@@ -1,0 +1,8 @@
+# Splunk Connect for SNMP poller
+# Sample Configuration file
+ipv4: True
+ipv6: False
+communities:
+  v1:
+    - public
+    - "my-area"
