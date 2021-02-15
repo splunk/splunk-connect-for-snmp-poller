@@ -6,3 +6,9 @@ communities:
   v1:
     - public
     - "my-area"
+
+profiles:
+  router:
+    varBinds: ['uptime', 'name', 'routingTable']
+  atm:
+    varBinds: ['cashLeft', 'transactionCount']

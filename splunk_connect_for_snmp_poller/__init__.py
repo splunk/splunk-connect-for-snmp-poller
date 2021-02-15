@@ -2,7 +2,7 @@ import signal
 import logging.config
 import argparse
 import yaml
-#from splunk_connect_for_snmp_poller.manager import poller
+from splunk_connect_for_snmp_poller.manager.poller import Poller
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +44,9 @@ def main():
         server_config = yaml.load(yamlfile, Loader=yaml.FullLoader)
 
     logger.debug(f"Server Config is:  {server_config}")
-    
-    #Run Poller here
+
+    my_poller = Poller(args, server_config)
+    my_poller.run()
 
 
 if __name__ == "__main__":
