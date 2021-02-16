@@ -9,6 +9,6 @@ communities:
 
 profiles:
   router:
-    varBinds: ['uptime', 'name', 'routingTable']
+    varBinds: ['sysDescr', 'uptime', 'name', 'routingTable']
   atm:
-    varBinds: ['cashLeft', 'transactionCount']
+    varBinds: ['sysDescr', 'cashLeft', 'transactionCount']

@@ -52,10 +52,12 @@ class Poller:
                         self._jobs_per_host[host] = job_reference
                     else:
                         logger.debug(f'Updating configuration for host {host}')
-                        schedule.cancel_job(self._jobs_per_host.get(host))
-                        job_reference = schedule.every(int(frequency)).seconds.do(some_task, host, version, community,
-                                                                                  profile)
-                        self._jobs_per_host[host] = job_reference
+                        old_conf = self._jobs_per_host.get(host).job_func.args
+                        if old_conf != (host, version, community, profile):
+                            schedule.cancel_job(self._jobs_per_host.get(host))
+                            job_reference = schedule.every(int(frequency)).seconds.do(some_task, host, version, community,
+                                                                                      profile)
+                            self._jobs_per_host[host] = job_reference
 
                 for host in list(self._jobs_per_host):
                     if host not in all_hosts:
