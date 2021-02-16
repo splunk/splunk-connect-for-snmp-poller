@@ -1,4 +1,2 @@
 host,version,community,profile,freqinseconds
-192.168.0.1,2c,passphrase1,router,1
-192.168.0.3,3,secretstring1,atm,2
-192.168.0.4,3,secretstring2,atm,1
+192.168.0.1,2c,passphrase1,router,5
