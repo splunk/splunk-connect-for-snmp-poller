@@ -25,11 +25,12 @@ class Poller:
             time.sleep(1)
 
     def check_inventory(self):
-        if os.stat('../inventory.csv').st_mtime > self._mod_time:
+        inventory_file = self._args.inventory
+        if os.stat(inventory_file).st_mtime > self._mod_time:
             logger.info('Change in inventory detected, reloading')
-            self._mod_time = os.stat('../inventory.csv').st_mtime
+            self._mod_time = os.stat(inventory_file).st_mtime
 
-            with open('../inventory.csv', newline='') as csvfile:
+            with open(inventory_file, newline='') as csvfile:
                 inventory = csv.DictReader(csvfile, delimiter=',')
 
                 all_hosts = set()
