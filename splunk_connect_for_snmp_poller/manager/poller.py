@@ -1,8 +1,9 @@
-import os
-import logging.config
-import schedule
-import time
 import csv
+import logging.config
+import os
+import time
+
+import schedule
 
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_get
 
@@ -24,11 +25,11 @@ class Poller:
             time.sleep(1)
 
     def check_inventory(self):
-        if os.stat('inventory.csv').st_mtime > self._mod_time:
+        if os.stat('../inventory.csv').st_mtime > self._mod_time:
             logger.info('Change in inventory detected, reloading')
-            self._mod_time = os.stat('inventory.csv').st_mtime
+            self._mod_time = os.stat('../inventory.csv').st_mtime
 
-            with open('inventory.csv', newline='') as csvfile:
+            with open('../inventory.csv', newline='') as csvfile:
                 inventory = csv.DictReader(csvfile, delimiter=',')
 
                 all_hosts = set()
@@ -55,7 +56,8 @@ class Poller:
                         old_conf = self._jobs_per_host.get(host).job_func.args
                         if old_conf != (host, version, community, profile):
                             schedule.cancel_job(self._jobs_per_host.get(host))
-                            job_reference = schedule.every(int(frequency)).seconds.do(some_task, host, version, community,
+                            job_reference = schedule.every(int(frequency)).seconds.do(some_task, host, version,
+                                                                                      community,
                                                                                       profile)
                             self._jobs_per_host[host] = job_reference
 
