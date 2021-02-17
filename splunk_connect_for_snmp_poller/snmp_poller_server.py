@@ -17,6 +17,6 @@ def main():
     poller_server.run()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     initialize_signals_handler()
     main()
