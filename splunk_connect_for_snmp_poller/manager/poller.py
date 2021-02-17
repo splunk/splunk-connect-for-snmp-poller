@@ -18,11 +18,15 @@ class Poller:
         self._jobs_per_host = {}
 
     def run(self):
-
+        counter = 0
         while True:
-            self.check_inventory()
+            if counter == 0:
+                self.check_inventory()
+                counter = int(self._args.refresh_interval)
+
             schedule.run_pending()
             time.sleep(1)
+            counter = counter - 1
 
     def check_inventory(self):
         inventory_file = self._args.inventory
@@ -49,6 +53,7 @@ class Poller:
                     all_hosts.add(agent['host'])
 
                     if host not in self._jobs_per_host:
+                        logger.debug(f'Adding configuration for host {host}')
                         job_reference = schedule.every(int(frequency)).seconds.do(some_task, host, version, community,
                                                                                   profile)
                         self._jobs_per_host[host] = job_reference
