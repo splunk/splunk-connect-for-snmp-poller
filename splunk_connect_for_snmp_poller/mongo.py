@@ -12,6 +12,9 @@ class WalkedHostsRepository:
     def add_host(self, host):
         self._walked_hosts.insert_one({'_id': host})
 
+    def delete_host(self, host):
+        self._walked_hosts.delete_many({'_id': host})
+
     def clear(self):
         self._walked_hosts.remove()
 

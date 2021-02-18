@@ -11,6 +11,8 @@ def main():
     mongo.add_host('192.168.0.2')
     print(mongo.contains_host('192.168.0.2'))
 
+    mongo.delete_host('192.168.0.2')
+    print(mongo.contains_host('192.168.0.2'))
 
 
 if __name__ == '__main__':
