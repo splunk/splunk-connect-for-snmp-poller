@@ -1,4 +1,5 @@
 import csv
+import functools
 import logging.config
 import os
 import time
@@ -26,7 +27,7 @@ class Poller:
 
             schedule.run_pending()
             time.sleep(1)
-            counter = counter - 1
+            counter -= 1
 
     def check_inventory(self):
         inventory_file = self._args.inventory
@@ -40,38 +41,49 @@ class Poller:
                 all_hosts = set()
 
                 for agent in inventory:
-                    host = agent['host']
-                    version = agent['version']
-                    community = agent['community']
-                    profile = agent['profile']
-                    frequency = agent['freqinseconds']
+                    try:
+                        host = agent['host']
+                        version = agent['version']
+                        community = agent['community']
+                        profile = agent['profile']
+                        frequency = int(agent['freqinseconds'])
 
-                    if version not in ('2c', '3'):
-                        logger.debug(f'Unsupported protocol version {version}, skipping')
-                        continue
+                        if version not in ('2c', '3'):
+                            logger.debug(f'Unsupported protocol version {version}, skipping')
+                            continue
 
-                    all_hosts.add(agent['host'])
+                        all_hosts.add(host)
 
-                    if host not in self._jobs_per_host:
-                        logger.debug(f'Adding configuration for host {host}')
-                        job_reference = schedule.every(int(frequency)).seconds.do(some_task, host, version, community,
-                                                                                  profile)
-                        self._jobs_per_host[host] = job_reference
-                    else:
-                        logger.debug(f'Updating configuration for host {host}')
-                        old_conf = self._jobs_per_host.get(host).job_func.args
-                        if old_conf != (host, version, community, profile):
-                            schedule.cancel_job(self._jobs_per_host.get(host))
-                            job_reference = schedule.every(int(frequency)).seconds.do(some_task, host, version,
-                                                                                      community,
+                        if host not in self._jobs_per_host:
+                            logger.debug(f'Adding configuration for host {host}')
+                            job_reference = schedule.every(int(frequency)).seconds.do(some_task, host, version, community,
                                                                                       profile)
                             self._jobs_per_host[host] = job_reference
+                        else:
+                            old_conf = self._jobs_per_host.get(host).job_func.args
+                            if old_conf != (host, version, community, profile) or frequency != self._jobs_per_host.get(host).interval:
+                                self.update_schedule(community, frequency, host, profile, version)
+                    except ValueError as ve:
+                        logger.error(ve)
 
                 for host in list(self._jobs_per_host):
                     if host not in all_hosts:
-                        schedule.cancel_job(self._jobs_per_host.get(host))
                         logger.debug(f'Removing host {host}')
+                        schedule.cancel_job(self._jobs_per_host.get(host))
                         del self._jobs_per_host[host]
+
+    def update_schedule(self, community, frequency, host, profile, version):
+        logger.debug(f'Updating configuration for host {host}')
+        new_job_func = functools.partial(some_task, host, version, community, profile)
+        functools.update_wrapper(new_job_func, some_task)
+
+        self._jobs_per_host.get(host).job_func = new_job_func
+        self._jobs_per_host.get(host).interval = frequency
+        old_next_run = self._jobs_per_host.get(host).next_run
+        self._jobs_per_host.get(host)._schedule_next_run()
+        new_next_run = self._jobs_per_host.get(host).next_run
+
+        self._jobs_per_host.get(host).next_run = old_next_run if new_next_run > old_next_run else new_next_run
 
 
 def some_task(host, version, community, profile):
