@@ -11,4 +11,4 @@ profiles:
   router:
     varBinds: ['sysDescr', 'uptime', 'name', 'routingTable']
   atm:
-    varBinds: ['sysDescr', 'cashLeft', 'transactionCount']
+    varBinds: ['sysDescr', 'cashLeft', 'transactionCount', '1.2.2.2.2.2...2']

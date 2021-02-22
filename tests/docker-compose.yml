@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  mongo:
+    ports:
+      - "27017:27017"
+    image: "mongo:latest"
+  rabbitmq:
+    ports:
+      - "5672:5672"
+    image: "rabbitmq:latest"
+  #snmp-poller:
+  #  image: "ghcr.io/splunk/splunk-connect-for-snmp-poller:latest"
