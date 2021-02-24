@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def is_responsive_splunk(splunk_conn_config):
-    logger.info(f'Calling with parameters {splunk_conn_config}')
+    logger.debug(f'Calling with parameters {splunk_conn_config}')
     try:
         connection_params = {'username': splunk_conn_config['username'], 'password': splunk_conn_config['password'],
                              'host': splunk_conn_config['host'], 'port': splunk_conn_config['port']}
@@ -27,8 +27,6 @@ def docker_compose_files(pytestconfig):
 
 @pytest.fixture(scope='session')
 def splunk_docker_configuration(request, docker_services):
-    logger.info('Calling splunk_docker_configuration()')
-
     service_name = 'splunk'
     docker_services.start(service_name)
     default_port = request.config.getoption('splunk_port')
