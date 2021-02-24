@@ -6,7 +6,10 @@ from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 def main():
     mongo_config = {'host': 'localhost', 'port': 27017, 'database': 'snmp_poller', 'collection': 'walked_hosts'}
 
-    mongo = WalkedHostsRepository(mongo_config)
+    try:
+        mongo = WalkedHostsRepository(mongo_config)
+    except Exception:
+        print('Exception!')
 
     mongo.clear()
     mongo.add_host('192.168.0.2')

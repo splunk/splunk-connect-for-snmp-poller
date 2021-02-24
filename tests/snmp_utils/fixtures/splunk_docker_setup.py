@@ -39,6 +39,6 @@ def splunk_docker_configuration(request, docker_services):
 
     logger.info(configuration)
     docker_services.wait_until_responsive(timeout=180.0, pause=1.0, check=lambda: is_responsive_splunk(configuration))
-    logger.info('Initialized Splunk from Docker')
+    logger.info(f'Initialized {service_name} from Docker')
 
     return configuration
