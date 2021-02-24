@@ -1,5 +1,6 @@
 import logging
 import os
+from time import sleep
 
 import pytest
 import splunklib.client as client
@@ -46,10 +47,12 @@ def splunk_connector(splunk_configuration):
             connection = client.connect(username=splunk_configuration["username"],
                                         password=splunk_configuration["password"],
                                         host=splunk_configuration["host"],
-                                        port=splunk_configuration["port"])
+                                        port=splunk_configuration["port"], verify=False)
         except ConnectionRefusedError as ex:
+            logger.error(f'Cannot connect to Splunk: {ex}')
             tried += 1
             if tried > connect_max_retries:
-                logger.error(f'Cannot connect to Splunk: {ex}')
                 raise
+            sleep(1)
+
         return connection

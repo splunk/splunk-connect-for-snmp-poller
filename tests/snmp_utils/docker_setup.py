@@ -1,5 +1,6 @@
 import logging
 import os
+from ssl import SSLEOFError
 
 import pytest
 import splunklib.client as client
@@ -9,13 +10,15 @@ logger = logging.getLogger(__name__)
 
 def is_responsive_splunk(splunk_conn_config):
     logger.info(f'Calling with parameters {splunk_conn_config}')
-    # return True
     try:
         connection_params = {'username': splunk_conn_config['username'], 'password': splunk_conn_config['password'],
                              'host': splunk_conn_config['host'], 'port': splunk_conn_config['port']}
         client.connect(**connection_params)
+        logger.info(f'Connected to Splunk!')
         return True
     except ConnectionRefusedError:
+        return False
+    except SSLEOFError:
         return False
 
 
