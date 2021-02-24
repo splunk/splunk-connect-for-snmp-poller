@@ -1,7 +1,8 @@
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 
-#TODO as for now this is just a demo on how to use WalkedHostsRepository
-#TODO final version should use fixures to run MongoDB in Docker
+
+# TODO as for now this is just a demo on how to use WalkedHostsRepository
+# TODO final version should use fixures to run MongoDB in Docker
 def main():
     mongo_config = {'host': 'localhost', 'port': 27017, 'database': 'snmp_poller', 'collection': 'walked_hosts'}
 

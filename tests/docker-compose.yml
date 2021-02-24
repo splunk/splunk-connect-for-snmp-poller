@@ -1,12 +1,25 @@
 version: "3.9"
 services:
   mongo:
-    ports:
-      - "27017:27017"
     image: "mongo:latest"
-  rabbitmq:
     ports:
-      - "5672:5672"
+      - "27017"
+  rabbitmq:
     image: "rabbitmq:latest"
-  #snmp-poller:
-  #  image: "ghcr.io/splunk/splunk-connect-for-snmp-poller:latest"
+    ports:
+      - "5672"
+  splunk:
+    image: "splunk/splunk:latest"
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=${SPLUNK_PASSWORD}
+    ports:
+      - "8000:8000"
+      - "8088:8088"
+      - "8089"
+    volumes:
+      - opt-splunk-var:/opt/splunk/var
+      - opt-splunk-etc:/opt/splunk/etc
+volumes:
+  opt-splunk-etc:
+  opt-splunk-var:
