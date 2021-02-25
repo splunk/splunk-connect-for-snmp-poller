@@ -1,5 +1,9 @@
 version: "3.9"
 services:
+  snmpsim:
+    image: "tandrup/snmpsim"
+    ports:
+      - "161:161/udp"
   mongo:
     image: "mongo:latest"
     ports:
