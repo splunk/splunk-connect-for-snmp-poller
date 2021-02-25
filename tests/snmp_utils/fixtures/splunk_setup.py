@@ -1,9 +1,7 @@
 import logging
 import os
-from time import sleep
 
 import pytest
-import splunklib.client as client
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +17,7 @@ def splunk_external_configuration(request):
 
 
 @pytest.fixture(scope='session')
-def splunk_configuration(request):
+def splunk_service(request):
     logger.info('Calling splunk_configuration()')
     request_type = request.config.getoption('splunk_type')
     if request_type == 'external':
@@ -31,23 +29,3 @@ def splunk_configuration(request):
         configuration = request.getfixturevalue('splunk_docker_configuration')
 
     return configuration
-
-
-@pytest.fixture(scope='session')
-def splunk_service(splunk_configuration):
-    logger.info('Calling splunk_connector()')
-    tried = 0
-    connect_max_retries = splunk_configuration['connect_max_retries']
-    while True:
-        try:
-            kwargs = {'username': splunk_configuration['username'], 'password': splunk_configuration['password'],
-                      'host': splunk_configuration['host'], 'port': splunk_configuration['port']}
-            connection = client.connect(**kwargs)
-        except ConnectionRefusedError as ex:
-            logger.error(f'Cannot connect to Splunk: {ex}')
-            tried += 1
-            if tried > connect_max_retries:
-                raise
-            sleep(1)
-        finally:
-            return connection
