@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  snmpsim:
+    image: "tandrup/snmpsim"
+    ports:
+      - "161:161/udp"
+  mongo:
+    image: "mongo:latest"
+    ports:
+      - "27017:27017"
+  rabbitmq:
+    image: "rabbitmq:latest"
+    ports:
+      - "5672:5672"
+  splunk:
+    image: "splunk/splunk:latest"
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=${SPLUNK_PASSWORD}
+    ports:
+      - "8000:8000"
+      - "8088:8088"
+      - "8089:8089"
+    volumes:
+      - opt-splunk-var:/opt/splunk/var
+      - opt-splunk-etc:/opt/splunk/etc
+volumes:
+  opt-splunk-etc:
+  opt-splunk-var:
