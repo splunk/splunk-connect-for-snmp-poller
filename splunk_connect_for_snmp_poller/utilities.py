@@ -9,6 +9,10 @@ logger = logging.getLogger(__name__)
 
 def default_signal_handler(signal_number, frame):
     logger.info(f'Received Signal: {signal_number}')
+
+    # Exit on ^C
+    if signal_number is 2:
+        exit(2)
     return
 
 
