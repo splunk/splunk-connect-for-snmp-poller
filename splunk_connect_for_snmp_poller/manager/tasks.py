@@ -32,10 +32,18 @@ def snmp_get(host, version, community, profile, mib_server_url):
         logger.debug(f"varBinds: {varBinds}")
         for varBind in varBinds:
             logger.debug(' = '.join([x.prettyPrint() for x in varBind]))
-        for name, val in varBinds:
-            logger.debug(str(name), str(val))
         
-        result = get_translation(varBinds, mib_server_url)
+        try:
+            for name, val in varBinds:
+                logger.debug("{} - {}".format(name, val))
+        except Exception as e:
+            logger.debug(f'Exception occured while logging varBinds name & value. Exception: {e}') 
+        
+        try:
+            result = get_translation(varBinds, mib_server_url)
+        except Exception as e:
+            logger.debug(f'Could not perform translation. Exception: {e}')         
+
         logger.debug("===\n\n{}\n\n===".format(result))
     # add in mongo
     
