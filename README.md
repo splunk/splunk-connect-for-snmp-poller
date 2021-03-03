@@ -24,6 +24,9 @@ Please use the GitHub issue tracker to submit bugs or request enhancements: http
 
 Get involved, try it out, ask questions, contribute filters, and make new friends!
 
+## Steps for Developer Environment
+
+> Refer to [BUILD_STEPS.md](build.md) for development aspects of poller.
 ## Contributing
 
 We welcome feedback and contributions from the community! Please see our [contribution guidelines](CONTRIBUTING.md) for more information on how to get involved.
