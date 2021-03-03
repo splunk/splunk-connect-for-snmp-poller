@@ -29,7 +29,6 @@ def parse_command_line_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--loglevel', default='debug',
                         help='Provide logging level. Example --loglevel debug, default=warning')
-    parser.add_argument('-p', '--port', default='2062', help='Port used to accept poller', type=int)
     parser.add_argument('-c', '--config', default='config.yaml', help='Config File')
     parser.add_argument('-i', '--inventory', default='inventory.csv', help='Inventory Config File')
 
@@ -38,8 +37,11 @@ def parse_command_line_arguments():
 
 def parse_config_file(config_file_path):
     logger.info(f'Config file is {config_file_path}')
-    with open(config_file_path, 'r') as yaml_file:
-        server_config = yaml.load(yaml_file, Loader=yaml.FullLoader)
-    logger.debug(f'Server Config is:  {server_config}')
+    try:
+        with open(config_file_path, 'r') as yaml_file:
+            server_config = yaml.load(yaml_file, Loader=yaml.FullLoader)
+        logger.debug(f'Server Config is:  {server_config}')
+    except Exception as e:
+        logger.debug(f'Exception occured while loading YAML: {e}')
 
     return server_config
