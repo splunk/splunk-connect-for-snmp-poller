@@ -1,4 +1,11 @@
 # Splunk Connect for SNMP poller
+snmp:
+  mibs_server: "http://mib-server-host:5000"
+
+celery:
+  broker:
+    type: "rabbitmq"
+
 # Sample Configuration file
 ipv4: True
 ipv6: False
