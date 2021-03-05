@@ -7,6 +7,7 @@ import schedule
 
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_get
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -76,5 +77,22 @@ def some_task(host, version, community, profile, server_config):
     logger.debug(f'Executing some_task for {host} version={version} community={community} profile={profile}')
     
     mib_server_url = server_config["snmp"]["mibs_server"]
-    
-    snmp_get.delay(host, version, community, profile, mib_server_url)
+    index =  {}
+    index["event_index"]=  server_config["splunk"]["index"]["event"]
+    index["metric_index"] = server_config["splunk"]["index"]["metric"]
+    host, port = parse_port(host)
+    snmp_get.delay(host, port, version, community, profile, mib_server_url, index)
+
+
+def parse_port(host):
+    """
+    @params host: host filed in inventory.csv. e.g 10.202.12.56, 127.0.0.1:1162
+    @return host, port
+    """
+    if ":" in host:
+        tmp = host.split(":")
+        host = tmp[0]
+        port = tmp[1]
+    else:
+        port = 1161
+    return host, port

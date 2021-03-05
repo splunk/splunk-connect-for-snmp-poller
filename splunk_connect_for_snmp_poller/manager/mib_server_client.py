@@ -14,7 +14,7 @@ class SharedException(Exception):
     pass
 
 
-def get_translation(var_binds, mib_server_url):
+def get_translation(var_binds, mib_server_url, metric=False):
     """
     @param var_binds: var_binds object getting from SNMP agents
     @param mib_server_url: URL of SNMP MIB server
@@ -27,10 +27,8 @@ def get_translation(var_binds, mib_server_url):
 
     for name, val in var_binds:
         var_bind = {
-            # "oid": name.prettyPrint(),
             "oid": str(name),
             "oid_type": name.__class__.__name__,
-            # "val": val.prettyPrint(),
             "val": str(val),
             "val_type": val.__class__.__name__
         }
@@ -43,8 +41,14 @@ def get_translation(var_binds, mib_server_url):
     endpoint = "translation"
     TRANSLATION_URL = os.path.join(mib_server_url.strip('/'), endpoint)
     logger.debug(f"[-] TRANSLATION_URL: {TRANSLATION_URL}")
+
+    # Set up the request params
+    params = {
+        "metric": metric
+    }
+
     try:
-        resp = requests.request("POST", TRANSLATION_URL, headers=headers, data=payload)
+        resp = requests.request("POST", TRANSLATION_URL, headers=headers, data=payload, params=params)
     except Exception as e:
         logger.error(f"MIB server is unreachable! Error happened while communicating to MIB server to perform the Translation: {e}")
         raise SharedException("MIB server is unreachable!")
@@ -52,9 +56,9 @@ def get_translation(var_binds, mib_server_url):
 
     if resp.status_code != 200:
         logger.error(f"[-] MIB Server API Error with code: {resp.status_code}")
-        raise SharedException(f"MIB Server API Error with code: {resp.status_code")
+        raise SharedException(f"MIB Server API Error with code: {resp.status_code}")
 
     # *TODO*: For future release could retain failed translations in some place to re-translate.
 
-    trap_event_string = resp.text
-    return trap_event_string
+    mibs_string = resp.text
+    return mibs_string
