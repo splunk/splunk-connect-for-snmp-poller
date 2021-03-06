@@ -9,17 +9,15 @@ logger = logging.getLogger(__name__)
 
 def post_data_to_splunk_hec(host, variables_binds, metric, index, hec_config):
     splunk_hec_token = hec_config.get_authentication_token()
-    splunk_hec_metric_token = hec_config.get_authentication_metric_token()
     endpoints = hec_config.get_endpoints()
     logger.debug(f"[-] splunk_hec_token : {splunk_hec_token}")
-    logger.debug(f"[-] splunk_hec_metric_token : {splunk_hec_metric_token}")
     logger.debug(f"[-] endpoints : {endpoints}")
  
     # check if it is metric data
     for endpoint in endpoints:
         if metric:     
             logger.debug(f"+++++++++metric index: {index['metric_index']} +++++++++")
-            post_metric_data(endpoint, splunk_hec_metric_token, host, variables_binds, index["metric_index"])         
+            post_metric_data(endpoint, splunk_hec_token, host, variables_binds, index["metric_index"])
         else:
             logger.debug(f"*********event index: {index['event_index']} ********")
             post_event_data(endpoint, splunk_hec_token, host, variables_binds, index["event_index"])
