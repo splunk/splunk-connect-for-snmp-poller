@@ -10,6 +10,7 @@ RUN cd /tmp ;\
 COPY entrypoint.sh /
 COPY dist/*.whl /tmp
 COPY config.yaml /
+COPY inventory.csv /
 RUN pip3.8 install $(ls /tmp/*.whl); rm -f /tmp/*.whl
 
 EXPOSE 612/udp
