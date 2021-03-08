@@ -7,6 +7,7 @@ from splunk_connect_for_snmp_poller.manager.hec_config import HecConfiguration
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from pysnmp.hlapi import *
 import json
+import os
 
 from pysnmp.smi import builder, view, compiler, rfc1902
 from pysmi import debug as pysmi_debug
