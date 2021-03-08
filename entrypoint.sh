@@ -45,6 +45,7 @@ then
 else
   echo starting sc4-snmp-worker
   celery -A splunk_connect_for_snmp_poller.manager.celery_client worker -l INFO -n worker1
+fi
 
 pid="$!"
 sleep 2
