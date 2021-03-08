@@ -38,8 +38,15 @@ trap 'kill ${!}; quit_handler' SIGQUIT
 
 
 
-echo starting sc4-snmp-poller
-sc4snmp-poller $@ &
+if [ "$POLLER_EXECUTION_MODE" = "scheduler" ]
+then
+  echo starting sc4-snmp-scheduler
+  sc4snmp-poller $@ &
+else
+  echo starting sc4-snmp-worker
+  celery -A splunk_connect_for_snmp_poller.manager.celery_client worker -l INFO -n worker1
+fi
+
 pid="$!"
 sleep 2
 if ! ps -p $pid > /dev/null
