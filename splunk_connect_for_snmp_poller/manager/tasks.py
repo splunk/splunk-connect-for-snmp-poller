@@ -18,7 +18,7 @@ pysmi_debug.setLogger(pysmi_debug.Debug('compiler'))
 
 @app.task
 def snmp_get(host, version, community, profile, server_config):
-    mib_server_url = server_config["snmp"]["mibs_server"]
+    mib_server_url = os.environ['MIBS_SERVER_URL']
     index =  {}
     index["event_index"]=  server_config["splunk"]["index"]["event"]
     index["metric_index"] = server_config["splunk"]["index"]["metric"]
