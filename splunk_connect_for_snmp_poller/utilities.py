@@ -28,6 +28,7 @@ def parse_command_line_arguments():
                         help='Provide logging level. Example --loglevel debug, default=warning')
     parser.add_argument('-c', '--config', default='config.yaml', help='Config File')
     parser.add_argument('-i', '--inventory', default='inventory.csv', help='Inventory Config File')
+    parser.add_argument('-r', '--refresh_interval', default='1', help='Refresh Interval of Inventory')
 
     return parser.parse_args()
 
