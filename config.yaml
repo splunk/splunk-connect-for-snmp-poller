@@ -1,4 +1,13 @@
 # Splunk Connect for SNMP poller
+snmp:
+  # mibs_server: "http://mib-server:5000"
+  mibs_server: "http://10.0.0.61:5000"
+  mibs_files_url: "http://10.0.0.61:5000/files/asn1/@mib@"
+
+celery:
+  broker:
+    type: "rabbitmq"
+
 # Sample Configuration file
 ipv4: True
 ipv6: False
@@ -9,6 +18,16 @@ communities:
 
 profiles:
   router:
-    varBinds: ['sysDescr', 'uptime', 'name', 'routingTable']
+    varBinds: 
+      # Syntax: [ "MIB-Files", "MIB object name" "MIB index number"]
+      - ['SNMPv2-MIB', 'sysDescr']
+      - ['SNMPv2-MIB', 'sysUpTime',0]
+      - ['SNMPv2-MIB', 'sysName']
+      - ['CISCO-FC-MGMT-MIB', 'cfcmPortLcStatsEntry']
+      - ['EFM-CU-MIB', 'efmCuPort']
   atm:
-    varBinds: ['sysDescr', 'cashLeft', 'transactionCount']
+    varBinds: ['sysDescr', 'cashLeft', 'transactionCount', '1.2.2.2.2.2...2']
+splunk:
+  index:
+    event: "snmp"
+    metric: "snmp_metric"

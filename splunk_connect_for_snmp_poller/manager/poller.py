@@ -8,6 +8,7 @@ import schedule
 
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_get
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,27 +43,29 @@ class Poller:
 
                 for agent in inventory:
                     try:
-                        host = agent['host']
-                        version = agent['version']
-                        community = agent['community']
-                        profile = agent['profile']
-                        frequency = int(agent['freqinseconds'])
+                        # Comment Feature: Skip if the Inventory hostname starts with character '#'
+                        if host[:1] != "#":
+                            host = agent['host']
+                            version = agent['version']
+                            community = agent['community']
+                            profile = agent['profile']
+                            frequency = int(agent['freqinseconds'])
 
-                        if version not in ('2c', '3'):
-                            logger.debug(f'Unsupported protocol version {version}, skipping')
-                            continue
+                            if version not in ('2c', '3'):
+                                logger.debug(f'Unsupported protocol version {version}, skipping')
+                                continue
 
-                        all_hosts.add(host)
+                            all_hosts.add(host)
 
-                        if host not in self._jobs_per_host:
-                            logger.debug(f'Adding configuration for host {host}')
-                            job_reference = schedule.every(int(frequency)).seconds.do(some_task, host, version, community,
-                                                                                      profile)
-                            self._jobs_per_host[host] = job_reference
-                        else:
-                            old_conf = self._jobs_per_host.get(host).job_func.args
-                            if old_conf != (host, version, community, profile) or frequency != self._jobs_per_host.get(host).interval:
-                                self.update_schedule(community, frequency, host, profile, version)
+                            if host not in self._jobs_per_host:
+                                logger.debug(f'Adding configuration for host {host}')
+                                job_reference = schedule.every(int(frequency)).seconds.do(some_task, host, version, community,
+                                                                                          profile, self._server_config)
+                                self._jobs_per_host[host] = job_reference
+                            else:
+                                old_conf = self._jobs_per_host.get(host).job_func.args
+                                if old_conf != (host, version, community, profile) or frequency != self._jobs_per_host.get(host).interval:
+                                    self.update_schedule(community, frequency, host, profile, version)
                     except ValueError as ve:
                         logger.error(ve)
 
@@ -86,5 +89,10 @@ class Poller:
         self._jobs_per_host.get(host).next_run = old_next_run if new_next_run > old_next_run else new_next_run
 
 
-def some_task(host, version, community, profile):
-    snmp_get.delay(host, version, community, profile)
+def some_task(host, version, community, profile, server_config):
+    logger.debug(f'Executing some_task for {host} version={version} community={community} profile={profile}')
+
+    snmp_get.delay(host, version, community, profile, server_config)
+
+
+

@@ -1,7 +1,26 @@
 from celery import Celery
+import os
+import logging.config
 
-app = Celery('hello', broker='amqp://guest@localhost//', backend='rpc://',
-             include=['splunk_connect_for_snmp_poller.manager.tasks'])
+logger = logging.getLogger(__name__)
+
+logger.info(f'Start Celery Client')
+
+# app = Celery('hello', broker=broker_url, backend='rpc://',
+#            include=['splunk_connect_for_snmp_poller.manager.tasks'])
+
+app = Celery(__name__)
+
+app.conf.update({
+    'broker_url': os.environ['CELERY_BROKER_URL'],
+    'imports': (
+        'splunk_connect_for_snmp_poller.manager.tasks',
+    ),
+    'result_backend' : 'rpc://',
+    'task_serializer': 'json',
+    'result_serializer': 'json',
+    'accept_content': ['json']})
+
 
 if __name__ == '__main__':
     app.start()
