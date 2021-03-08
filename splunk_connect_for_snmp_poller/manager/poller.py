@@ -43,9 +43,9 @@ class Poller:
 
                 for agent in inventory:
                     try:
+                        host = agent['host']
                         # Comment Feature: Skip if the Inventory hostname starts with character '#'
                         if host[:1] != "#":
-                            host = agent['host']
                             version = agent['version']
                             community = agent['community']
                             profile = agent['profile']
@@ -64,8 +64,8 @@ class Poller:
                                 self._jobs_per_host[host] = job_reference
                             else:
                                 old_conf = self._jobs_per_host.get(host).job_func.args
-                                if old_conf != (host, version, community, profile) or frequency != self._jobs_per_host.get(host).interval:
-                                    self.update_schedule(community, frequency, host, profile, version)
+                                if old_conf != (host, version, community, profile, self._server_config) or frequency != self._jobs_per_host.get(host).interval:
+                                    self.update_schedule(community, frequency, host, profile, version, self._server_config)
                     except ValueError as ve:
                         logger.error(ve)
 
@@ -75,9 +75,9 @@ class Poller:
                         schedule.cancel_job(self._jobs_per_host.get(host))
                         del self._jobs_per_host[host]
 
-    def update_schedule(self, community, frequency, host, profile, version):
+    def update_schedule(self, community, frequency, host, profile, version, server_config):
         logger.debug(f'Updating configuration for host {host}')
-        new_job_func = functools.partial(some_task, host, version, community, profile)
+        new_job_func = functools.partial(some_task, host, version, community, profile, server_config)
         functools.update_wrapper(new_job_func, some_task)
 
         self._jobs_per_host.get(host).job_func = new_job_func
