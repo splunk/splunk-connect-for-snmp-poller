@@ -167,7 +167,7 @@ def get_by_mib_name(host, port, version, community, mib_file, mib_name, mib_inde
     # TODO Should we create a spearate fun/module for mibViewController?
     mibBuilder = builder.MibBuilder()
     mibViewController = view.MibViewController(mibBuilder)
-    compiler.addMibCompiler(mibBuilder, sources=[os.environ['MIBS_SERVER_URL']])
+    compiler.addMibCompiler(mibBuilder, os.environ['MIBS_FILES_URL'])
 
     try:
         errorIndication, errorStatus, errorIndex, varBinds = next(
@@ -180,7 +180,7 @@ def get_by_mib_name(host, port, version, community, mib_file, mib_name, mib_inde
 
         if errorIndication:
             result = f"error: {errorIndication}"
-            logger.debug(result1)
+            logger.debug(result)
             results.append((result, False))
         elif errorStatus:
             result = 'error: %s at %s' % (errorStatus.prettyPrint(),
