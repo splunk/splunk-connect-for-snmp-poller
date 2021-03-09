@@ -147,7 +147,7 @@ def get_var_binds_string(mib_server_url, hec_config, varBinds):
                 }
                 result = json.dumps(result)
             else: 
-                result = "{} = {}".format(name.prettyPrint(), val.prettyPrint())
+                result = '{oid}="{value}"'.format(oid=name.prettyPrint(), value=val.prettyPrint())
 
     except Exception as e:
         logger.debug(f'Exception occured while logging varBinds name & value. Exception: {e}') 
