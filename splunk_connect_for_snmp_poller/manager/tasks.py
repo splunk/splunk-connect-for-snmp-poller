@@ -133,6 +133,7 @@ def get_var_binds_string(mib_server_url, hec_config, varBinds):
     @return result: formated string ready to be sent to Splunk HEC
     @return metric: boolean, metric data flag 
     """
+    logger.info(f"I got these var binds: {varBinds}")
     # check if this is metric data
     metric = is_metric_data(hec_config, varBinds)
     # Get Original varbinds as backup in case the mib-server is unreachable
