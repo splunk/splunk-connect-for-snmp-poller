@@ -1,6 +1,6 @@
-from celery.log import get_task_logger
+from celery.utils.log import get_task_logger
 
-logger = get_task_logger()
+logger = get_task_logger(__name__)
 
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
