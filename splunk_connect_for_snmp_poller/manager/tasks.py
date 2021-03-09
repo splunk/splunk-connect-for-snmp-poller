@@ -180,7 +180,7 @@ def get_by_mib_name(host, port, version, community, mib_file, mib_name, mib_inde
 
         if errorIndication:
             result = f"error: {errorIndication}"
-            logger.debug(result1)
+            logger.debug(result)
             results.append((result, False))
         elif errorStatus:
             result = 'error: %s at %s' % (errorStatus.prettyPrint(),
