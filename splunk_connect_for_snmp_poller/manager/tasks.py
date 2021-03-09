@@ -25,6 +25,7 @@ def snmp_get(host, version, community, profile, server_config):
     index["metric_index"] = server_config["splunk"]["index"]["metric"]
     host, port = parse_port(host)
     hec_config = HecConfiguration()
+    logger.debug(f"Using the following MIBS server URL: {mib_server_url}")
 
     # results list contains all data ready to send out to Splunk HEC
     results = []
@@ -43,7 +44,7 @@ def snmp_get(host, version, community, profile, server_config):
                             mib_index = varbind[2]
                         get_by_mib_name(host, port, version, community, varbind[0], varbind[1], mib_index, mib_server_url, hec_config, server_config, results)
                     except Exception as e:
-                        logger.error(f"Error happend while polling by mib name: {e}")
+                        logger.error(f"Error happend while calling get_by_mib_name(): {e}")
  
     #nextCmd - snmpwalk
     else:
@@ -71,6 +72,7 @@ def snmp_get(host, version, community, profile, server_config):
                 else:
                     result, metric = get_var_binds_string(mib_server_url, hec_config, varBinds)    
                     results.append((result, metric))
+                    logger.debug(f"SNMP/WALK executed")
         # getCmd - snmpget
         else:       
             logger.debug(f'Executing SNMP GET for {host} profile={profile}')       
@@ -164,6 +166,7 @@ def get_var_binds_string(mib_server_url, hec_config, varBinds):
 
 
 def get_by_mib_name(host, port, version, community, mib_file, mib_name, mib_index, mib_server_url, hec_config, server_config, results):
+    logger.debug(f"Executing get_by_mib_name() with {host} {port} {version} {community} {mib_file} {mib_name} {mib_index} {mib_server_url}")
     # TODO Should we create a spearate fun/module for mibViewController?
     mibBuilder = builder.MibBuilder()
     mibViewController = view.MibViewController(mibBuilder)
