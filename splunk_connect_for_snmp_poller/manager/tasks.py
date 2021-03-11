@@ -1,5 +1,6 @@
-import logging
-logger = logging.getLogger(__name__)
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger(__name__)
 
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
@@ -7,6 +8,7 @@ from splunk_connect_for_snmp_poller.manager.hec_config import HecConfiguration
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from pysnmp.hlapi import *
 import json
+import os
 
 from pysnmp.smi import builder, view, compiler, rfc1902
 from pysmi import debug as pysmi_debug
@@ -18,12 +20,13 @@ pysmi_debug.setLogger(pysmi_debug.Debug('compiler'))
 
 @app.task
 def snmp_get(host, version, community, profile, server_config):
-    mib_server_url = server_config["snmp"]["mibs_server"]
+    mib_server_url = os.environ['MIBS_SERVER_URL']
     index =  {}
     index["event_index"]=  server_config["splunk"]["index"]["event"]
     index["metric_index"] = server_config["splunk"]["index"]["metric"]
     host, port = parse_port(host)
     hec_config = HecConfiguration()
+    logger.info(f"Using the following MIBS server URL: {mib_server_url}")
 
     # results list contains all data ready to send out to Splunk HEC
     results = []
@@ -42,12 +45,12 @@ def snmp_get(host, version, community, profile, server_config):
                             mib_index = varbind[2]
                         get_by_mib_name(host, port, version, community, varbind[0], varbind[1], mib_index, mib_server_url, hec_config, server_config, results)
                     except Exception as e:
-                        logger.error(f"Error happend while polling by mib name: {e}")
+                        logger.error(f"Error happend while calling get_by_mib_name(): {e}")
  
     #nextCmd - snmpwalk
     else:
         if profile[-1] == "*":
-            logger.debug(f'Executing SNMP WALK for {host} profile={profile}')
+            logger.info(f'Executing SNMP WALK for {host} profile={profile}')
             for (errorIndication,errorStatus,errorIndex,varBinds) in nextCmd(
                 SnmpEngine(),
                 CommunityData(community),
@@ -58,21 +61,22 @@ def snmp_get(host, version, community, profile, server_config):
             
                 if errorIndication:
                     result = f"error: {errorIndication}"
-                    logger.debug(result)
+                    logger.info(result)
                     results.append((result, False))
                     break
                 elif errorStatus:
                     result = 'error: %s at %s' % (errorStatus.prettyPrint(),
                         errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
-                    logger.debug(result)
+                    logger.info(result)
                     results.append((result, False))
                     break
                 else:
                     result, metric = get_var_binds_string(mib_server_url, hec_config, varBinds)    
                     results.append((result, metric))
+                    logger.info(f"SNMP/WALK executed")
         # getCmd - snmpget
         else:       
-            logger.debug(f'Executing SNMP GET for {host} profile={profile}')       
+            logger.info(f'Executing SNMP GET for {host} profile={profile}')
             # check if it's in mongo
             errorIndication, errorStatus, errorIndex, varBinds = next(
             getCmd(SnmpEngine(),
@@ -96,7 +100,7 @@ def snmp_get(host, version, community, profile, server_config):
             results.append((result,metric))
        
     
-    logger.debug(f"***results list with {len(results)} items***\n{results}")
+    logger.info(f"***results list with {len(results)} items***\n{results}")
 
     # Post mib event to splunk HEC
     for event, metric in results:
@@ -129,6 +133,7 @@ def get_var_binds_string(mib_server_url, hec_config, varBinds):
     @return result: formated string ready to be sent to Splunk HEC
     @return metric: boolean, metric data flag 
     """
+    logger.info(f"I got these var binds: {varBinds}")
     # check if this is metric data
     metric = is_metric_data(hec_config, varBinds)
     # Get Original varbinds as backup in case the mib-server is unreachable
@@ -147,26 +152,28 @@ def get_var_binds_string(mib_server_url, hec_config, varBinds):
                 }
                 result = json.dumps(result)
             else: 
-                result = "{} = {}".format(name.prettyPrint(), val.prettyPrint())
+                result = '{oid}="{value}"'.format(oid=name.prettyPrint(), value=val.prettyPrint())
 
     except Exception as e:
-        logger.debug(f'Exception occured while logging varBinds name & value. Exception: {e}') 
+        logger.info(f'Exception occured while logging varBinds name & value. Exception: {e}')
 
     # Overrid the varBinds string with translated varBinds string  
     try:
         result = get_translation(varBinds, mib_server_url, metric)
-        logger.debug(f"=========result=======\n{result}")
+        logger.info(f"=========result=======\n{result}")
     except Exception as e:
-        logger.debug(f'Could not perform translation. Exception: {e}')
-    logger.debug(f"###############final result -- metric: {metric}#######################\n{result}")
+        logger.info(f'Could not perform translation. Exception: {e}')
+    logger.info(f"###############final result -- metric: {metric}#######################\n{result}")
     return result, metric
 
 
 def get_by_mib_name(host, port, version, community, mib_file, mib_name, mib_index, mib_server_url, hec_config, server_config, results):
+    logger.info(f"Executing get_by_mib_name() with {host} {port} {version} {community} {mib_file} {mib_name} {mib_index} {mib_server_url}")
     # TODO Should we create a spearate fun/module for mibViewController?
     mibBuilder = builder.MibBuilder()
     mibViewController = view.MibViewController(mibBuilder)
-    compiler.addMibCompiler(mibBuilder, sources=[server_config["snmp"]["mibs_files_url"]])
+    config={'sources': [ os.environ['MIBS_FILES_URL'] ]}
+    compiler.addMibCompiler(mibBuilder, **config)
 
     try:
         errorIndication, errorStatus, errorIndex, varBinds = next(
@@ -179,17 +186,17 @@ def get_by_mib_name(host, port, version, community, mib_file, mib_name, mib_inde
 
         if errorIndication:
             result = f"error: {errorIndication}"
-            logger.debug(result1)
+            logger.info(result)
             results.append((result, False))
         elif errorStatus:
             result = 'error: %s at %s' % (errorStatus.prettyPrint(),
                                 errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
-            logger.debug(result)
+            logger.info(result)
             results.append((result, False))
         else:
-            logger.debug(f"varBinds: {varBinds}")
+            logger.info(f"varBinds: {varBinds}")
             for varBind in varBinds:
-                logger.debug(' = '.join([x.prettyPrint() for x in varBind]))
+                logger.info(' = '.join([x.prettyPrint() for x in varBind]))
             result, metric = get_var_binds_string(mib_server_url, hec_config, varBinds)
             results.append((result,metric))
     except Exception as e:
