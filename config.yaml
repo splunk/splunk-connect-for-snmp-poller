@@ -31,3 +31,6 @@ splunk:
   index:
     event: "snmp"
     metric: "snmp_metric"
+mongo:
+  database: "snmp_poller"
+  collection: "walked_hosts"

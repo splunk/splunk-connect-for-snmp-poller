@@ -9,6 +9,7 @@ from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splun
 from pysnmp.hlapi import *
 import json
 import os
+from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 
 from pysnmp.smi import builder, view, compiler, rfc1902
 from pysmi import debug as pysmi_debug
@@ -27,6 +28,7 @@ def snmp_get(host, version, community, profile, server_config):
     host, port = parse_port(host)
     hec_config = HecConfiguration()
     logger.info(f"Using the following MIBS server URL: {mib_server_url}")
+    mongo_walked_hosts_coll = WalkedHostsRepository(server_config["mongo"])
 
     # results list contains all data ready to send out to Splunk HEC
     results = []
@@ -50,30 +52,38 @@ def snmp_get(host, version, community, profile, server_config):
     #nextCmd - snmpwalk
     else:
         if profile[-1] == "*":
-            logger.info(f'Executing SNMP WALK for {host} profile={profile}')
-            for (errorIndication,errorStatus,errorIndex,varBinds) in nextCmd(
-                SnmpEngine(),
-                CommunityData(community),
-                # TODO do we have port in inventory.csv
-                UdpTransportTarget((host, port)),
-                ContextData(),
-                ObjectType(ObjectIdentity(profile[:-2])),lexicographicMode=False):
-            
-                if errorIndication:
-                    result = f"error: {errorIndication}"
-                    logger.info(result)
-                    results.append((result, False))
-                    break
-                elif errorStatus:
-                    result = 'error: %s at %s' % (errorStatus.prettyPrint(),
-                        errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
-                    logger.info(result)
-                    results.append((result, False))
-                    break
-                else:
-                    result, metric = get_var_binds_string(mib_server_url, hec_config, varBinds)    
-                    results.append((result, metric))
-                    logger.info(f"SNMP/WALK executed")
+            # TODO discuss do we need to check profile
+            host_port = f"{host}:{port}"
+            if mongo_walked_hosts_coll.contains_host(host_port) == 0:
+                logger.info(f'Executing SNMP WALK for {host} profile={profile}')
+                for (errorIndication,errorStatus,errorIndex,varBinds) in nextCmd(
+                    SnmpEngine(),
+                    CommunityData(community),
+                    # TODO do we have port in inventory.csv
+                    UdpTransportTarget((host, port)),
+                    ContextData(),
+                    ObjectType(ObjectIdentity(profile[:-2])),lexicographicMode=False):
+                
+                    if errorIndication:
+                        result = f"error: {errorIndication}"
+                        logger.info(result)
+                        results.append((result, False))
+                        break
+                    elif errorStatus:
+                        result = 'error: %s at %s' % (errorStatus.prettyPrint(),
+                            errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
+                        logger.info(result)
+                        results.append((result, False))
+                        break
+                    else:
+                        result, metric = get_var_binds_string(mib_server_url, hec_config, varBinds)    
+                        results.append((result, metric))
+                logger.info(f"SNMP/WALK executed")
+                
+                mongo_walked_hosts_coll.add_host(host_port)
+                
+            else: 
+                logger.info(f"SNMP/WALK already executed for {profile}")
         # getCmd - snmpget
         else:       
             logger.info(f'Executing SNMP GET for {host} profile={profile}')
