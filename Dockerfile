@@ -9,7 +9,6 @@ RUN cd /tmp ;\
 
 COPY entrypoint.sh /work/entrypoint.sh
 COPY dist/*.whl /tmp
-COPY inventory.csv /work/inventory.csv
 RUN pip3.8 install $(ls /tmp/*.whl); rm -f /tmp/*.whl
 
 WORKDIR /work
