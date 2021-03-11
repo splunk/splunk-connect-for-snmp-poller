@@ -18,7 +18,7 @@ class WalkedHostsRepository:
     def contains_host(self, host):
         return self._walked_hosts.find({'_id': host}).count()
 
-    def add_host(self, host, job=None):       
+    def add_host(self, host):       
         self._walked_hosts.insert_one({'_id': host})
         
     def delete_host(self, host):
