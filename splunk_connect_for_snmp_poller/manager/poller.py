@@ -7,6 +7,8 @@ import time
 import schedule
 
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_get
+from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
+
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +20,7 @@ class Poller:
         self._server_config = server_config
         self._mod_time = 0
         self._jobs_per_host = {}
+        self._mongo_walked_hosts_coll = WalkedHostsRepository(self._server_config["mongo"])
 
     def run(self):
         counter = 0
@@ -57,6 +60,9 @@ class Poller:
 
                             all_hosts.add(host)
 
+                            # perform the query when the scheduler start
+                            self.one_time_walk(host, version, community, profile, self._server_config)
+
                             if host not in self._jobs_per_host:
                                 logger.debug(f'Adding configuration for host {host}')
                                 job_reference = schedule.every(int(frequency)).seconds.do(some_task, host, version, community,
@@ -87,6 +93,17 @@ class Poller:
         new_next_run = self._jobs_per_host.get(host).next_run
 
         self._jobs_per_host.get(host).next_run = old_next_run if new_next_run > old_next_run else new_next_run
+
+    def one_time_walk(self, host, version, community, profile, server_config):
+        if self._mongo_walked_hosts_coll.contains_host(host) == 0:
+            snmp_get(host, version, community, profile, self._server_config)
+            self._mongo_walked_hosts_coll.add_host(host)
+        else:
+            logger.debug(f"One time walk executed!")
+
+
+        
+
 
 
 def some_task(host, version, community, profile, server_config):

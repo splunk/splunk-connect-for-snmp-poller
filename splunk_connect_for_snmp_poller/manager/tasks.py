@@ -53,37 +53,37 @@ def snmp_get(host, version, community, profile, server_config):
     else:
         if profile[-1] == "*":
             # TODO discuss do we need to check profile
-            host_port = f"{host}:{port}"
-            if mongo_walked_hosts_coll.contains_host(host_port) == 0:
-                logger.info(f'Executing SNMP WALK for {host} profile={profile}')
-                for (errorIndication,errorStatus,errorIndex,varBinds) in nextCmd(
-                    SnmpEngine(),
-                    CommunityData(community),
-                    # TODO do we have port in inventory.csv
-                    UdpTransportTarget((host, port)),
-                    ContextData(),
-                    ObjectType(ObjectIdentity(profile[:-2])),lexicographicMode=False):
+            # host_port = f"{host}:{port}"
+            # if mongo_walked_hosts_coll.contains_host(host_port) == 0:
+            logger.info(f'Executing SNMP WALK for {host} profile={profile}')
+            for (errorIndication,errorStatus,errorIndex,varBinds) in nextCmd(
+                SnmpEngine(),
+                CommunityData(community),
+                # TODO do we have port in inventory.csv
+                UdpTransportTarget((host, port)),
+                ContextData(),
+                ObjectType(ObjectIdentity(profile[:-2])),lexicographicMode=False):
+            
+                if errorIndication:
+                    result = f"error: {errorIndication}"
+                    logger.info(result)
+                    results.append((result, False))
+                    break
+                elif errorStatus:
+                    result = 'error: %s at %s' % (errorStatus.prettyPrint(),
+                        errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
+                    logger.info(result)
+                    results.append((result, False))
+                    break
+                else:
+                    result, metric = get_var_binds_string(mib_server_url, hec_config, varBinds)    
+                    results.append((result, metric))
+            logger.info(f"SNMP/WALK executed")
                 
-                    if errorIndication:
-                        result = f"error: {errorIndication}"
-                        logger.info(result)
-                        results.append((result, False))
-                        break
-                    elif errorStatus:
-                        result = 'error: %s at %s' % (errorStatus.prettyPrint(),
-                            errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
-                        logger.info(result)
-                        results.append((result, False))
-                        break
-                    else:
-                        result, metric = get_var_binds_string(mib_server_url, hec_config, varBinds)    
-                        results.append((result, metric))
-                logger.info(f"SNMP/WALK executed")
+                # mongo_walked_hosts_coll.add_host(host_port)
                 
-                mongo_walked_hosts_coll.add_host(host_port)
-                
-            else: 
-                logger.info(f"SNMP/WALK already executed for {profile}")
+            # else: 
+            #     logger.info(f"SNMP/WALK already executed for {profile}")
         # getCmd - snmpget
         else:       
             logger.info(f'Executing SNMP GET for {host} profile={profile}')
