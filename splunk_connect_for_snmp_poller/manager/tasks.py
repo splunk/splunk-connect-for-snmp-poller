@@ -223,6 +223,6 @@ def parse_port(host):
         host = tmp[0]
         port = tmp[1]
     else:
-        port = 1161
+        port = 161
     return host, port
 

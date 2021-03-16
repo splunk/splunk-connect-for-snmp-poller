@@ -34,6 +34,10 @@ def post_event_data(endpoint, token, host, variables_binds, index):
         "index": index,
         "event": str(variables_binds),
     }
+
+    if "error" in str(variables_binds):
+        data["sourcetype"] = "sc4snmp:error"
+
     logger.debug(f"+++++++++headers+++++++++\n{headers}")
     logger.debug(f"+++++++++data+++++++++\n{data}")
 

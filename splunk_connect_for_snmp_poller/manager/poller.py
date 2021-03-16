@@ -35,9 +35,9 @@ class Poller:
 
     def check_inventory(self):
         inventory_file = self._args.inventory
-        if os.stat(inventory_file).st_mtime > self._mod_time:
+        if os.stat(inventory_file, follow_symlinks=True).st_mtime > self._mod_time:
             logger.info('Change in inventory detected, reloading')
-            self._mod_time = os.stat(inventory_file).st_mtime
+            self._mod_time = os.stat(inventory_file, follow_symlinks=True).st_mtime
 
             with open(inventory_file, newline='') as csvfile:
                 inventory = csv.DictReader(csvfile, delimiter=',')
