@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 # TODO Remove debugging statement later
 
-def post_data_to_splunk_hec(host, variables_binds, metric, index, hec_config):
+def post_data_to_splunk_hec(host, variables_binds, metric, index, hec_config, one_time_flag=False):
     splunk_hec_token = hec_config.get_authentication_token()
     endpoints = hec_config.get_endpoints()
     logger.debug(f"[-] splunk_hec_token : {splunk_hec_token}")
@@ -20,10 +20,10 @@ def post_data_to_splunk_hec(host, variables_binds, metric, index, hec_config):
             post_metric_data(endpoint, splunk_hec_token, host, variables_binds, index["metric_index"])
         else:
             logger.debug(f"*********event index: {index['event_index']} ********")
-            post_event_data(endpoint, splunk_hec_token, host, variables_binds, index["event_index"])
+            post_event_data(endpoint, splunk_hec_token, host, variables_binds, index["event_index"], one_time_flag)
                    
 # TODO Discuss the format of event data payload
-def post_event_data(endpoint, token, host, variables_binds, index):
+def post_event_data(endpoint, token, host, variables_binds, index, one_time_flag=False):
     headers = {
         "Authorization": f"Splunk {token}"
     }
@@ -35,9 +35,12 @@ def post_event_data(endpoint, token, host, variables_binds, index):
         "event": str(variables_binds),
     }
 
+    if one_time_flag:
+        data["sourcetype"] = "sc4snmp:walk"
+
     if "error" in str(variables_binds):
         data["sourcetype"] = "sc4snmp:error"
-
+    
     logger.debug(f"+++++++++headers+++++++++\n{headers}")
     logger.debug(f"+++++++++data+++++++++\n{data}")
 

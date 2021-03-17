@@ -20,7 +20,7 @@ pysmi_debug.setLogger(pysmi_debug.Debug('compiler'))
 
 
 @app.task
-def snmp_get(host, version, community, profile, server_config):
+def snmp_get(host, version, community, profile, server_config, one_time_flag=False):
     mib_server_url = os.environ['MIBS_SERVER_URL']
     index =  {}
     index["event_index"]=  server_config["splunk"]["index"]["event"]
@@ -114,7 +114,7 @@ def snmp_get(host, version, community, profile, server_config):
 
     # Post mib event to splunk HEC
     for event, metric in results:
-        post_data_to_splunk_hec(host, event, metric, index, hec_config)
+        post_data_to_splunk_hec(host, event, metric, index, hec_config, one_time_flag)
 
             
     return f'Executing SNMP GET for {host} version={version} profile={profile}'
