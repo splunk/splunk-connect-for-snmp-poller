@@ -6,7 +6,7 @@ import time
 
 import schedule
 
-from splunk_connect_for_snmp_poller.manager.tasks import snmp_get
+from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 
 
@@ -106,13 +106,11 @@ class Poller:
 def scheduled_task(host, version, community, profile, server_config):
     logger.debug(f'Executing scheduled_task for {host} version={version} community={community} profile={profile}')
 
-    snmp_get.delay(host, version, community, profile, server_config)
+    snmp_polling.delay(host, version, community, profile, server_config)
 
 
 def onetime_task(host, version, community, profile, server_config):
     logger.debug(f'Executing onetime_task for {host} version={version} community={community} profile={profile}')
 
-    snmp_get.delay(host, version, community, profile, server_config, one_time_flag=True)
+    snmp_polling.delay(host, version, community, profile, server_config, one_time_flag=True)
     return schedule.CancelJob
-
-
