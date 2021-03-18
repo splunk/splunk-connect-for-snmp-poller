@@ -6,7 +6,9 @@ import time
 
 import schedule
 
-from splunk_connect_for_snmp_poller.manager.tasks import snmp_get
+from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
+from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
+
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +20,7 @@ class Poller:
         self._server_config = server_config
         self._mod_time = 0
         self._jobs_per_host = {}
+        self._mongo_walked_hosts_coll = WalkedHostsRepository(self._server_config["mongo"])
 
     def run(self):
         counter = 0
@@ -57,9 +60,12 @@ class Poller:
 
                             all_hosts.add(host)
 
+                            # perform one-time walk for the entire tree for each un-walked host
+                            self.one_time_walk(host, version, community, "1.3.6.1.*", self._server_config)
+
                             if host not in self._jobs_per_host:
                                 logger.debug(f'Adding configuration for host {host}')
-                                job_reference = schedule.every(int(frequency)).seconds.do(some_task, host, version, community,
+                                job_reference = schedule.every(int(frequency)).seconds.do(scheduled_task, host, version, community,
                                                                                           profile, self._server_config)
                                 self._jobs_per_host[host] = job_reference
                             else:
@@ -77,8 +83,8 @@ class Poller:
 
     def update_schedule(self, community, frequency, host, profile, version, server_config):
         logger.debug(f'Updating configuration for host {host}')
-        new_job_func = functools.partial(some_task, host, version, community, profile, server_config)
-        functools.update_wrapper(new_job_func, some_task)
+        new_job_func = functools.partial(scheduled_task, host, version, community, profile, server_config)
+        functools.update_wrapper(new_job_func, scheduled_task)
 
         self._jobs_per_host.get(host).job_func = new_job_func
         self._jobs_per_host.get(host).interval = frequency
@@ -88,11 +94,23 @@ class Poller:
 
         self._jobs_per_host.get(host).next_run = old_next_run if new_next_run > old_next_run else new_next_run
 
+    def one_time_walk(self, host, version, community, profile, server_config):
+        logger.debug(f"[-]walked flag: {self._mongo_walked_hosts_coll.contains_host(host)}")
+        if self._mongo_walked_hosts_coll.contains_host(host) == 0:
+            schedule.every().second.do(onetime_task, host, version, community, profile, server_config)
+            self._mongo_walked_hosts_coll.add_host(host)
+        else:
+            logger.debug(f"[-] One time walk executed for {host}!")
 
-def some_task(host, version, community, profile, server_config):
-    logger.debug(f'Executing some_task for {host} version={version} community={community} profile={profile}')
 
-    snmp_get.delay(host, version, community, profile, server_config)
+def scheduled_task(host, version, community, profile, server_config):
+    logger.debug(f'Executing scheduled_task for {host} version={version} community={community} profile={profile}')
+
+    snmp_polling.delay(host, version, community, profile, server_config)
 
 
+def onetime_task(host, version, community, profile, server_config):
+    logger.debug(f'Executing onetime_task for {host} version={version} community={community} profile={profile}')
 
+    snmp_polling.delay(host, version, community, profile, server_config, one_time_flag=True)
+    return schedule.CancelJob
