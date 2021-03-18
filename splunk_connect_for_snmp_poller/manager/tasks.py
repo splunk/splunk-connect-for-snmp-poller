@@ -29,6 +29,9 @@ def snmp_get(host, version, community, profile, server_config, one_time_flag=Fal
     hec_config = HecConfiguration()
     logger.info(f"Using the following MIBS server URL: {mib_server_url}")
     mongo_walked_hosts_coll = WalkedHostsRepository(server_config["mongo"])
+    
+    # create one SnmpEngie for get_handler, walk_handler, mib_string_handler
+    snmp_engine = SnmpEngine()
 
     # results list contains all data ready to send out to Splunk HEC
     results = []
@@ -39,76 +42,37 @@ def snmp_get(host, version, community, profile, server_config, one_time_flag=Fal
         mib_profile = server_config["profiles"].get(profile, None)
         if mib_profile :
             varBinds = mib_profile.get('varBinds', None)
+            logger.debug(f"======varBinds============\n{varBinds}")
             if varBinds:
                 for varbind in varBinds:
-                    try:
-                        mib_index = 0
-                        if len(varbind) == 3:
-                            mib_index = varbind[2]
-                        get_by_mib_name(host, port, version, community, varbind[0], varbind[1], mib_index, mib_server_url, hec_config, server_config, results)
-                    except Exception as e:
-                        logger.error(f"Error happend while calling get_by_mib_name(): {e}")
- 
+                    logger.debug(f"======varbind============\n{varbind}")
+                    # check if the varbind is mib string or oid
+                    logger.debug(f"======varbind_list_flag===========\n{isinstance(varbind, list)}=")
+                    if isinstance(varbind, list):
+                        try:
+                            mib_index = 0
+                            if len(varbind) == 3:
+                                mib_index = varbind[2]
+                            mib_string_handler(snmp_engine, host, port, version, community, varbind[0], varbind[1], mib_index, mib_server_url, hec_config, server_config, results)
+                        except Exception as e:
+                            logger.error(f"Error happend while calling mib_string_handler(): {e}")
+                    else:
+                        try:
+                            if varbind[-1] == "*":
+                                walk_handler(snmp_engine, community, host, port, varbind, mib_server_url, hec_config, results)
+                            else:
+                                get_handler(snmp_engine, community, host, port, varbind, mib_server_url, hec_config, results) 
+                        except Exception as e:
+                            logger.error(f"Invalid format for oid. Error message: {e}")   
     #nextCmd - snmpwalk
     else:
         if profile[-1] == "*":
-            # TODO discuss do we need to check profile
-            # host_port = f"{host}:{port}"
-            # if mongo_walked_hosts_coll.contains_host(host_port) == 0:
             logger.info(f'Executing SNMP WALK for {host} profile={profile}')
-            for (errorIndication,errorStatus,errorIndex,varBinds) in nextCmd(
-                SnmpEngine(),
-                CommunityData(community),
-                # TODO do we have port in inventory.csv
-                UdpTransportTarget((host, port)),
-                ContextData(),
-                ObjectType(ObjectIdentity(profile[:-2])),lexicographicMode=False):
-            
-                if errorIndication:
-                    result = f"error: {errorIndication}"
-                    logger.info(result)
-                    results.append((result, False))
-                    break
-                elif errorStatus:
-                    result = 'error: %s at %s' % (errorStatus.prettyPrint(),
-                        errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
-                    logger.info(result)
-                    results.append((result, False))
-                    break
-                else:
-                    result, metric = get_var_binds_string(mib_server_url, hec_config, varBinds)    
-                    results.append((result, metric))
-            logger.info(f"SNMP/WALK executed")
-                
-                # mongo_walked_hosts_coll.add_host(host_port)
-                
-            # else: 
-            #     logger.info(f"SNMP/WALK already executed for {profile}")
+            walk_handler(snmp_engine, community, host, port, profile, mib_server_url, hec_config, results)
         # getCmd - snmpget
         else:       
             logger.info(f'Executing SNMP GET for {host} profile={profile}')
-            # check if it's in mongo
-            errorIndication, errorStatus, errorIndex, varBinds = next(
-            getCmd(SnmpEngine(),
-                CommunityData(community, mpModel=0),
-                # TODO do we have port in inventory.csv
-                UdpTransportTarget((host, port)),
-                ContextData(),
-                ObjectType(ObjectIdentity(profile)))
-            )
-            if errorIndication:
-                result = f"error: {errorIndication}"
-                metric = False
-                logger.error(result)
-            elif errorStatus:
-                result = 'error: %s at %s' % (errorStatus.prettyPrint(),
-                                    errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
-                metric = False
-                logger.error(result)
-            else:
-                result, metric = get_var_binds_string(mib_server_url, hec_config, varBinds)
-            results.append((result,metric))
-       
+            get_handler(snmp_engine, community, host, port, profile, mib_server_url, hec_config, results) 
     
     logger.info(f"***results list with {len(results)} items***\n{results}")
 
@@ -177,7 +141,7 @@ def get_var_binds_string(mib_server_url, hec_config, varBinds):
     return result, metric
 
 
-def get_by_mib_name(host, port, version, community, mib_file, mib_name, mib_index, mib_server_url, hec_config, server_config, results):
+def mib_string_handler(snmp_engine, host, port, version, community, mib_file, mib_name, mib_index, mib_server_url, hec_config, server_config, results):
     logger.info(f"Executing get_by_mib_name() with {host} {port} {version} {community} {mib_file} {mib_name} {mib_index} {mib_server_url}")
     # TODO Should we create a spearate fun/module for mibViewController?
     mibBuilder = builder.MibBuilder()
@@ -187,7 +151,7 @@ def get_by_mib_name(host, port, version, community, mib_file, mib_name, mib_inde
 
     try:
         errorIndication, errorStatus, errorIndex, varBinds = next(
-            getCmd(SnmpEngine(),
+            getCmd(snmp_engine,
                 CommunityData(community, mpModel=0),
                 UdpTransportTarget((host, port)),
                 ContextData(),
@@ -211,7 +175,51 @@ def get_by_mib_name(host, port, version, community, mib_file, mib_name, mib_inde
             results.append((result,metric))
     except Exception as e:
         print(f"Error happened while polling by mib name: {e}")
-    
+
+def get_handler(snmp_engine, community, host, port, profile, mib_server_url, hec_config, results):
+    errorIndication, errorStatus, errorIndex, varBinds = next(
+    getCmd(snmp_engine,
+        CommunityData(community, mpModel=0),
+        UdpTransportTarget((host, port)),
+        ContextData(),
+        ObjectType(ObjectIdentity(profile)))
+    )
+    if errorIndication:
+        result = f"error: {errorIndication}"
+        metric = False
+        logger.error(result)
+    elif errorStatus:
+        result = 'error: %s at %s' % (errorStatus.prettyPrint(),
+                            errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
+        metric = False
+        logger.error(result)
+    else:
+        result, metric = get_var_binds_string(mib_server_url, hec_config, varBinds)
+    results.append((result,metric))
+
+def walk_handler(snmp_engine, community, host, port, profile, mib_server_url, hec_config, results):
+    for (errorIndication,errorStatus,errorIndex,varBinds) in nextCmd(
+        snmp_engine,
+        CommunityData(community),
+        UdpTransportTarget((host, port)),
+        ContextData(),
+        ObjectType(ObjectIdentity(profile[:-2])),lexicographicMode=False):
+
+        if errorIndication:
+            result = f"error: {errorIndication}"
+            logger.info(result)
+            results.append((result, False))
+            break
+        elif errorStatus:
+            result = 'error: %s at %s' % (errorStatus.prettyPrint(),
+                errorIndex and varBinds[int(errorIndex) - 1][0] or '?')
+            logger.info(result)
+            results.append((result, False))
+            break
+        else:
+            result, metric = get_var_binds_string(mib_server_url, hec_config, varBinds)    
+            results.append((result, metric))
+
 
 def parse_port(host):
     """
