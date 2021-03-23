@@ -73,13 +73,12 @@ def get_translated_string(mib_server_url, hec_config, varBinds):
     return result, metric
 
 
-def mib_string_handler(snmp_engine, host, port, version, community, mib_file, mib_name, mib_index, mib_server_url, hec_config, server_config, results):
+def mib_string_handler(snmp_engine, auth_data, host, port, mib_file, mib_name, mib_index, mib_server_url, hec_config, server_config, results):
     """
     Perform the SNMP Get for mib-name/string, 
     e.g. ['SNMPv2-MIB', 'sysUpTime',0] (syntax -> [<mib_file_name>, <mib_name/string>, <min_index>])
     which querise the info correalted to this specific mib-name/string (e.g. sysUpTime)  
     """
-    logger.info(f"Executing get_by_mib_name() with {host} {port} {version} {community} {mib_file} {mib_name} {mib_index} {mib_server_url}")
     mibBuilder = builder.MibBuilder()
     mibViewController = view.MibViewController(mibBuilder)
     config={'sources': [ os.environ['MIBS_FILES_URL'] ]}
@@ -88,7 +87,7 @@ def mib_string_handler(snmp_engine, host, port, version, community, mib_file, mi
     try:
         errorIndication, errorStatus, errorIndex, varBinds = next(
             getCmd(snmp_engine,
-                CommunityData(community, mpModel=0),
+                auth_data,
                 UdpTransportTarget((host, port)),
                 ContextData(),
                 ObjectType(ObjectIdentity(mib_file, mib_name, mib_index)).resolveWithMib(mibViewController))               
@@ -112,7 +111,7 @@ def mib_string_handler(snmp_engine, host, port, version, community, mib_file, mi
     except Exception as e:
         logger.error(f"Error happened while polling by mib name: {e}")
 
-def get_handler(snmp_engine, community, host, port, profile, mib_server_url, hec_config, results):
+def get_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, hec_config, results):
     """
     Perform the SNMP Get for an oid, 
     e.g. 1.3.6.1.2.1.1.9.1.2.1, 
@@ -120,7 +119,7 @@ def get_handler(snmp_engine, community, host, port, profile, mib_server_url, hec
     """
     errorIndication, errorStatus, errorIndex, varBinds = next(
     getCmd(snmp_engine,
-        CommunityData(community, mpModel=0),
+        auth_data,
         UdpTransportTarget((host, port)),
         ContextData(),
         ObjectType(ObjectIdentity(profile)))
@@ -138,7 +137,7 @@ def get_handler(snmp_engine, community, host, port, profile, mib_server_url, hec
         result, metric = get_translated_string(mib_server_url, hec_config, varBinds)
     results.append((result,metric))
 
-def walk_handler(snmp_engine, community, host, port, profile, mib_server_url, hec_config, results):
+def walk_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, hec_config, results):
     """
     Perform the SNMP Walk for oid end with *, 
     e.g. 1.3.6.1.2.1.1.9.*, 
@@ -146,7 +145,7 @@ def walk_handler(snmp_engine, community, host, port, profile, mib_server_url, he
     """
     for (errorIndication,errorStatus,errorIndex,varBinds) in nextCmd(
         snmp_engine,
-        CommunityData(community),
+        auth_data,
         UdpTransportTarget((host, port)),
         ContextData(),
         ObjectType(ObjectIdentity(profile[:-2])),lexicographicMode=False):
@@ -178,3 +177,46 @@ def parse_port(host):
     else:
         port = 161
     return host, port
+
+
+def build_authData(version, community):
+    """
+    create authData (CommunityData or UsmUserData) instance based on the SNMP's version
+    @params version: str, "1" | "2c" | "3"
+    @params community: 
+        for v1/v2c: str, community string, e.g. "public"
+        for v3: str, <userName(required)>|<authKey(optional)>|<privKey(optional)> separated "|"
+    @return authData class instance 
+        for v1/v2c: CommunityData class instance 
+        for v3: UsmUserData class instance 
+    """
+    if version == "3":
+        try:
+            # for SNMP v3
+            # UsmUserData(userName, authKey=None, privKey=None)
+            authKey = None
+            privKey = None
+            temp = community.split('|')
+            userName = temp[0]
+            if len(temp) == 2:
+                authKey = temp[1]
+            if len(temp) == 3:
+                authKey = temp[1]
+                privKey = temp[2]
+            return UsmUserData(userName, authKey, privKey)
+        except Exception as e:
+            logger.error(f"Error happend while building UsmUserData for SNMP v3: {e}")       
+    elif version == "1":
+        # for SNMP v1
+        # CommunityData(community_tring, mpModel=0)
+        try: 
+            return CommunityData(community, mpModel=0)
+        except Exception as e:
+            logger.error(f"Error happend while building CommunityData for SNMP v1: {e}")       
+    else:
+        # for SNMP v2c
+        # CommunityData(community_tring, mpModel=1)
+        try: 
+            return CommunityData(community, mpModel=1)
+        except Exception as e:
+            logger.error(f"Error happend while building CommunityData for SNMP v2c: {e}") 

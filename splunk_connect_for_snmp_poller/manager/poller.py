@@ -54,10 +54,6 @@ class Poller:
                             profile = agent['profile']
                             frequency = int(agent['freqinseconds'])
 
-                            if version not in ('2c', '3'):
-                                logger.debug(f'Unsupported protocol version {version}, skipping')
-                                continue
-
                             all_hosts.add(host)
 
                             # perform one-time walk for the entire tree for each un-walked host
