@@ -57,11 +57,11 @@ def is_valid_version(version):
 
 
 def is_valid_community(community_string):
-    return community_string == "public"
+    return True if community_string.strip() else False
 
 
 def is_valid_profile(profile):
-    return True
+    return True if profile.strip() else False
 
 
 def is_valid_inventory_line(line):
