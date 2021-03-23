@@ -17,12 +17,13 @@ def is_valid_number(port, validation):
         integer_value = int(port)
         return validation(integer_value)
     except ValueError:
+        logger.error(f"{port} is not a number")
         return False
 
 
-def is_valid_port_or_empty(port):
+def is_valid_port(port):
     up_to_65535 = lambda p: p >= 1 and p <= 65535
-    return not port or is_valid_number(port, up_to_65535)
+    return is_valid_number(port, up_to_65535)
 
 
 def is_valid_second_quantity(seconds):
@@ -34,8 +35,7 @@ def resolve_host(hostname):
     import socket
 
     try:
-        socket.gethostbyname(hostname)
-        return True
+        return socket.gethostbyname(hostname) if hostname else False
     except socket.error:
         logger.error(f"Cannot resolve {hostname}")
         return False
@@ -44,11 +44,12 @@ def resolve_host(hostname):
 def is_valid_host(host):
     host_port = [elem.strip() for elem in host.split(":")]
     length = len(host_port)
-    if length > 2:
+    if length == 1:
+        return resolve_host(host_port[0])
+    elif length == 2:
+        return resolve_host(host_port[0]) and is_valid_port(host_port[1])
+    else:
         return False
-    host = host_port[0] if length >= 1 else None
-    port = host_port[1] if length == 2 else None
-    return True if resolve_host(host) and is_valid_port_or_empty(port) else False
 
 
 def is_valid_version(version):
