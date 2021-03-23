@@ -25,7 +25,7 @@ class HecConfiguration:
                 f"{HecConfiguration.authentication_token_env_variable_name} environment variable undefined"
             )
         self._authentication_token = authentication_token
-        
+
         enable_ssl = os.environ.get(HecConfiguration.enable_ssl_env_variable_name)
         if enable_ssl is None:
             raise ValueError(

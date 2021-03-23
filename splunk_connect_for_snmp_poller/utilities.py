@@ -8,38 +8,59 @@ logger = logging.getLogger(__name__)
 
 
 def default_signal_handler(signal_number, frame):
-    logger.info(f'Received Signal: {signal_number}')
+    logger.info(f"Received Signal: {signal_number}")
     exit(signal_number)
     return
 
 
 def initialize_signals_handler():
     signals_to_catch = (
-        signal.SIGHUP, signal.SIGINT, signal.SIGQUIT, signal.SIGQUIT, signal.SIGILL, signal.SIGTRAP, signal.SIGABRT,
-        signal.SIGBUS, signal.SIGFPE, signal.SIGUSR1, signal.SIGSEGV, signal.SIGUSR2, signal.SIGPIPE, signal.SIGALRM,
-        signal.SIGTERM)
+        signal.SIGHUP,
+        signal.SIGINT,
+        signal.SIGQUIT,
+        signal.SIGQUIT,
+        signal.SIGILL,
+        signal.SIGTRAP,
+        signal.SIGABRT,
+        signal.SIGBUS,
+        signal.SIGFPE,
+        signal.SIGUSR1,
+        signal.SIGSEGV,
+        signal.SIGUSR2,
+        signal.SIGPIPE,
+        signal.SIGALRM,
+        signal.SIGTERM,
+    )
     for one_signal in signals_to_catch:
         signal.signal(one_signal, default_signal_handler)
 
 
 def parse_command_line_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-l', '--loglevel', default='debug',
-                        help='Provide logging level. Example --loglevel debug, default=warning')
-    parser.add_argument('-c', '--config', default='config.yaml', help='Config File')
-    parser.add_argument('-i', '--inventory', default='inventory.csv', help='Inventory Config File')
-    parser.add_argument('-r', '--refresh_interval', default='1', help='Refresh Interval of Inventory')
+    parser.add_argument(
+        "-l",
+        "--loglevel",
+        default="debug",
+        help="Provide logging level. Example --loglevel debug, default=warning",
+    )
+    parser.add_argument("-c", "--config", default="config.yaml", help="Config File")
+    parser.add_argument(
+        "-i", "--inventory", default="inventory.csv", help="Inventory Config File"
+    )
+    parser.add_argument(
+        "-r", "--refresh_interval", default="1", help="Refresh Interval of Inventory"
+    )
 
     return parser.parse_args()
 
 
 def parse_config_file(config_file_path):
-    logger.info(f'Config file is {config_file_path}')
+    logger.info(f"Config file is {config_file_path}")
     try:
-        with open(config_file_path, 'r') as yaml_file:
+        with open(config_file_path, "r") as yaml_file:
             server_config = yaml.load(yaml_file, Loader=yaml.FullLoader)
-        logger.debug(f'Server Config is:  {server_config}')
+        logger.debug(f"Server Config is:  {server_config}")
     except Exception as e:
-        logger.debug(f'Exception occured while loading YAML: {e}')
+        logger.debug(f"Exception occurred while loading YAML: {e}")
 
     return server_config
