@@ -56,64 +56,58 @@ class Poller:
                 inventory_hosts = set()
 
                 for agent in inventory:
-                    try:
-                        host = agent["host"]
-                        version = agent["version"]
-                        community = agent["community"]
-                        profile = agent["profile"]
-                        frequency_str = agent["freqinseconds"]
-                        if self.should_process_current_line(
-                            host, version, community, profile, frequency_str
-                        ):
-                            frequency = int(agent["freqinseconds"])
+                    host = agent["host"]
+                    version = agent["version"]
+                    community = agent["community"]
+                    profile = agent["profile"]
+                    frequency_str = agent["freqinseconds"]
+                    if self.should_process_current_line(
+                        host, version, community, profile, frequency_str
+                    ):
+                        frequency = int(agent["freqinseconds"])
 
-                            inventory_hosts.add(host)
-                            # perform one-time walk for the entire tree for each un-walked host
-                            self.one_time_walk(
+                        inventory_hosts.add(host)
+                        # perform one-time walk for the entire tree for each un-walked host
+                        self.one_time_walk(
+                            host,
+                            version,
+                            community,
+                            "1.3.6.1.*",
+                            self._server_config,
+                        )
+
+                        if host not in self._jobs_per_host:
+                            logger.debug(f"Adding configuration for host {host}")
+                            job_reference = schedule.every(int(frequency)).seconds.do(
+                                scheduled_task,
                                 host,
                                 version,
                                 community,
-                                "1.3.6.1.*",
+                                profile,
                                 self._server_config,
                             )
-
-                            if host not in self._jobs_per_host:
-                                logger.debug(f"Adding configuration for host {host}")
-                                job_reference = schedule.every(
-                                    int(frequency)
-                                ).seconds.do(
-                                    scheduled_task,
+                            self._jobs_per_host[host] = job_reference
+                        else:
+                            old_conf = self._jobs_per_host.get(host).job_func.args
+                            if (
+                                old_conf
+                                != (
                                     host,
                                     version,
                                     community,
                                     profile,
                                     self._server_config,
                                 )
-                                self._jobs_per_host[host] = job_reference
-                            else:
-                                old_conf = self._jobs_per_host.get(host).job_func.args
-                                if (
-                                    old_conf
-                                    != (
-                                        host,
-                                        version,
-                                        community,
-                                        profile,
-                                        self._server_config,
-                                    )
-                                    or frequency
-                                    != self._jobs_per_host.get(host).interval
-                                ):
-                                    self.update_schedule(
-                                        community,
-                                        frequency,
-                                        host,
-                                        profile,
-                                        version,
-                                        self._server_config,
-                                    )
-                    except ValueError as ve:
-                        logger.error(ve)
+                                or frequency != self._jobs_per_host.get(host).interval
+                            ):
+                                self.update_schedule(
+                                    community,
+                                    frequency,
+                                    host,
+                                    profile,
+                                    version,
+                                    self._server_config,
+                                )
 
                 for host in list(self._jobs_per_host):
                     if host not in inventory_hosts:
