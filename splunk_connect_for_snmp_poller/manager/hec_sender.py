@@ -28,6 +28,9 @@ def post_event_data(endpoint, token, host, variables_binds, index, one_time_flag
         "Authorization": f"Splunk {token}"
     }
 
+    if "NoSuchInstance" in str(variables_binds):
+        variables_binds = "error: " + str(variables_binds)
+
     data = {
         "sourcetype": "sc4snmp:meta",
         "host": host,
