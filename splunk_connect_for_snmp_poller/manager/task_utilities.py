@@ -3,7 +3,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
-from splunk_connect_for_snmp_poller.manager.hec_config import HecConfiguration
+# from splunk_connect_for_snmp_poller.manager.hec_config import HecConfiguration
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from pysnmp.hlapi import *
 import json
@@ -17,21 +17,35 @@ pysmi_debug.setLogger(pysmi_debug.Debug('compiler'))
 # TODO remove the debugging statement later 
 
 
-def is_metric_data(hec_config, varBinds):
+# def is_metric_data(hec_config, varBinds):
+#     """
+#     Check the condition to see if the varBinds belongs to metric data. 
+#      - if mib value is int/float 
+#     @param hec_config: HecConfiguration Object
+#     @param varBinds: varBinds Object
+#     @return: boolean
+#     """
+#     # check if the mib value is float
+#     for name, value in varBinds:
+#         try:
+#             float(value.prettyPrint())
+#             return True
+#         except ValueError:
+#             return False
+
+def is_metric_data(value):
     """
     Check the condition to see if the varBinds belongs to metric data. 
      - if mib value is int/float 
-    @param hec_config: HecConfiguration Object
-    @param varBinds: varBinds Object
+    @param value: str
     @return: boolean
     """
     # check if the mib value is float
-    for name, value in varBinds:
-        try:
-            float(value.prettyPrint())
-            return True
-        except ValueError:
-            return False
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
 
 def get_translated_string(mib_server_url, hec_config, varBinds):
     """
@@ -42,7 +56,8 @@ def get_translated_string(mib_server_url, hec_config, varBinds):
     """
     logger.info(f"I got these var binds: {varBinds}")
     # check if this is metric data
-    metric = is_metric_data(hec_config, varBinds)
+    # metric = is_metric_data(hec_config, varBinds)
+    
     # Get Original varbinds as backup in case the mib-server is unreachable
     try:
         for name, val in varBinds:             
@@ -51,6 +66,7 @@ def get_translated_string(mib_server_url, hec_config, varBinds):
             # if the mib server is unreachable
             # should we format it align with the format of the translated one
             # result = "{} = {}".format(name.prettyPrint(), val.prettyPrint())
+            metric = is_metric_data(val.prettyPrint())
             if metric:
                 result = {
                     "metric_name": name.prettyPrint(),
@@ -59,14 +75,23 @@ def get_translated_string(mib_server_url, hec_config, varBinds):
                 result = json.dumps(result)
             else: 
                 result = '{oid}="{value}"'.format(oid=name.prettyPrint(), value=val.prettyPrint())
-
     except Exception as e:
         logger.info(f'Exception occurred while logging varBinds name & value. Exception: {e}')
 
     # Overrid the varBinds string with translated varBinds string  
     try:
+        logger.debug(f"==========result before translated -- metric={metric}============\n{result}")
         result = get_translation(varBinds, mib_server_url, metric)
         logger.info(f"=========result=======\n{result}")
+        # TODO double check the result to handle the edge case, 
+        # where the value of an metric data was translated from int to string
+        if "metric_name" in result:
+            result_dict = json.loads(result)
+            _value = result_dict.get('_value', None)
+            logger.debug(f"=========_value=======\n{_value}")
+            if not is_metric_data(_value):
+                metric=False
+                result = get_translation(varBinds, mib_server_url, metric)
     except Exception as e:
         logger.info(f'Could not perform translation. Exception: {e}')
     logger.info(f"###############final result -- metric: {metric}#######################\n{result}")
@@ -135,6 +160,7 @@ def get_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, hec
         logger.error(result)
     else:
         result, metric = get_translated_string(mib_server_url, hec_config, varBinds)
+        
     results.append((result,metric))
 
 def walk_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, hec_config, results):
@@ -179,13 +205,15 @@ def parse_port(host):
     return host, port
 
 
-def build_authData(version, community):
+def build_authData(version, community, server_config):
     """
     create authData (CommunityData or UsmUserData) instance based on the SNMP's version
     @params version: str, "1" | "2c" | "3"
     @params community: 
         for v1/v2c: str, community string, e.g. "public"
-        for v3: str, <userName(required)>|<authKey(optional)>|<privKey(optional)> separated "|"
+        for v3: str, userName
+    @params server_config: dict of config.yaml
+        for v3 to lookup authKey/privKey using userName
     @return authData class instance 
         for v1/v2c: CommunityData class instance 
         for v3: UsmUserData class instance 
@@ -194,28 +222,23 @@ def build_authData(version, community):
         try:
             # for SNMP v3
             # UsmUserData(userName, authKey=None, privKey=None)
-            authKey = None
-            privKey = None
-            temp = community.split('|')
-            userName = temp[0]
-            if len(temp) == 2:
-                authKey = temp[1]
-            if len(temp) == 3:
-                authKey = temp[1]
-                privKey = temp[2]
+            userName = community
+            authKey = server_config["usernames"][userName].get("authKey", None)
+            privKey = server_config["usernames"][userName].get("privKey", None)
+            logger.debug(f"=============\nuserName - {userName}, authKey - {authKey}, privKey - {privKey}")
             return UsmUserData(userName, authKey, privKey)
         except Exception as e:
             logger.error(f"Error happend while building UsmUserData for SNMP v3: {e}")       
     elif version == "1":
         # for SNMP v1
-        # CommunityData(community_tring, mpModel=0)
+        # CommunityData(community_string, mpModel=0)
         try: 
             return CommunityData(community, mpModel=0)
         except Exception as e:
             logger.error(f"Error happend while building CommunityData for SNMP v1: {e}")       
     else:
         # for SNMP v2c
-        # CommunityData(community_tring, mpModel=1)
+        # CommunityData(community_string, mpModel=1)
         try: 
             return CommunityData(community, mpModel=1)
         except Exception as e:
