@@ -4,10 +4,14 @@ class InventoryLineBuilder:
 
     def valid_inventory_lines(self):
         return [
+            "127.0.0.1, 1 ,public,router,1",
+            "127.0.0.1:6666, 1,public,router,1",
             "127.0.0.1, 2c ,public,router,1",
             "127.0.0.1:6666, 2c,public,router,1",
             "127.0.0.1,3 ,public,router,1",
             "127.0.0.1:6666,3,public,router,1",
+            "localhost,1,public,router,1",
+            "localhost:6666,1,public,router,1",
             "localhost,2c,public,router,1",
             "localhost:6666,2c,public,router,1",
             "localhost,3,public,router,1",
@@ -33,10 +37,4 @@ class InventoryLineBuilder:
         return [
             "127.0.0.1, 2cc ,public,router,1",
             "127.0.0.1, 4 ,public,router,1",
-        ]
-
-    def invalid_communities(self):
-        # For now we support only public
-        return [
-            "127.0.0.1, 2cc ,public_invalid,router,1",
         ]

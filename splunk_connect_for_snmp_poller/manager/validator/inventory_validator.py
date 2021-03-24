@@ -3,8 +3,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 INVENTORY_COMPONENTS_PER_LINE = 5
-SNMP_VERSION_2 = "2c"
+SNMP_VERSION_1 = "1"
+SNMP_VERSION_2C = "2c"
 SNMP_VERSION_3 = "3"
+snmp_allowed_versions = {SNMP_VERSION_1, SNMP_VERSION_2C, SNMP_VERSION_3}
 
 
 def should_process_inventory_line(host_from_inventory):
@@ -22,12 +24,16 @@ def is_valid_number(port, validation):
 
 
 def is_valid_port(port):
-    up_to_65535 = lambda p: p >= 1 and p <= 65535
+    def up_to_65535(p):
+        return 1 <= p <= 65535
+
     return is_valid_number(port, up_to_65535)
 
 
 def is_valid_second_quantity(seconds):
-    any_positive_number = lambda positive_number: positive_number > 0
+    def any_positive_number(positive_number):
+        return positive_number > 0
+
     return is_valid_number(seconds, any_positive_number)
 
 
@@ -53,7 +59,8 @@ def is_valid_host(host):
 
 
 def is_valid_version(version):
-    return version == SNMP_VERSION_2 or version == SNMP_VERSION_3
+    global snmp_allowed_versions
+    return version in snmp_allowed_versions
 
 
 def is_valid_community(community_string):
