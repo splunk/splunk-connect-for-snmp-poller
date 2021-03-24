@@ -8,6 +8,10 @@ import schedule
 
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
+from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
+    should_process_inventory_line,
+    is_valid_inventory_line_from_dict,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +37,13 @@ class Poller:
             time.sleep(1)
             counter -= 1
 
+    def should_process_current_line(self, host, version, community, profile, frequency):
+        return should_process_inventory_line(
+            host
+        ) and is_valid_inventory_line_from_dict(
+            host, version, community, profile, frequency
+        )
+
     def check_inventory(self):
         inventory_file = self._args.inventory
         if os.stat(inventory_file, follow_symlinks=True).st_mtime > self._mod_time:
@@ -42,26 +53,21 @@ class Poller:
             with open(inventory_file, newline="") as csvfile:
                 inventory = csv.DictReader(csvfile, delimiter=",")
 
-                all_hosts = set()
+                inventory_hosts = set()
 
                 for agent in inventory:
                     try:
                         host = agent["host"]
-                        # Comment Feature: Skip if the Inventory hostname starts with character '#'
-                        if host[:1] != "#":
-                            version = agent["version"]
-                            community = agent["community"]
-                            profile = agent["profile"]
+                        version = agent["version"]
+                        community = agent["community"]
+                        profile = agent["profile"]
+                        frequency_str = agent["freqinseconds"]
+                        if self.should_process_current_line(
+                            host, version, community, profile, frequency_str
+                        ):
                             frequency = int(agent["freqinseconds"])
 
-                            if version not in ("2c", "3"):
-                                logger.debug(
-                                    f"Unsupported protocol version {version}, skipping"
-                                )
-                                continue
-
-                            all_hosts.add(host)
-
+                            inventory_hosts.add(host)
                             # perform one-time walk for the entire tree for each un-walked host
                             self.one_time_walk(
                                 host,
@@ -110,7 +116,7 @@ class Poller:
                         logger.error(ve)
 
                 for host in list(self._jobs_per_host):
-                    if host not in all_hosts:
+                    if host not in inventory_hosts:
                         logger.debug(f"Removing host {host}")
                         schedule.cancel_job(self._jobs_per_host.get(host))
                         del self._jobs_per_host[host]

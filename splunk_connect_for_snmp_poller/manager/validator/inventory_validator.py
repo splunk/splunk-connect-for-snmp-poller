@@ -41,7 +41,8 @@ def resolve_host(hostname):
     import socket
 
     try:
-        return socket.gethostbyname(hostname) if hostname else False
+        socket.gethostbyname(hostname)
+        return True if hostname else False
     except socket.error:
         logger.error(f"Cannot resolve {hostname}")
         return False
