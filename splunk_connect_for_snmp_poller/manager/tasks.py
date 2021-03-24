@@ -54,16 +54,16 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                                 mib_index = 0
                                 if len(varbind) == 3:
                                     mib_index = varbind[2]
-                                mib_string_handler(snmp_engine, auth_data, host, port, varbind[0], varbind[1], mib_index, mib_server_url, hec_config, server_config, results)
+                                mib_string_handler(snmp_engine, auth_data, host, port, varbind[0], varbind[1], mib_index, mib_server_url, server_config, results)
                             except Exception as e:
                                 logger.error(f"Error happend while calling mib_string_handler(): {e}")
                         else:
                             # Perform SNMP polling for oid
                             try:
                                 if varbind[-1] == "*":
-                                    walk_handler(snmp_engine, auth_data, host, port, varbind, mib_server_url, hec_config, results)
+                                    walk_handler(snmp_engine, auth_data, host, port, varbind, mib_server_url, results)
                                 else:
-                                    get_handler(snmp_engine, auth_data, host, port, varbind, mib_server_url, hec_config, results) 
+                                    get_handler(snmp_engine, auth_data, host, port, varbind, mib_server_url, results) 
                             except Exception as e:
                                 logger.error(f"Invalid format for oid. Error message: {e}")   
         # Perform SNNP Polling for oid profile in inventory.csv
@@ -71,11 +71,11 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
             # Perform SNNP WALK for oid end with *
             if profile[-1] == "*":
                 logger.info(f'Executing SNMP WALK for {host} profile={profile}')
-                walk_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, hec_config, results)
+                walk_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, results)
             # Perform SNNP GET for an oid 
             else:       
                 logger.info(f'Executing SNMP GET for {host} profile={profile}')
-                get_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, hec_config, results) 
+                get_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, results) 
         
         logger.info(f"***results list with {len(results)} items***\n{results}")
 
