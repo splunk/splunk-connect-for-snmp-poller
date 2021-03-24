@@ -30,8 +30,3 @@ class TestInventoryLine(TestCase):
         for line in InventoryLineBuilder().invalid_snmp_versions():
             logger.info(f"Invalid SNMP protocol version: {line}")
             self.assertFalse(is_valid_inventory_line(line))
-
-    def test_invalid_community(self):
-        for line in InventoryLineBuilder().invalid_communities():
-            logger.info(f"Invalid SNMP protocol version: {line}")
-            self.assertFalse(is_valid_inventory_line(line))
