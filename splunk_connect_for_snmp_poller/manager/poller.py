@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 class Poller:
+    # see https://www.alvestrand.no/objectid/1.3.6.1.html for a better understanding
+    universal_base_oid = "1.3.6.1.*"
+
     def __init__(self, args, server_config):
         self._args = args
         self._server_config = server_config
@@ -72,7 +75,7 @@ class Poller:
                             host,
                             version,
                             community,
-                            "1.3.6.1.*",
+                            Poller.universal_base_oid,
                             self._server_config,
                         )
 
