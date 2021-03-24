@@ -81,10 +81,23 @@ def is_valid_inventory_line(line):
     if len(components) != INVENTORY_COMPONENTS_PER_LINE:
         return False
 
+    return is_valid_inventory_line_from_dict(
+        components[0], components[1], components[2], components[3], components[4]
+    )
+
+
+def is_valid_inventory_line_from_dict(host, version, community, profile, seconds):
+    logger.info(
+        f"Validating host = [{host}], version = [{version}], community = [{community}], profile = [{profile}], seconds = [{seconds}]"
+    )
+
+    if None in [host, version, community, profile, seconds]:
+        return False
+
     return (
-        is_valid_host(components[0])
-        and is_valid_version(components[1])
-        and is_valid_community(components[2])
-        and is_valid_profile(components[3])
-        and is_valid_second_quantity(components[4])
+        is_valid_host(host.strip())
+        and is_valid_version(version.strip())
+        and is_valid_community(community.strip())
+        and is_valid_profile(profile.strip())
+        and is_valid_second_quantity(seconds.strip())
     )
