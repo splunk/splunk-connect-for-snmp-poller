@@ -88,7 +88,7 @@ def mib_string_handler(snmp_engine, host, port, version, community, mib_file, mi
     try:
         errorIndication, errorStatus, errorIndex, varBinds = next(
             getCmd(snmp_engine,
-                CommunityData(community, mpModel=0),
+                CommunityData(community, mpModel=1),
                 UdpTransportTarget((host, port)),
                 ContextData(),
                 ObjectType(ObjectIdentity(mib_file, mib_name, mib_index)).resolveWithMib(mibViewController))               
@@ -120,7 +120,7 @@ def get_handler(snmp_engine, community, host, port, profile, mib_server_url, hec
     """
     errorIndication, errorStatus, errorIndex, varBinds = next(
     getCmd(snmp_engine,
-        CommunityData(community, mpModel=0),
+        CommunityData(community, mpModel=1),
         UdpTransportTarget((host, port)),
         ContextData(),
         ObjectType(ObjectIdentity(profile)))
@@ -146,7 +146,7 @@ def walk_handler(snmp_engine, community, host, port, profile, mib_server_url, he
     """
     for (errorIndication,errorStatus,errorIndex,varBinds) in nextCmd(
         snmp_engine,
-        CommunityData(community),
+        CommunityData(community, mpModel=1),
         UdpTransportTarget((host, port)),
         ContextData(),
         ObjectType(ObjectIdentity(profile[:-2])),lexicographicMode=False):
