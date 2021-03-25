@@ -27,14 +27,20 @@ def is_valid_port(port):
     def up_to_65535(p):
         return 1 <= p <= 65535
 
-    return is_valid_number(port, up_to_65535)
+    valid_port = is_valid_number(port, up_to_65535)
+    if not valid_port:
+        logger.error(f"Port {port} is out of range 1 <= {port} <= 65535")
+    return valid_port
 
 
 def is_valid_second_quantity(seconds):
     def any_positive_number(positive_number):
         return positive_number > 0
 
-    return is_valid_number(seconds, any_positive_number)
+    valid_port = is_valid_number(seconds, any_positive_number)
+    if not valid_port:
+        logger.error(f"Negative number of seconds: {seconds}")
+    return valid_port
 
 
 def resolve_host(hostname):
@@ -61,7 +67,12 @@ def is_valid_host(host):
 
 def is_valid_version(version):
     global snmp_allowed_versions
-    return version in snmp_allowed_versions
+    valid_version = version in snmp_allowed_versions
+    if not valid_version:
+        logger.error(
+            f"{version} is an invalid version. Only {snmp_allowed_versions} are allowed"
+        )
+    return valid_version
 
 
 def is_valid_community(community_string):
@@ -95,10 +106,13 @@ def is_valid_inventory_line_from_dict(host, version, community, profile, seconds
     if None in [host, version, community, profile, seconds]:
         return False
 
-    return (
+    valid_inventory_line = (
         is_valid_host(host.strip())
         and is_valid_version(version.strip())
         and is_valid_community(community.strip())
         and is_valid_profile(profile.strip())
         and is_valid_second_quantity(seconds.strip())
     )
+    if not valid_inventory_line:
+        logger.error(f"Invalid inventory line")
+    return valid_inventory_line
