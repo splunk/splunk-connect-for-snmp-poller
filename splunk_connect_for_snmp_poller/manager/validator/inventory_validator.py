@@ -2,7 +2,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-INVENTORY_COMPONENTS_PER_LINE = 5
 SNMP_VERSION_1 = "1"
 SNMP_VERSION_2C = "2c"
 SNMP_VERSION_3 = "3"
@@ -81,21 +80,6 @@ def is_valid_community(community_string):
 
 def is_valid_profile(profile):
     return True if profile.strip() else False
-
-
-def is_valid_inventory_line(line):
-    logger.debug(f"Validating [{line}]")
-    if not line or not line.strip():
-        return False
-
-    components = [component.strip() for component in line.split(",")]
-    logger.debug(f"Components: {components}")
-    if len(components) != INVENTORY_COMPONENTS_PER_LINE:
-        return False
-
-    return is_valid_inventory_line_from_dict(
-        components[0], components[1], components[2], components[3], components[4]
-    )
 
 
 def is_valid_inventory_line_from_dict(host, version, community, profile, seconds):

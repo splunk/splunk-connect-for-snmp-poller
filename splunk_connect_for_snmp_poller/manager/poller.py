@@ -69,7 +69,14 @@ class Poller:
                     ):
                         frequency = int(agent["freqinseconds"])
 
+                        if host in inventory_hosts:
+                            logger.error(
+                                f"{host},{version},{community},{profile},{frequency_str} has duplicated hostame {host} in the inventory, please use profile for multiple OIDs per host"
+                            )
+                            continue
+
                         inventory_hosts.add(host)
+
                         # perform one-time walk for the entire tree for each un-walked host
                         self.one_time_walk(
                             host,
@@ -111,7 +118,6 @@ class Poller:
                                     version,
                                     self._server_config,
                                 )
-
                 for host in list(self._jobs_per_host):
                     if host not in inventory_hosts:
                         logger.debug(f"Removing host {host}")

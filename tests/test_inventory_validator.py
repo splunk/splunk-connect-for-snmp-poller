@@ -1,12 +1,29 @@
 from unittest import TestCase
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     should_process_inventory_line,
-    is_valid_inventory_line,
+    is_valid_inventory_line_from_dict,
 )
 from tests.static_inventory_test_data import InventoryLineBuilder
 import logging
 
 logger = logging.getLogger(__name__)
+
+INVENTORY_COMPONENTS_PER_LINE = 5
+
+
+def is_valid_inventory_line(line):
+    logger.debug(f"Validating [{line}]")
+    if not line or not line.strip():
+        return False
+
+    components = [component.strip() for component in line.split(",")]
+    logger.debug(f"Components: {components}")
+    if len(components) != INVENTORY_COMPONENTS_PER_LINE:
+        return False
+
+    return is_valid_inventory_line_from_dict(
+        components[0], components[1], components[2], components[3], components[4]
+    )
 
 
 class TestInventoryLine(TestCase):
