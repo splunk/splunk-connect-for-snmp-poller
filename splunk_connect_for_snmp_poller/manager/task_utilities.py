@@ -3,13 +3,11 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
-from splunk_connect_for_snmp_poller.manager.hec_config import HecConfiguration
-from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from pysnmp.hlapi import *
 import json
 import os
 
-from pysnmp.smi import builder, view, compiler, rfc1902
+from pysnmp.smi import builder, view, compiler
 from pysmi import debug as pysmi_debug
 pysmi_debug.setLogger(pysmi_debug.Debug('compiler'))
 
@@ -17,11 +15,10 @@ pysmi_debug.setLogger(pysmi_debug.Debug('compiler'))
 # TODO remove the debugging statement later 
 
 
-def is_metric_data(hec_config, varBinds):
+def is_metric_data(varBinds):
     """
     Check the condition to see if the varBinds belongs to metric data. 
      - if mib value is int/float 
-    @param hec_config: HecConfiguration Object
     @param varBinds: varBinds Object
     @return: boolean
     """
@@ -33,7 +30,7 @@ def is_metric_data(hec_config, varBinds):
         except ValueError:
             return False
 
-def get_translated_string(mib_server_url, hec_config, varBinds):
+def get_translated_string(mib_server_url, varBinds):
     """
     Get the translated/formatted var_binds string depending on whether the varBinds is an event or metric
     Note: if it failed to get translation, return the the original varBinds
@@ -42,7 +39,7 @@ def get_translated_string(mib_server_url, hec_config, varBinds):
     """
     logger.info(f"I got these var binds: {varBinds}")
     # check if this is metric data
-    metric = is_metric_data(hec_config, varBinds)
+    metric = is_metric_data(varBinds)
     # Get Original varbinds as backup in case the mib-server is unreachable
     try:
         for name, val in varBinds:             
@@ -73,7 +70,7 @@ def get_translated_string(mib_server_url, hec_config, varBinds):
     return result, metric
 
 
-def mib_string_handler(snmp_engine, host, port, version, community, mib_file, mib_name, mib_index, mib_server_url, hec_config, server_config, results):
+def mib_string_handler(snmp_engine, host, port, version, community, mib_file, mib_name, mib_index, mib_server_url, results):
     """
     Perform the SNMP Get for mib-name/string, 
     e.g. ['SNMPv2-MIB', 'sysUpTime',0] (syntax -> [<mib_file_name>, <mib_name/string>, <min_index>])
@@ -107,12 +104,12 @@ def mib_string_handler(snmp_engine, host, port, version, community, mib_file, mi
             logger.info(f"varBinds: {varBinds}")
             for varBind in varBinds:
                 logger.info(' = '.join([x.prettyPrint() for x in varBind]))
-            result, metric = get_translated_string(mib_server_url, hec_config, varBinds)
+            result, metric = get_translated_string(mib_server_url, varBinds)
             results.append((result,metric))
     except Exception as e:
         logger.error(f"Error happened while polling by mib name: {e}")
 
-def get_handler(snmp_engine, community, host, port, profile, mib_server_url, hec_config, results):
+def get_handler(snmp_engine, community, host, port, profile, mib_server_url, results):
     """
     Perform the SNMP Get for an oid, 
     e.g. 1.3.6.1.2.1.1.9.1.2.1, 
@@ -135,10 +132,10 @@ def get_handler(snmp_engine, community, host, port, profile, mib_server_url, hec
         metric = False
         logger.error(result)
     else:
-        result, metric = get_translated_string(mib_server_url, hec_config, varBinds)
+        result, metric = get_translated_string(mib_server_url, varBinds)
     results.append((result,metric))
 
-def walk_handler(snmp_engine, community, host, port, profile, mib_server_url, hec_config, results):
+def walk_handler(snmp_engine, community, host, port, profile, mib_server_url, results):
     """
     Perform the SNMP Walk for oid end with *, 
     e.g. 1.3.6.1.2.1.1.9.*, 
@@ -163,7 +160,7 @@ def walk_handler(snmp_engine, community, host, port, profile, mib_server_url, he
             results.append((result, False))
             break
         else:
-            result, metric = get_translated_string(mib_server_url, hec_config, varBinds)    
+            result, metric = get_translated_string(mib_server_url, varBinds)
             results.append((result, metric))
 
 def parse_port(host):
