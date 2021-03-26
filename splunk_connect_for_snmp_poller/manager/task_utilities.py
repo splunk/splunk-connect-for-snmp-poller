@@ -80,7 +80,7 @@ def get_translated_string(mib_server_url, varBinds):
     return result, metric
 
 
-def mib_string_handler(snmp_engine, auth_data, host, port, mib_file, mib_name, mib_index, mib_server_url, server_config, results):
+def mib_string_handler(snmp_engine, auth_data, context_data, host, port, mib_file, mib_name, mib_index, mib_server_url, server_config, results):
     """
     Perform the SNMP Get for mib-name/string, 
     e.g. ['SNMPv2-MIB', 'sysUpTime',0] (syntax -> [<mib_file_name>, <mib_name/string>, <min_index>])
@@ -96,7 +96,7 @@ def mib_string_handler(snmp_engine, auth_data, host, port, mib_file, mib_name, m
             getCmd(snmp_engine,
                 auth_data,
                 UdpTransportTarget((host, port)),
-                ContextData(),
+                context_data,
                 ObjectType(ObjectIdentity(mib_file, mib_name, mib_index)).resolveWithMib(mibViewController))               
         )
 
@@ -118,7 +118,7 @@ def mib_string_handler(snmp_engine, auth_data, host, port, mib_file, mib_name, m
     except Exception as e:
         logger.error(f"Error happened while polling by mib name: {e}")
 
-def get_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, results):
+def get_handler(snmp_engine, auth_data, context_data, host, port, profile, mib_server_url, results):
     """
     Perform the SNMP Get for an oid, 
     e.g. 1.3.6.1.2.1.1.9.1.2.1, 
@@ -128,7 +128,7 @@ def get_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, res
     getCmd(snmp_engine,
         auth_data,
         UdpTransportTarget((host, port)),
-        ContextData(),
+        context_data,
         ObjectType(ObjectIdentity(profile)))
     )
     if errorIndication:
@@ -145,7 +145,7 @@ def get_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, res
         
     results.append((result,metric))
 
-def walk_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, results):
+def walk_handler(snmp_engine, auth_data, context_data, host, port, profile, mib_server_url, results):
     """
     Perform the SNMP Walk for oid end with *, 
     e.g. 1.3.6.1.2.1.1.9.*, 
@@ -155,7 +155,7 @@ def walk_handler(snmp_engine, auth_data, host, port, profile, mib_server_url, re
         snmp_engine,
         auth_data,
         UdpTransportTarget((host, port)),
-        ContextData(),
+        context_data,
         ObjectType(ObjectIdentity(profile[:-2])),lexicographicMode=False):
 
         if errorIndication:
@@ -268,4 +268,38 @@ def build_authData(version, community, server_config):
                 return CommunityData(communityIndex, communityName, mpModel,contextEngineId, contextName, tag, securityName)
             except Exception as e:
                 logger.error(f"Error happend while building CommunityData for SNMP v2c: {e}") 
+
+def build_contextData(version, community, server_config):
+    """
+    create ContextData instance based on the SNMP's version
+    for SNMP v1/v2c, use the default ContextData with contextName as empty string 
+    for SNMP v3, users can specify contextName, o.w. use empty string as contextName
+    @params version: str, "1" | "2c" | "3"
+    @params community: 
+        for v1/v2c: str, community string/community name, e.g. "public"
+        for v3: str, userName
+    @params server_config: dict of config.yaml
+        for v3 to lookup authKey/privKey using userName
+    @return ContextData class instance 
+        for v1/v2c: default ContextData(contextEngineId=None, contextName='') 
+        for v3: can specify contextName ContextData(contextEngineId=None, contextName=<contextName>) 
+    reference: https://pysnmp.readthedocs.io/en/latest/docs/api-reference.html
+    """
+    contextEngineId = None
+    contextName = ""
+    try:
+        if version == "3" and server_config["usernames"].get(community, None):
+            contextEngineId = server_config["usernames"][community].get("contextEngineId", None)
+            contextName = server_config["usernames"][community].get("contextName", "")
+        logger.debug(f"======contextEngineId: {contextEngineId}, contextName: {contextName}=============")
+    except Exception as e:
+        logger.error(f"Error happend while parsing params for ContextData: {e}")
+    try:
+        return ContextData(contextEngineId, contextName)
+    except Exception as e:
+        logger.error(f"Error happend while building ContextData: {e}")
+    
+        
+
+
 
