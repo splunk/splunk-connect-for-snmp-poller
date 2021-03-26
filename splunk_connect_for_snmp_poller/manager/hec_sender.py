@@ -4,21 +4,31 @@ import json
 
 logger = logging.getLogger(__name__)
 
-# TODO Remove debugging statement later
 
-def post_data_to_splunk_hec(host, logs_endpoint, metrics_endpoint, variables_binds, metric, index, one_time_flag=False):
+def post_data_to_splunk_hec(
+    host, logs_endpoint, metrics_endpoint, variables_binds, metric, index, one_time_flag=False
+):
     logger.debug(f"[-] logs : {logs_endpoint}, metrics : {metrics_endpoint}")
     # check if it is metric data
     if metric:
         logger.debug(f"+++++++++metric index: {index['metric_index']} +++++++++")
-        post_metric_data(metrics_endpoint, host, variables_binds, index["metric_index"])
+        post_metric_data(
+            metrics_endpoint, host, variables_binds, index["metric_index"]
+        )
     else:
         logger.debug(f"*********event index: {index['event_index']} ********")
-        post_event_data(logs_endpoint, host, variables_binds, index["event_index"], one_time_flag)
+        post_event_data(
+            logs_endpoint,
+            host,
+            variables_binds,
+            index["event_index"],
+            one_time_flag,
+        )
 
 
 # TODO Discuss the format of event data payload
 def post_event_data(endpoint, host, variables_binds, index, one_time_flag=False):
+
     if "NoSuchInstance" in str(variables_binds):
         variables_binds = "error: " + str(variables_binds)
 
@@ -39,9 +49,7 @@ def post_event_data(endpoint, host, variables_binds, index, one_time_flag=False)
 
     try:
         logger.debug(f"+++++++++endpoint+++++++++\n{endpoint}")
-        response = requests.post(
-            url=endpoint, json=data
-        )
+        response = requests.post(url=endpoint, json=data)
         logger.debug(f"Response code is {response.status_code}")
         logger.debug(f"Response is {response.text}")
     except requests.ConnectionError as e:
@@ -60,9 +68,7 @@ def post_metric_data(endpoint, host, variables_binds, index):
 
     try:
         logger.debug(f"-----endpoint------\n{endpoint}")
-        response = requests.post(
-            url=endpoint, json=data
-        )
+        response = requests.post(url=endpoint, json=data)
         logger.debug(f"Response code is {response.status_code}")
         logger.debug(f"Response is {response.text}")
     except requests.ConnectionError as e:
