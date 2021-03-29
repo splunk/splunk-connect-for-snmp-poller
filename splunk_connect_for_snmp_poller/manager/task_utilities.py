@@ -85,7 +85,6 @@ def mib_string_handler(
     mib_name,
     mib_index,
     mib_server_url,
-    server_config,
     results,
 ):
     """

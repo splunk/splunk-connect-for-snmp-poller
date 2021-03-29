@@ -57,7 +57,6 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                                 varbind[1],
                                 mib_index,
                                 mib_server_url,
-                                server_config,
                                 results,
                             )
                         except Exception as e:
@@ -119,7 +118,7 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
     logger.info(f"***results list with {len(results)} items***\n{results}")
 
     # Post mib event to splunk HEC
-    for event, metric in results:
-        post_data_to_splunk_hec(host, otel_logs_url, otel_metrics_url, event, metric, index, one_time_flag)
+    for event, is_metric in results:
+        post_data_to_splunk_hec(host, otel_logs_url, otel_metrics_url, event, is_metric, index, one_time_flag)
 
     return f"Executing SNMP Polling for {host} version={version} profile={profile}"
