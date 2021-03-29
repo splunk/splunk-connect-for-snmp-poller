@@ -134,9 +134,7 @@ def mib_string_handler(
         logger.error(f"Error happened while polling by mib name: {e}")
 
 
-def get_handler(
-    snmp_engine, community, host, port, profile, mib_server_url, results
-):
+def get_handler(snmp_engine, community, host, port, profile, mib_server_url, results):
     """
     Perform the SNMP Get for an oid,
     e.g. 1.3.6.1.2.1.1.9.1.2.1,
@@ -167,9 +165,7 @@ def get_handler(
     results.append((result, metric))
 
 
-def walk_handler(
-    snmp_engine, community, host, port, profile, mib_server_url, results
-):
+def walk_handler(snmp_engine, community, host, port, profile, mib_server_url, results):
     """
     Perform the SNMP Walk for oid end with *,
     e.g. 1.3.6.1.2.1.1.9.*,

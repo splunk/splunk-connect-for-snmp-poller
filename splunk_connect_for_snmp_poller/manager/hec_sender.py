@@ -7,15 +7,19 @@ logger = get_logger(__name__)
 
 
 def post_data_to_splunk_hec(
-    host, logs_endpoint, metrics_endpoint, variables_binds, is_metric, index, one_time_flag=False
+    host,
+    logs_endpoint,
+    metrics_endpoint,
+    variables_binds,
+    is_metric,
+    index,
+    one_time_flag=False,
 ):
     logger.debug(f"[-] logs : {logs_endpoint}, metrics : {metrics_endpoint}")
 
     if is_metric:
         logger.debug(f"+++++++++metric index: {index['metric_index']} +++++++++")
-        post_metric_data(
-            metrics_endpoint, host, variables_binds, index["metric_index"]
-        )
+        post_metric_data(metrics_endpoint, host, variables_binds, index["metric_index"])
     else:
         logger.debug(f"*********event index: {index['event_index']} ********")
         post_event_data(
@@ -61,9 +65,9 @@ def post_event_data(endpoint, host, variables_binds, index, one_time_flag=False)
 def post_metric_data(endpoint, host, variables_binds, index):
 
     json_val = json.loads(variables_binds)
-    metric_name = json_val['metric_name']
-    metric_value = json_val['_value']
-    fields = {'metric_name:' + metric_name: metric_value}
+    metric_name = json_val["metric_name"]
+    metric_value = json_val["_value"]
+    fields = {"metric_name:" + metric_name: metric_value}
 
     data = {
         "host": host,

@@ -19,8 +19,10 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
     otel_metrics_url = os.environ["OTEL_SERVER_METRICS_URL"]
-    index = {"event_index": server_config["splunk"]["index"]["event"],
-             "metric_index": server_config["splunk"]["index"]["metric"]}
+    index = {
+        "event_index": server_config["splunk"]["index"]["event"],
+        "metric_index": server_config["splunk"]["index"]["metric"],
+    }
     host, port = parse_port(host)
     logger.info(f"Using the following MIBS server URL: {mib_server_url}")
 
@@ -119,6 +121,14 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
 
     # Post mib event to splunk HEC
     for event, is_metric in results:
-        post_data_to_splunk_hec(host, otel_logs_url, otel_metrics_url, event, is_metric, index, one_time_flag)
+        post_data_to_splunk_hec(
+            host,
+            otel_logs_url,
+            otel_metrics_url,
+            event,
+            is_metric,
+            index,
+            one_time_flag,
+        )
 
     return f"Executing SNMP Polling for {host} version={version} profile={profile}"
