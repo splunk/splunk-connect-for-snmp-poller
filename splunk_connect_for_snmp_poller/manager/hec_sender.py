@@ -1,40 +1,38 @@
-import logging
 import requests
 import json
 
-logger = logging.getLogger(__name__)
+from celery.utils.log import get_logger
+
+logger = get_logger(__name__)
 
 
 def post_data_to_splunk_hec(
-    host, variables_binds, metric, index, hec_config, one_time_flag=False
+    host,
+    logs_endpoint,
+    metrics_endpoint,
+    variables_binds,
+    is_metric,
+    index,
+    one_time_flag=False,
 ):
-    splunk_hec_token = hec_config.get_authentication_token()
-    endpoints = hec_config.get_endpoints()
-    logger.debug(f"[-] splunk_hec_token : {splunk_hec_token}")
-    logger.debug(f"[-] endpoints : {endpoints}")
+    logger.debug(f"[-] logs : {logs_endpoint}, metrics : {metrics_endpoint}")
 
-    # check if it is metric data
-    for endpoint in endpoints:
-        if metric:
-            logger.debug(f"+++++++++metric index: {index['metric_index']} +++++++++")
-            post_metric_data(
-                endpoint, splunk_hec_token, host, variables_binds, index["metric_index"]
-            )
-        else:
-            logger.debug(f"*********event index: {index['event_index']} ********")
-            post_event_data(
-                endpoint,
-                splunk_hec_token,
-                host,
-                variables_binds,
-                index["event_index"],
-                one_time_flag,
-            )
+    if is_metric:
+        logger.debug(f"+++++++++metric index: {index['metric_index']} +++++++++")
+        post_metric_data(metrics_endpoint, host, variables_binds, index["metric_index"])
+    else:
+        logger.debug(f"*********event index: {index['event_index']} ********")
+        post_event_data(
+            logs_endpoint,
+            host,
+            variables_binds,
+            index["event_index"],
+            one_time_flag,
+        )
 
 
 # TODO Discuss the format of event data payload
-def post_event_data(endpoint, token, host, variables_binds, index, one_time_flag=False):
-    headers = {"Authorization": f"Splunk {token}"}
+def post_event_data(endpoint, host, variables_binds, index, one_time_flag=False):
 
     if "NoSuchInstance" in str(variables_binds):
         variables_binds = "error: " + str(variables_binds)
@@ -52,12 +50,11 @@ def post_event_data(endpoint, token, host, variables_binds, index, one_time_flag
     if "error" in str(variables_binds):
         data["sourcetype"] = "sc4snmp:error"
 
-    logger.debug(f"+++++++++headers+++++++++\n{headers}")
     logger.debug(f"+++++++++data+++++++++\n{data}")
 
     try:
         logger.debug(f"+++++++++endpoint+++++++++\n{endpoint}")
-        response = requests.post(url=endpoint, json=data, headers=headers, verify=False)
+        response = requests.post(url=endpoint, json=data)
         logger.debug(f"Response code is {response.status_code}")
         logger.debug(f"Response is {response.text}")
     except requests.ConnectionError as e:
@@ -65,20 +62,24 @@ def post_event_data(endpoint, token, host, variables_binds, index, one_time_flag
 
 
 # TODO Discuss the format of metric data payload
-def post_metric_data(endpoint, token, host, variables_binds, index):
-    headers = {"Authorization": f"Splunk {token}"}
+def post_metric_data(endpoint, host, variables_binds, index):
+
+    json_val = json.loads(variables_binds)
+    metric_name = json_val["metric_name"]
+    metric_value = json_val["_value"]
+    fields = {"metric_name:" + metric_name: metric_value}
 
     data = {
         "host": host,
         "index": index,
-        "fields": json.loads(variables_binds),
+        "event": "metric",
+        "fields": fields,
     }
-    logger.debug(f"--------headers------\n{headers}")
     logger.debug(f"--------data------\n{data}")
 
     try:
         logger.debug(f"-----endpoint------\n{endpoint}")
-        response = requests.post(url=endpoint, json=data, headers=headers, verify=False)
+        response = requests.post(url=endpoint, json=data)
         logger.debug(f"Response code is {response.status_code}")
         logger.debug(f"Response is {response.text}")
     except requests.ConnectionError as e:

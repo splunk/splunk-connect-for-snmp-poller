@@ -1,9 +1,7 @@
 from celery.utils.log import get_task_logger
 
-logger = get_task_logger(__name__)
-
+import os
 from splunk_connect_for_snmp_poller.manager.celery_client import app
-from splunk_connect_for_snmp_poller.manager.hec_config import HecConfiguration
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     get_handler,
@@ -12,21 +10,21 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
     parse_port,
 )
 from pysnmp.hlapi import *
-import os
-from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 
+logger = get_task_logger(__name__)
 
 # TODO remove the debugging statement later
 @app.task
 def snmp_polling(host, version, community, profile, server_config, one_time_flag=False):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
-    index = {}
-    index["event_index"] = server_config["splunk"]["index"]["event"]
-    index["metric_index"] = server_config["splunk"]["index"]["metric"]
+    otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
+    otel_metrics_url = os.environ["OTEL_SERVER_METRICS_URL"]
+    index = {
+        "event_index": server_config["splunk"]["index"]["event"],
+        "metric_index": server_config["splunk"]["index"]["metric"],
+    }
     host, port = parse_port(host)
-    hec_config = HecConfiguration()
     logger.info(f"Using the following MIBS server URL: {mib_server_url}")
-    mongo_walked_hosts_coll = WalkedHostsRepository(server_config["mongo"])
 
     # create one SnmpEngie for get_handler, walk_handler, mib_string_handler
     snmp_engine = SnmpEngine()
@@ -61,8 +59,6 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                                 varbind[1],
                                 mib_index,
                                 mib_server_url,
-                                hec_config,
-                                server_config,
                                 results,
                             )
                         except Exception as e:
@@ -80,7 +76,6 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                                     port,
                                     varbind,
                                     mib_server_url,
-                                    hec_config,
                                     results,
                                 )
                             else:
@@ -91,7 +86,6 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                                     port,
                                     varbind,
                                     mib_server_url,
-                                    hec_config,
                                     results,
                                 )
                         except Exception as e:
@@ -108,7 +102,6 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                 port,
                 profile,
                 mib_server_url,
-                hec_config,
                 results,
             )
         # Perform SNNP GET for an oid
@@ -121,14 +114,21 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                 port,
                 profile,
                 mib_server_url,
-                hec_config,
                 results,
             )
 
     logger.info(f"***results list with {len(results)} items***\n{results}")
 
     # Post mib event to splunk HEC
-    for event, metric in results:
-        post_data_to_splunk_hec(host, event, metric, index, hec_config, one_time_flag)
+    for event, is_metric in results:
+        post_data_to_splunk_hec(
+            host,
+            otel_logs_url,
+            otel_metrics_url,
+            event,
+            is_metric,
+            index,
+            one_time_flag,
+        )
 
     return f"Executing SNMP Polling for {host} version={version} profile={profile}"
