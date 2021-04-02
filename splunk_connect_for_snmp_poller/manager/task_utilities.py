@@ -116,7 +116,7 @@ def mib_string_handler(
     """
     Perform the SNMP Get for mib-name/string,
     e.g. ['SNMPv2-MIB', 'sysUpTime',0] (syntax -> [<mib_file_name>, <mib_name/string>, <min_index>])
-    which querise the info correalted to this specific mib-name/string (e.g. sysUpTime)
+    which queries the info correlated to this specific mib-name/string (e.g. sysUpTime)
     """
     mibBuilder = builder.MibBuilder()
     mibViewController = view.MibViewController(mibBuilder)
@@ -180,7 +180,7 @@ def get_handler(
     """
     Perform the SNMP Get for an oid,
     e.g. 1.3.6.1.2.1.1.9.1.2.1,
-    which queries the info correalted to this specific oid
+    which queries the info correlated to this specific oid
     """
     errorIndication, errorStatus, errorIndex, varBinds = next(
         getCmd(
@@ -224,7 +224,7 @@ def walk_handler(
     """
     Perform the SNMP Walk for oid end with *,
     e.g. 1.3.6.1.2.1.1.9.*,
-    which queries the infos correalted to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
+    which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
     """
 
     for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
