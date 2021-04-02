@@ -4,7 +4,12 @@ logger = get_task_logger(__name__)
 
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
+from splunk_connect_for_snmp_poller.manager.const import (
+    AuthProtocolMap,
+    PrivProtocolMap,
+)
 from pysnmp.hlapi import *
+from pysnmp.proto import rfc1902
 import json
 import os
 
@@ -322,20 +327,28 @@ def build_authData(version, community, server_config):
                 authProtocol = server_config["usernames"][userName].get(
                     "authProtocol", None
                 )
+                if authProtocol:
+                    authProtocol = AuthProtocolMap.get(authProtocol.upper(), "NONE")
                 privProtocol = server_config["usernames"][userName].get(
                     "privProtocol", None
                 )
+                if privProtocol:
+                    privProtocol = PrivProtocolMap.get(privProtocol.upper(), "NONE")
                 securityEngineId = server_config["usernames"][userName].get(
                     "securityEngineId", None
                 )
+                if securityEngineId:
+                    securityEngineId = rfc1902.OctetString(
+                        hexValue=str(securityEngineId)
+                    )
                 securityName = server_config["usernames"][userName].get(
                     "securityName", None
                 )
-                authKeyType = server_config["usernames"][userName].get(
-                    "authKeyType", 0
+                authKeyType = int(
+                    server_config["usernames"][userName].get("authKeyType", 0)
                 )  # USM_KEY_TYPE_PASSPHRASE
-                privKeyType = server_config["usernames"][userName].get(
-                    "privKeyType", 0
+                privKeyType = int(
+                    server_config["usernames"][userName].get("privKeyType", 0)
                 )  # USM_KEY_TYPE_PASSPHRASE
         except Exception as e:
             logger.error(
@@ -382,6 +395,9 @@ def build_authData(version, community, server_config):
                 securityName = server_config["communities"][communityName].get(
                     "securityName", None
                 )
+            logger.debug(
+                f"=============\ncommunityName - {communityName}, communityIndex - {communityIndex}, contextEngineId - {contextEngineId}, contextName - {contextName}, tag - {tag}, securityName - {securityName}"
+            )
         except Exception as e:
             logger.error(
                 f"Error happend while parsing parmas of communityName for SNMP v1/v2c: {e}"
