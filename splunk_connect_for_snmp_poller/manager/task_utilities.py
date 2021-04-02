@@ -74,7 +74,7 @@ def get_translated_string(mib_server_url, varBinds):
             f"Exception occurred while logging varBinds name & value. Exception: {e}"
         )
 
-    # Overrid the varBinds string with translated varBinds string
+    # Override the varBinds string with translated varBinds string
     try:
         logger.debug(
             f"==========result before translated -- is_metric={is_metric}============\n{result}"
