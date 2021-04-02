@@ -8,7 +8,7 @@ from pysnmp.hlapi import *
 import json
 import os
 
-from pysnmp.smi import builder, view, compiler, rfc1902
+from pysnmp.smi import builder, view, compiler
 from pysmi import debug as pysmi_debug
 
 pysmi_debug.setLogger(pysmi_debug.Debug("compiler"))
@@ -40,10 +40,9 @@ def get_translated_string(mib_server_url, varBinds):
     Get the translated/formatted var_binds string depending on whether the varBinds is an event or metric
     Note: if it failed to get translation, return the the original varBinds
     @return result: formated string ready to be sent to Splunk HEC
-    @return metric: boolean, metric data flag
+    @return is_metric: boolean, metric data flag
     """
     logger.info(f"I got these var binds: {varBinds}")
-
     # Get Original varbinds as backup in case the mib-server is unreachable
     try:
         for name, val in varBinds:
@@ -54,8 +53,8 @@ def get_translated_string(mib_server_url, varBinds):
             # result = "{} = {}".format(name.prettyPrint(), val.prettyPrint())
 
             # check if this is metric data
-            metric = is_metric_data(val.prettyPrint())
-            if metric:
+            is_metric = is_metric_data(val.prettyPrint())
+            if is_metric:
                 result = {
                     "metric_name": name.prettyPrint(),
                     "_value": val.prettyPrint(),
@@ -73,9 +72,9 @@ def get_translated_string(mib_server_url, varBinds):
     # Overrid the varBinds string with translated varBinds string
     try:
         logger.debug(
-            f"==========result before translated -- metric={metric}============\n{result}"
+            f"==========result before translated -- is_metric={is_metric}============\n{result}"
         )
-        result = get_translation(varBinds, mib_server_url, metric)
+        result = get_translation(varBinds, mib_server_url, is_metric)
         logger.info(f"=========result=======\n{result}")
         # TODO double check the result to handle the edge case,
         # where the value of an metric data was translated from int to string
@@ -84,14 +83,14 @@ def get_translated_string(mib_server_url, varBinds):
             _value = result_dict.get("_value", None)
             logger.debug(f"=========_value=======\n{_value}")
             if not is_metric_data(_value):
-                metric = False
-                result = get_translation(varBinds, mib_server_url, metric)
+                is_metric = False
+                result = get_translation(varBinds, mib_server_url, is_metric)
     except Exception as e:
         logger.info(f"Could not perform translation. Exception: {e}")
     logger.info(
-        f"###############final result -- metric: {metric}#######################\n{result}"
+        f"###############final result -- metric: {is_metric}#######################\n{result}"
     )
-    return result, metric
+    return result, is_metric
 
 
 def mib_string_handler(
@@ -104,9 +103,9 @@ def mib_string_handler(
     mib_name,
     mib_index,
     mib_server_url,
-    server_config,
     index,
-    hec_config,
+    otel_logs_url,
+    otel_metrics_url,
     one_time_flag,
 ):
     """
@@ -132,7 +131,7 @@ def mib_string_handler(
             )
         )
 
-        metric = False
+        is_metric = False
         if errorIndication:
             result = f"error: {errorIndication}"
             logger.info(result)
@@ -146,8 +145,16 @@ def mib_string_handler(
             logger.info(f"varBinds: {varBinds}")
             for varBind in varBinds:
                 logger.info(" = ".join([x.prettyPrint() for x in varBind]))
-            result, metric = get_translated_string(mib_server_url, varBinds)
-        post_data_to_splunk_hec(host, result, metric, index, hec_config, one_time_flag)
+            result, is_metric = get_translated_string(mib_server_url, varBinds)
+        post_data_to_splunk_hec(
+            host,
+            otel_logs_url,
+            otel_metrics_url,
+            result,
+            is_metric,
+            index,
+            one_time_flag,
+        )
     except Exception as e:
         logger.error(f"Error happened while polling by mib name: {e}")
 
@@ -161,7 +168,8 @@ def get_handler(
     profile,
     mib_server_url,
     index,
-    hec_config,
+    otel_logs_url,
+    otel_metrics_url,
     one_time_flag,
 ):
     """
@@ -178,7 +186,7 @@ def get_handler(
             ObjectType(ObjectIdentity(profile)),
         )
     )
-    metric = False
+    is_metric = False
     if errorIndication:
         result = f"error: {errorIndication}"
         logger.error(result)
@@ -189,8 +197,10 @@ def get_handler(
         )
         logger.error(result)
     else:
-        result, metric = get_translated_string(mib_server_url, varBinds)
-    post_data_to_splunk_hec(host, result, metric, index, hec_config, one_time_flag)
+        result, is_metric = get_translated_string(mib_server_url, varBinds)
+    post_data_to_splunk_hec(
+        host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
+    )
 
 
 def walk_handler(
@@ -202,7 +212,8 @@ def walk_handler(
     profile,
     mib_server_url,
     index,
-    hec_config,
+    otel_logs_url,
+    otel_metrics_url,
     one_time_flag,
 ):
     """
@@ -219,12 +230,18 @@ def walk_handler(
         ObjectType(ObjectIdentity(profile[:-2])),
         lexicographicMode=False,
     ):
-        metric = False
+        is_metric = False
         if errorIndication:
             result = f"error: {errorIndication}"
             logger.info(result)
             post_data_to_splunk_hec(
-                host, result, metric, index, hec_config, one_time_flag
+                host,
+                otel_logs_url,
+                otel_metrics_url,
+                result,
+                is_metric,
+                index,
+                one_time_flag,
             )
             break
         elif errorStatus:
@@ -234,13 +251,25 @@ def walk_handler(
             )
             logger.info(result)
             post_data_to_splunk_hec(
-                host, result, metric, index, hec_config, one_time_flag
+                host,
+                otel_logs_url,
+                otel_metrics_url,
+                result,
+                is_metric,
+                index,
+                one_time_flag,
             )
             break
         else:
-            result, metric = get_translated_string(mib_server_url, varBinds)
+            result, is_metric = get_translated_string(mib_server_url, varBinds)
             post_data_to_splunk_hec(
-                host, result, metric, index, hec_config, one_time_flag
+                host,
+                otel_logs_url,
+                otel_metrics_url,
+                result,
+                is_metric,
+                index,
+                one_time_flag,
             )
 
 

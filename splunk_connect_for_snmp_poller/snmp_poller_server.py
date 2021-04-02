@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    logger.info(f'Startup Config')
+    logger.info(f"Startup Config")
     args = parse_command_line_arguments()
     logging.getLogger().setLevel(args.loglevel.upper())
 
@@ -17,6 +17,6 @@ def main():
     poller_server.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     initialize_signals_handler()
     main()

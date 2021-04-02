@@ -1,9 +1,7 @@
 from celery.utils.log import get_task_logger
 
-logger = get_task_logger(__name__)
-
+import os
 from splunk_connect_for_snmp_poller.manager.celery_client import app
-from splunk_connect_for_snmp_poller.manager.hec_config import HecConfiguration
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     get_handler,
@@ -15,29 +13,26 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
 )
 from pysnmp.hlapi import *
 import os
-from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 
+logger = get_task_logger(__name__)
 
 # TODO remove the debugging statement later
-
-
 @app.task
 def snmp_polling(host, version, community, profile, server_config, one_time_flag=False):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
-    index = {}
-    index["event_index"] = server_config["splunk"]["index"]["event"]
-    index["metric_index"] = server_config["splunk"]["index"]["metric"]
+    otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
+    otel_metrics_url = os.environ["OTEL_SERVER_METRICS_URL"]
+    index = {
+        "event_index": server_config["splunk"]["index"]["event"],
+        "metric_index": server_config["splunk"]["index"]["metric"],
+    }
     host, port = parse_port(host)
-    hec_config = HecConfiguration()
     logger.info(f"Using the following MIBS server URL: {mib_server_url}")
-    mongo_walked_hosts_coll = WalkedHostsRepository(server_config["mongo"])
 
     # create one SnmpEngie for get_handler, walk_handler, mib_string_handler
     snmp_engine = SnmpEngine()
 
     # create auth_data depending on SNMP's version
-    # TODO discuss how to handle when auth_data == None
-    # Added try catch below
     auth_data = build_authData(version, community, server_config)
     logger.debug(f"==========auth_data=========\n{auth_data}")
 
@@ -75,7 +70,8 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                                     mib_server_url,
                                     server_config,
                                     index,
-                                    hec_config,
+                                    otel_logs_url,
+                                    otel_metrics_url,
                                     one_time_flag,
                                 )
                             except Exception as e:
@@ -95,7 +91,8 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                                         varbind,
                                         mib_server_url,
                                         index,
-                                        hec_config,
+                                        otel_logs_url,
+                                        otel_metrics_url,
                                         one_time_flag,
                                     )
                                 else:
@@ -108,7 +105,8 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                                         varbind,
                                         mib_server_url,
                                         index,
-                                        hec_config,
+                                        otel_logs_url,
+                                        otel_metrics_url,
                                         one_time_flag,
                                     )
                             except Exception as e:
@@ -129,7 +127,8 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                     profile,
                     mib_server_url,
                     index,
-                    hec_config,
+                    otel_logs_url,
+                    otel_metrics_url,
                     one_time_flag,
                 )
             # Perform SNNP GET for an oid
@@ -144,7 +143,8 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                     profile,
                     mib_server_url,
                     index,
-                    hec_config,
+                    otel_logs_url,
+                    otel_metrics_url,
                     one_time_flag,
                 )
 
