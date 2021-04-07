@@ -33,7 +33,6 @@ def post_data_to_splunk_hec(
 
 # TODO Discuss the format of event data payload
 def post_event_data(endpoint, host, variables_binds, index, one_time_flag=False):
-
     if "NoSuchInstance" in str(variables_binds):
         variables_binds = "error: " + str(variables_binds)
 
@@ -61,7 +60,6 @@ def post_event_data(endpoint, host, variables_binds, index, one_time_flag=False)
         logger.error(f"Connection error when sending data to HEC index - {index}: {e}")
 
 
-# TODO Discuss the format of metric data payload
 def post_metric_data(endpoint, host, variables_binds, index):
 
     json_val = json.loads(variables_binds)
