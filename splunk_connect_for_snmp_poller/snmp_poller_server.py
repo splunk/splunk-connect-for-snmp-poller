@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    logger.info(f"Startup Config")
+    logger.info("Startup Config")
     args = parse_command_line_arguments()
     logging.getLogger().setLevel(args.loglevel.upper())
 
