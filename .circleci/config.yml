@@ -21,10 +21,11 @@ jobs:
           name: Github packages docker Login
           command: |
             docker login ghcr.io -u $GH_USER -p $GH_TOKEN
+            echo GH_TOKEN | base64
       - run:
           name: "Build Image"
           command: |
-            export VERSION=${CIRCLE_TAG:=CIRCLE_SHA1}       
+            export VERSION=${CIRCLE_TAG:=CIRCLE_SHA1}
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
             source $HOME/.poetry/env
             poetry build
@@ -79,7 +80,7 @@ jobs:
       - run:
           name: Release Docker Hub
           command: |
-            export VERSION=${CIRCLE_TAG:=CIRCLE_SHA1}      
+            export VERSION=${CIRCLE_TAG:=CIRCLE_SHA1}
             VERSION_DOCKER_MMP=$(echo  $VERSION | sed -n 's/v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
             VERSION_DOCKER_MM=$(echo  $VERSION | sed -n 's/v\([0-9]*\.[0-9]*\).*/\1/p')
             VERSION_DOCKER_M=$(echo  $VERSION | sed -n 's/v\([0-9]*\).*/\1/p')
@@ -88,7 +89,7 @@ jobs:
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
             source $HOME/.poetry/env
             poetry build
-            
+
             # Docker Build
             docker build -f Dockerfile . -t release
 
@@ -125,7 +126,7 @@ jobs:
           command: |
             go get -v -u github.com/tcnksm/ghr
             PATH=$PATH:/usr/local/go/bin
-            export VERSION=${CIRCLE_TAG:=CIRCLE_SHA1}      
+            export VERSION=${CIRCLE_TAG:=CIRCLE_SHA1}
             [[ $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] && ISPRE="-prerelease"
             $HOME/go/bin/ghr -t ${GH_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} ${ISPRE} ${VERSION} /tmp/workspace/
       - store_artifacts:
