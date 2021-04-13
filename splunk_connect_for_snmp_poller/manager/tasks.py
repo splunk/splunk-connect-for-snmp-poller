@@ -14,7 +14,20 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
 from pysnmp.hlapi import *
 import os
 
+import threading
+
+# Used to store a single SnmpEngine() instance for each Celery task
+thread_local = threading.local()
 logger = get_task_logger(__name__)
+
+
+def get_shared_snmp_engine():
+    if not hasattr(thread_local, "local_snmp_engine"):
+        thread_local.local_snmp_engine = SnmpEngine()
+        logger.info("Created a single shared instance of SnmpEngine()")
+
+    return thread_local.local_snmp_engine
+
 
 # TODO remove the debugging statement later
 @app.task
@@ -30,7 +43,7 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
     logger.info(f"Using the following MIBS server URL: {mib_server_url}")
 
     # create one SnmpEngie for get_handler, walk_handler, mib_string_handler
-    snmp_engine = SnmpEngine()
+    snmp_engine = get_shared_snmp_engine()
 
     # create auth_data depending on SNMP's version
     auth_data = build_authData(version, community, server_config)
