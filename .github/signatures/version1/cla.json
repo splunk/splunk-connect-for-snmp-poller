@@ -1,3 +1,12 @@
 {
-   "signedContributors": []
+  "signedContributors": [
+    {
+      "name": "weliasz",
+      "id": 77732905,
+      "comment_id": 823025541,
+      "created_at": "2021-04-20T06:58:15Z",
+      "repoId": 329303921,
+      "pullRequestNo": 49
+    }
+  ]
 }
