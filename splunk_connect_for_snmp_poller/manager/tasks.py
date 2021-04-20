@@ -24,7 +24,7 @@ logger = get_task_logger(__name__)
 def get_shared_snmp_engine():
     if not hasattr(thread_local, "local_snmp_engine"):
         thread_local.local_snmp_engine = SnmpEngine()
-        logger.info("Created a single shared instance of SnmpEngine()")
+        logger.info("Created a single shared instance of an SnmpEngine() object")
 
     return thread_local.local_snmp_engine
 
