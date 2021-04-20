@@ -22,13 +22,10 @@ logger = get_task_logger(__name__)
 
 
 def get_shared_snmp_engine():
-    enetered = False
     if not hasattr(thread_local, "local_snmp_engine"):
         thread_local.local_snmp_engine = SnmpEngine()
-        entered = True
         logger.info("Created a single shared instance of SnmpEngine()")
 
-    logger.info(f"Returning a single instance of SnmpEngine(): {entered}")
     return thread_local.local_snmp_engine
 
 
