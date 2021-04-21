@@ -16,22 +16,34 @@ class ObjectTypeMock:
 
 class TestTaskUtilities(TestCase):
     def test_metric_for_integer(self):
-        self.assertTrue(is_metric_data([("some_name", ObjectTypeMock("1"))]))
+        self.assertTrue(is_metric_data("1"))
 
     def test_metric_for_negative_integer(self):
-        self.assertTrue(is_metric_data([("some_name", ObjectTypeMock("-5"))]))
+        self.assertTrue(is_metric_data("-5"))
 
     def test_metric_for_float(self):
-        self.assertTrue(is_metric_data([("some_name", ObjectTypeMock("2.0"))]))
+        self.assertTrue(is_metric_data("2.0"))
 
     def test_metric_for_negative_float(self):
-        self.assertTrue(is_metric_data([("some_name", ObjectTypeMock("-2.0"))]))
+        self.assertTrue(is_metric_data("-2.0"))
 
     def test_metric_for_zero(self):
-        self.assertTrue(is_metric_data([("some_name", ObjectTypeMock("0"))]))
+        self.assertTrue(is_metric_data("0"))
+
+    def test_metric_for_ip(self):
+        self.assertFalse(is_metric_data("127.0.0.1"))
+
+    def test_metric_for_string_with_numbers(self):
+        self.assertFalse(is_metric_data("1.0 1"))
 
     def test_metric_for_string(self):
-        self.assertFalse(is_metric_data([("some_name", ObjectTypeMock("asdad"))]))
+        self.assertFalse(is_metric_data("asdad"))
+
+    def test_metric_for_exponential_value(self):
+        self.assertTrue(is_metric_data("0.1e-10"))
+
+    def test_metric_for_string_mix_of_letters_and_numbers(self):
+        self.assertFalse(is_metric_data("0.1e a"))
 
     def test_port_parse_with_default_port(self):
         host, port = parse_port("192.168.0.13")
