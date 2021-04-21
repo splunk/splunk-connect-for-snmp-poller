@@ -15,6 +15,7 @@ requests = "^2.25.1"
 schedule = "^1.0.0"
 celery = "^5.0.5"
 pymongo = "^3.11.3"
+coverage = "^5.5"
 
 [tool.poetry.dev-dependencies]
 #pytest-splunk-addon = "^1.4.0"
