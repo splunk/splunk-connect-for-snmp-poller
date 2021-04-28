@@ -61,7 +61,10 @@ def get_translated_string(mib_server_url, varBinds):
             is_metric = is_metric_data(val.prettyPrint())
             if is_metric:
                 result = {
-                    "metric_name": name.prettyPrint(),
+                    # Prefix the metric for ux in analytics workspace
+                    # Splunk uses . rather than :: for hierarchy.
+                    # if the metric name contains a . replace with _
+                    "metric_name": 'sc4snmp.{name.prettyPrint().replace(".","_").replace("::", ".")}',
                     "_value": val.prettyPrint(),
                 }
                 result = json.dumps(result)
