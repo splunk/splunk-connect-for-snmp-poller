@@ -68,7 +68,6 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                                     varbind[1],
                                     mib_index,
                                     mib_server_url,
-                                    server_config,
                                     index,
                                     otel_logs_url,
                                     otel_metrics_url,
