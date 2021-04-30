@@ -64,7 +64,7 @@ def get_translated_string(mib_server_url, varBinds):
                     # Prefix the metric for ux in analytics workspace
                     # Splunk uses . rather than :: for hierarchy.
                     # if the metric name contains a . replace with _
-                    "metric_name": 'sc4snmp.{name.prettyPrint().replace(".","_").replace("::", ".")}',
+                    "metric_name": f'sc4snmp.{name.prettyPrint().replace(".","_").replace("::", ".")}',
                     "_value": val.prettyPrint(),
                 }
                 result = json.dumps(result)
