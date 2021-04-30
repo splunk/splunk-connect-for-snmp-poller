@@ -11,9 +11,7 @@ class WalkedHostsRepository:
         )
         if os.environ.get("MONGO_USER"):
             self._client.admin.authenticate(
-                os.environ["MONGO_USER"],
-                os.environ["MONGO_PASS"],
-                mechanism="SCRAM-SHA-1",
+                os.environ["MONGO_USER"], os.environ["MONGO_PASS"]
             )
 
         self._walked_hosts = self._client[mongo_config["database"]][
