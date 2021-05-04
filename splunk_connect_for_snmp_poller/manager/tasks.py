@@ -68,7 +68,7 @@ def snmp_polling(host, version, community, profile, server_config, one_time_flag
                         if isinstance(varbind, list):
                             # Perform SNMP polling for mib string
                             try:
-                                mib_index = 0
+                                mib_index = 1
                                 if len(varbind) == 3:
                                     mib_index = varbind[2]
                                 mib_string_handler(
