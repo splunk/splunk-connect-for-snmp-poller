@@ -10,7 +10,7 @@ app = Celery(__name__)
 
 app.conf.update(
     {
-        "broker_url": "\"" + os.environ["CELERY_BROKER_URL"] + "\"",
+        "broker_url": '"' + os.environ["CELERY_BROKER_URL"] + '"',
         "imports": ("splunk_connect_for_snmp_poller.manager.tasks",),
         "result_backend": "rpc://",
         "task_serializer": "json",
