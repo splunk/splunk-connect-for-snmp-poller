@@ -50,6 +50,17 @@ def parse_command_line_arguments():
     parser.add_argument(
         "-r", "--refresh_interval", default="1", help="Refresh Interval of Inventory"
     )
+    parser.add_argument(
+        "--event_index", default="##EVENTS_INDEX##", help="Event index for polling data"
+    )
+    parser.add_argument(
+        "--metric_index",
+        default="##METRICS_INDEX##",
+        help="Metric index for polling data",
+    )
+    parser.add_argument(
+        "--meta_index", default="##META_INDEX##", help="Meta index for polling data"
+    )
 
     return parser.parse_args()
 
