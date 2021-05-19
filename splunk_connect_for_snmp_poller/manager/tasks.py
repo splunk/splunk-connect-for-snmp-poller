@@ -31,14 +31,12 @@ def get_shared_snmp_engine():
 
 # TODO remove the debugging statement later
 @app.task
-def snmp_polling(host, version, community, profile, server_config, one_time_flag=False):
+def snmp_polling(
+    host, version, community, profile, server_config, index, one_time_flag=False
+):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
     otel_metrics_url = os.environ["OTEL_SERVER_METRICS_URL"]
-    index = {
-        "event_index": server_config["splunk"]["index"]["event"],
-        "metric_index": server_config["splunk"]["index"]["metric"],
-    }
     host, port = parse_port(host)
     logger.info(f"Using the following MIBS server URL: {mib_server_url}")
 
