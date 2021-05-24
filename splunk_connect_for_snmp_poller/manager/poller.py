@@ -29,6 +29,13 @@ class Poller:
             self._server_config["mongo"]
         )
 
+    def get_splunk_indexes(self):
+        index = {
+            "event_index": self._args.event_index,
+            "metric_index": self._args.metric_index,
+        }
+        return index
+
     def run(self):
         counter = 0
         while True:
@@ -49,8 +56,10 @@ class Poller:
 
     def check_inventory(self):
         inventory_file = self._args.inventory
+        splunk_indexes = self.get_splunk_indexes()
         if os.stat(inventory_file, follow_symlinks=True).st_mtime > self._mod_time:
             logger.info("Change in inventory detected, reloading")
+            logger.debug(f"[-] Configured the Splunk indexes: {splunk_indexes}")
             self._mod_time = os.stat(inventory_file, follow_symlinks=True).st_mtime
 
             with open(inventory_file, newline="") as csvfile:
@@ -84,6 +93,7 @@ class Poller:
                             community,
                             Poller.universal_base_oid,
                             self._server_config,
+                            splunk_indexes,
                         )
 
                         if host not in self._jobs_per_host:
@@ -95,6 +105,7 @@ class Poller:
                                 community,
                                 profile,
                                 self._server_config,
+                                splunk_indexes,
                             )
                             self._jobs_per_host[host] = job_reference
                         else:
@@ -107,6 +118,7 @@ class Poller:
                                     community,
                                     profile,
                                     self._server_config,
+                                    splunk_indexes,
                                 )
                                 or frequency != self._jobs_per_host.get(host).interval
                             ):
@@ -117,6 +129,7 @@ class Poller:
                                     profile,
                                     version,
                                     self._server_config,
+                                    splunk_indexes,
                                 )
                 for host in list(self._jobs_per_host):
                     if host not in inventory_hosts:
@@ -125,11 +138,24 @@ class Poller:
                         del self._jobs_per_host[host]
 
     def update_schedule(
-        self, community, frequency, host, profile, version, server_config
+        self,
+        community,
+        frequency,
+        host,
+        profile,
+        version,
+        server_config,
+        splunk_indexes,
     ):
         logger.debug(f"Updating configuration for host {host}")
         new_job_func = functools.partial(
-            scheduled_task, host, version, community, profile, server_config
+            scheduled_task,
+            host,
+            version,
+            community,
+            profile,
+            server_config,
+            splunk_indexes,
         )
         functools.update_wrapper(new_job_func, scheduled_task)
 
@@ -143,33 +169,47 @@ class Poller:
             old_next_run if new_next_run > old_next_run else new_next_run
         )
 
-    def one_time_walk(self, host, version, community, profile, server_config):
+    def one_time_walk(
+        self, host, version, community, profile, server_config, splunk_indexes
+    ):
         logger.debug(
             f"[-]walked flag: {self._mongo_walked_hosts_coll.contains_host(host)}"
         )
         if self._mongo_walked_hosts_coll.contains_host(host) == 0:
             schedule.every().second.do(
-                onetime_task, host, version, community, profile, server_config
+                onetime_task,
+                host,
+                version,
+                community,
+                profile,
+                server_config,
+                splunk_indexes,
             )
             self._mongo_walked_hosts_coll.add_host(host)
         else:
             logger.debug(f"[-] One time walk executed for {host}!")
 
 
-def scheduled_task(host, version, community, profile, server_config):
+def scheduled_task(host, version, community, profile, server_config, splunk_indexes):
     logger.debug(
         f"Executing scheduled_task for {host} version={version} community={community} profile={profile}"
     )
 
-    snmp_polling.delay(host, version, community, profile, server_config)
+    snmp_polling.delay(host, version, community, profile, server_config, splunk_indexes)
 
 
-def onetime_task(host, version, community, profile, server_config):
+def onetime_task(host, version, community, profile, server_config, splunk_indexes):
     logger.debug(
         f"Executing onetime_task for {host} version={version} community={community} profile={profile}"
     )
 
     snmp_polling.delay(
-        host, version, community, profile, server_config, one_time_flag=True
+        host,
+        version,
+        community,
+        profile,
+        server_config,
+        splunk_indexes,
+        one_time_flag=True,
     )
     return schedule.CancelJob

@@ -1,3 +1,5 @@
+import time
+
 import requests
 import json
 
@@ -37,6 +39,7 @@ def post_event_data(endpoint, host, variables_binds, index, one_time_flag=False)
         variables_binds = "error: " + str(variables_binds)
 
     data = {
+        "time": time.time(),
         "sourcetype": "sc4snmp:meta",
         "host": host,
         "index": index,
@@ -68,11 +71,13 @@ def post_metric_data(endpoint, host, variables_binds, index):
     fields = {"metric_name:" + metric_name: metric_value}
 
     data = {
+        "time": time.time(),
         "host": host,
         "index": index,
         "event": "metric",
         "fields": fields,
     }
+
     logger.debug(f"--------data------\n{data}")
 
     try:
