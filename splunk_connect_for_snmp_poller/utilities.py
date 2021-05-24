@@ -64,7 +64,7 @@ def parse_command_line_arguments():
 
     return parser.parse_args()
 
-
+# Test
 def parse_config_file(config_file_path):
     logger.info(f"Config file is {config_file_path}")
     try:
