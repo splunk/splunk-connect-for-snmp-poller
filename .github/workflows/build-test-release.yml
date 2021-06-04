@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: build and publish
+name: CI
 
 # Controls when the action will run.
 on:
@@ -84,14 +84,8 @@ jobs:
       - uses: actions/upload-artifact@v2 # upload test results
         if: success() || failure() # run this step even if previous step failed
         with:
-          name: test-results
+          name: test-results-unit-python_${{ matrix.python-version }}
           path: test-results/*
-      - uses: dorny/test-reporter@v1
-        with:
-          artifact: test-results # artifact name
-          name: Unit Tests # Name of the check run which will be created
-          path: "junit.xml" # Path to test results (inside artifact .zip)
-          reporter: java-junit # Format of test results
 
   semgrep:
     runs-on: ubuntu-latest
