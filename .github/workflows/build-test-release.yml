@@ -71,8 +71,8 @@ jobs:
         run: source $HOME/.poetry/env; poetry install
       - name: Run Pytest
         run: source $HOME/.poetry/env; poetry run pytest
-      - name: Run Coverage --cov=./ --cov-report=xml
-        run: source $HOME/.poetry/env; poetry run pytest
+      - name: Run Coverage
+        run: source $HOME/.poetry/env; poetry run pytest --cov=./ --cov-report=xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
@@ -82,7 +82,7 @@ jobs:
           env_vars: OS,PYTHON
           fail_ci_if_error: true
           path_to_write_report: ./coverage/codecov_report.txt
-          verbose: true        
+          verbose: true
   semgrep:
     runs-on: ubuntu-latest
     name: Test Static Analysis
@@ -104,7 +104,7 @@ jobs:
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v1
         with:
-          sarif_file: snyk.sarif          
+          sarif_file: snyk.sarif
   build:
     name: Build Release
     needs:
@@ -172,11 +172,11 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           image: ${{ fromJSON(steps.docker_meta.outputs.json).tags[0] }}
-          args: --file=Dockerfile            
+          args: --file=Dockerfile
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v1
         with:
-          sarif_file: snyk.sarif          
+          sarif_file: snyk.sarif
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v2.5.4
         with:
