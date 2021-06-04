@@ -103,7 +103,7 @@ def parse_config_file(config_file_path):
     logger.info(f"Config file is {config_file_path}")
     try:
         with open(config_file_path, "r") as yaml_file:
-            server_config = yaml.load(yaml_file, Loader=yaml.FullLoader)
+            server_config = yaml.safe_load(yaml_file)
         logger.debug(f"Server Config is:  {server_config}")
     except Exception as e:
         logger.debug(f"Exception occurred while loading YAML: {e}")
