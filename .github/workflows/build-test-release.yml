@@ -89,6 +89,10 @@ jobs:
         uses: snyk/actions/node@0.3.0
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Upload result to GitHub Code Scanning
+            uses: github/codeql-action/upload-sarif@v1
+            with:
+              sarif_file: snyk.sarif          
   build:
     name: Build Release
     needs:
@@ -157,6 +161,10 @@ jobs:
         with:
           image: ${{ fromJSON(steps.docker_meta.outputs.json).tags[0] }}
           args: --file=Dockerfile            
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: snyk.sarif          
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v2.5.4
         with:
