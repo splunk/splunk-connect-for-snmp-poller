@@ -70,7 +70,7 @@ jobs:
       - name: Install Code
         run: source $HOME/.poetry/env; poetry install
       - name: Run Pytest with coverage
-        run: source $HOME/.poetry/env; poetry run pytest --cov=./ --cov-report=xml
+        run: source $HOME/.poetry/env; poetry run pytest --cov=./ --cov-report=xml --junitxml=test-results/junit.xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
@@ -81,6 +81,12 @@ jobs:
           fail_ci_if_error: true
           path_to_write_report: ./coverage/codecov_report.txt
           verbose: true
+      - uses: dorny/test-reporter@v1
+        with:
+          artifact: test-results # artifact name
+          name: Unit Tests # Name of the check run which will be created
+          path: "*.xml" # Path to test results (inside artifact .zip)
+          reporter: java-junit # Format of test results
   semgrep:
     runs-on: ubuntu-latest
     name: Test Static Analysis
