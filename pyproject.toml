@@ -36,6 +36,7 @@ coverage = "^5.5"
 #pytest-splunk-addon = "^1.4.0"
 pytest = "*"
 black = "21.5b2"
+pytest-cov = "^2.12.1"
 
 [tool.poetry.scripts]
 sc4snmp-poller = "splunk_connect_for_snmp_poller.snmp_poller_server:main"
