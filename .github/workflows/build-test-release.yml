@@ -16,7 +16,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   sca:
-    name: Software Composition Analysis
+    name: compliance-dependencies
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -42,7 +42,7 @@ jobs:
             .ort/analyzer/*
         if: always()
   copyright:
-    name: Check Copyright on files
+    name: compliance-copyrights
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -89,7 +89,7 @@ jobs:
 
   semgrep:
     runs-on: ubuntu-latest
-    name: Test Static Analysis
+    name: security-sast-semgrep
     steps:
       - uses: actions/checkout@v2
       - name: Semgrep
@@ -98,6 +98,7 @@ jobs:
         with:
           config: p/r2c
   snyk:
+    name: security-vuln-snyk
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
