@@ -40,7 +40,11 @@ def post_data_to_splunk_hec(
     else:
         logger.debug(f"*********event index: {index['event_index']} ********")
         post_event_data(
-            logs_endpoint, host, variables_binds, index["event_index"], one_time_flag,
+            logs_endpoint,
+            host,
+            variables_binds,
+            index["event_index"],
+            one_time_flag,
         )
 
 
