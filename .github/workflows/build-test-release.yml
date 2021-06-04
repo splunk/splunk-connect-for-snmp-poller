@@ -6,11 +6,11 @@ name: CI
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-      branches:
-        - "main"
-        - "develop"
-      tags:
-        - "v*"
+    branches:
+      - "main"
+      - "develop"
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
   pull_request:
     branches: [main, develop]
 
@@ -119,6 +119,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          #Very Important semantic-release won't trigger a tagged
+          #build if this is not set false
+          persist-credentials: false
+
       - name: Setup python
         uses: actions/setup-python@v2
         with:
