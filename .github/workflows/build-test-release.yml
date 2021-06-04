@@ -52,7 +52,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # needed only when you want License-Eye to comment on the pull request.
   test-unit:
-    name: Python ${{ matrix.python-version }}
+    name: Test Unit Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -70,4 +70,4 @@ jobs:
       - name: Install Code
         run: source $HOME/.poetry/env; poetry install
       - name: Run Pytest
-        run: pytest
+        run: source $HOME/.poetry/env; poetry run pytest
