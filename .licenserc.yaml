@@ -13,8 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import logging.config
+header:
+  license:
+    spdx-id: Apache-2.0
+    copyright-owner: Splunk Inc.
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s"
-)
+  paths-ignore:
+    - ".circleci/"
+    - ".github/"
+    - ".vscode/"
+    - "dist"
+    - "licenses"
+    - "**/*.md"
+    - "LICENSE"
+    - "NOTICE"
+    - "*.lock"
+
+  comment: on-failure
