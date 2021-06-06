@@ -98,9 +98,18 @@ jobs:
       - name: Lint Code Base
         uses: github/super-linter@v4
         env:
-          VALIDATE_ALL_CODEBASE: true
+          VALIDATE_ALL_CODEBASE: false
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  review_secrets:
+    name: security-detect-secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Trufflehog Actions Scan
+        uses: edplato/trufflehog-actions-scan@v0.9f-beta
+
   semgrep:
     runs-on: ubuntu-latest
     name: security-sast-semgrep
@@ -129,6 +138,7 @@ jobs:
     needs:
       - lint
       - test-unit
+      - review_secrets
       - compliance-copyrights
       - compliance-dependencies
     runs-on: ubuntu-latest
