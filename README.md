@@ -1,11 +1,7 @@
 # README
 
-Splunk Connect for SNMP MIB Server is an open source packaged component for of Splunk Connect for SNMP.
-This project contains a community collection of SNMP MIBs.
-
-## Purpose
-
-This project is a repository of MIBS packaged as a OCI compliant container for use with Splunk Connect for SNMP
+Splunk Connect for SNMP Poller is an open source packaged component for of Splunk Connect for SNMP.
+This project contains a community collection of SNMP data on schedule.
 
 
 ## Usage
@@ -30,11 +26,3 @@ Get involved, try it out, ask questions, contribute filters, and make new friend
 ## Contributing
 
 We welcome feedback and contributions from the community! Please see our [contribution guidelines](CONTRIBUTING.md) for more information on how to get involved.
-
-## License
-
-* Individual MIBs licensed as indicated
-
-* NGNIX [BSD-2-Clause](https://hub.docker.com/_/nginx/)
-
-
