@@ -87,14 +87,24 @@ jobs:
           name: test-results-unit-python_${{ matrix.python-version }}
           path: test-results/*
 
-  black:
+  lint:
     runs-on: ubuntu-latest
-    name: Lint Black formatter
+    name: Lint Code Base
     steps:
       - uses: actions/checkout@v2
-      - uses: lgeiger/black-action@v1.0.1
         with:
-          args: ". --check"
+            # Full git history is needed to get a proper list of changed files within `super-linter`
+            fetch-depth: 0
+
+        ################################
+        # Run Linter against code base #
+        ################################
+        - name: Lint Code Base
+          uses: github/super-linter@v4
+          env:
+            VALIDATE_ALL_CODEBASE: true
+            DEFAULT_BRANCH: main
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   semgrep:
     runs-on: ubuntu-latest
     name: security-sast-semgrep
@@ -121,7 +131,7 @@ jobs:
   build:
     name: Build Release
     needs:
-      - black
+      - lint
       - test-unit
       - compliance-copyrights
       - compliance-dependencies
