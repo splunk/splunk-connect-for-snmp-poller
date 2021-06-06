@@ -3,7 +3,6 @@
 Splunk Connect for SNMP Poller is an open source packaged component for of Splunk Connect for SNMP.
 This project contains a community collection of SNMP data on schedule.
 
-
 ## Usage
 
 This project is only intended to be used as part of a Splunk Connect for SNMP Deployment
