@@ -87,6 +87,14 @@ jobs:
           name: test-results-unit-python_${{ matrix.python-version }}
           path: test-results/*
 
+  black:
+    runs-on: ubuntu-latest
+    name: security-sast-semgrep
+    steps:
+      - uses: actions/checkout@v2
+      - uses: lgeiger/black-action@v1.0.1
+        with:
+          args: ". --check"
   semgrep:
     runs-on: ubuntu-latest
     name: security-sast-semgrep
@@ -113,6 +121,7 @@ jobs:
   build:
     name: Build Release
     needs:
+      - black
       - test-unit
       - compliance-copyrights
       - compliance-dependencies
