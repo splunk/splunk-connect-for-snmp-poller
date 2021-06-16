@@ -27,6 +27,8 @@ jobs:
       - name: ort-action
         uses: splunk/addonfactory-ort-action@v1
         id: ort-action
+        with:
+          UsePython3: 3.8
       - name: ort-action-artifacts-reports
         uses: actions/upload-artifact@v2
         with:
