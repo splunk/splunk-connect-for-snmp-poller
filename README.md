@@ -9,10 +9,10 @@ This project is only intended to be used as part of a Splunk Connect for SNMP De
 
 ## Support
 
-Splunk Connect for SNMP is an open source product developed by Splunkers with contributions from the 
-community of partners and customers. This unique product will be enhanced, maintained and supported 
-by the community, led by Splunkers with deep subject matter expertise. The primary reason why Splunk 
-is taking this approach is to push product development closer to those that use and depend upon it. 
+Splunk Connect for SNMP is an open source product developed by Splunkers with contributions from the
+community of partners and customers. This unique product will be enhanced, maintained and supported
+by the community, led by Splunkers with deep subject matter expertise. The primary reason why Splunk
+is taking this approach is to push product development closer to those that use and depend upon it.
 This direct connection will help us all be more successful and move at a rapid pace.
 
 Post a question to Splunk Answers using the tag "Splunk Connect For SNMP"
