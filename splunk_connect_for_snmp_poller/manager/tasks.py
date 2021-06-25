@@ -81,18 +81,13 @@ def snmp_polling(
                         if isinstance(varbind, list):
                             # Perform SNMP polling for mib string
                             try:
-                                mib_index = 1
-                                if len(varbind) == 3:
-                                    mib_index = varbind[2]
                                 mib_string_handler(
                                     snmp_engine,
                                     auth_data,
                                     context_data,
                                     host,
                                     port,
-                                    varbind[0],
-                                    varbind[1],
-                                    mib_index,
+                                    varbind,
                                     mib_server_url,
                                     index,
                                     otel_logs_url,
