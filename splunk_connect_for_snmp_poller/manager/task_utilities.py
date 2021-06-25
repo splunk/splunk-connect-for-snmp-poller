@@ -192,7 +192,7 @@ def mib_string_handler(
 
         else:
             raise Exception(
-                f"Invalid mib string - {mib_string}. Please provide a valid mib string in the correct format."
+                f"Invalid mib string - {mib_string}. Please provide a valid mib string in the correct format. Learn more about the format at https://bit.ly/3qtqzQc"
             )
     except Exception as e:
         logger.error(f"Error happened while polling for mib string: {mib_string}: {e}")
