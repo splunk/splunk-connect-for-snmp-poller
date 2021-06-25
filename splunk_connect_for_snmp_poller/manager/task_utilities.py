@@ -151,7 +151,7 @@ def mib_string_handler(
                 mib_string[0], mib_string[1], mib_string[2]
             ).resolveWithMib(mibViewController)
             oid = str(oid)
-            logger.info(f"[-] oid: {oid}")
+            logger.debug(f"[-] oid: {oid}")
 
             # call snmpget
             get_handler(
