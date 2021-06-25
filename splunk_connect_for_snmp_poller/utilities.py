@@ -100,7 +100,7 @@ def parse_command_line_arguments():
 
 
 def parse_config_file(config_file_path):
-    logger.info(f"Config file is {config_file_path}")
+    logger.debug(f"Config file is {config_file_path}")
     try:
         with open(config_file_path, "r") as yaml_file:
             server_config = yaml.safe_load(yaml_file)
