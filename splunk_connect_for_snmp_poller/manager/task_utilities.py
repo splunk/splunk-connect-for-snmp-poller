@@ -122,9 +122,7 @@ def mib_string_handler(
     context_data,
     host,
     port,
-    mib_file,
-    mib_name,
-    mib_index,
+    mib_string,
     mib_server_url,
     index,
     otel_logs_url,
@@ -132,9 +130,14 @@ def mib_string_handler(
     one_time_flag,
 ):
     """
-    Perform the SNMP Get for mib-name/string,
+    Perform the SNMP Get for mib-name/string, where mib string is a list
+    1) case 1: with mib index - consider it as a single oid -> snmpget
     e.g. ['SNMPv2-MIB', 'sysUpTime',0] (syntax -> [<mib_file_name>, <mib_name/string>, <min_index>])
-    which queries the info correlated to this specific mib-name/string (e.g. sysUpTime)
+    execute snmpget to query info correlated to this specific mib-name/string
+
+    2) case 2: without mib index - consider it as a oid with * -> snmpwalk
+    . ['SNMPv2-MIB', 'sysORUpTime'] (syntax -> [<mib_file_name>, <mib_name/string>)
+    execute snmpwalk to query all the subtree
     """
     mibBuilder = builder.MibBuilder()
     mibViewController = view.MibViewController(mibBuilder)
@@ -142,42 +145,54 @@ def mib_string_handler(
     compiler.addMibCompiler(mibBuilder, **config)
 
     try:
-        errorIndication, errorStatus, errorIndex, varBinds = next(
-            getCmd(
+        if len(mib_string) == 3:
+            # convert mib string to oid
+            oid = ObjectIdentity(
+                mib_string[0], mib_string[1], mib_string[2]
+            ).resolveWithMib(mibViewController)
+            oid = str(oid)
+            logger.info(f"[-] oid: {oid}")
+
+            # call snmpget
+            get_handler(
                 snmp_engine,
                 auth_data,
-                UdpTransportTarget((host, port)),
                 context_data,
-                ObjectType(
-                    ObjectIdentity(mib_file, mib_name, mib_index)
-                ).resolveWithMib(mibViewController),
+                host,
+                port,
+                oid,
+                mib_server_url,
+                index,
+                otel_logs_url,
+                otel_metrics_url,
+                one_time_flag,
             )
-        )
+        elif len(mib_string) == 2:
+            # convert mib string to oid
+            oid = ObjectIdentity(mib_string[0], mib_string[1]).resolveWithMib(
+                mibViewController
+            )
+            oid = str(oid) + ".*"
+            logger.debug(f"[-] oid: {oid}")
 
-        is_metric = False
-        if errorIndication:
-            result = f"error: {errorIndication}"
-            logger.info(result)
-        elif errorStatus:
-            result = "error: %s at %s" % (
-                errorStatus.prettyPrint(),
-                errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
+            # call snmpwalk
+            walk_handler(
+                snmp_engine,
+                auth_data,
+                context_data,
+                host,
+                port,
+                oid,
+                mib_server_url,
+                index,
+                otel_logs_url,
+                otel_metrics_url,
+                one_time_flag,
             )
-            logger.info(result)
+
         else:
-            logger.info(f"varBinds: {varBinds}")
-            for varBind in varBinds:
-                logger.info(" = ".join([x.prettyPrint() for x in varBind]))
-            result, is_metric = get_translated_string(mib_server_url, varBinds)
-        post_data_to_splunk_hec(
-            host,
-            otel_logs_url,
-            otel_metrics_url,
-            result,
-            is_metric,
-            index,
-            one_time_flag,
-        )
+            logger.error("Please provide a valid mib string in the correct format")
+            raise Exception("lease provide a valid mib string in the correct format")
     except Exception as e:
         logger.error(f"Error happened while polling by mib name: {e}")
 
