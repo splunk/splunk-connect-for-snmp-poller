@@ -81,7 +81,7 @@ class Poller:
             os.stat(server_config_file, follow_symlinks=True).st_mtime
             > self._config_mod_time
         ):
-            logger.info("[--] Change in scheduler config detected, reloading")
+            logger.info("[-] Change in scheduler config detected, reloading")
             self._config_mod_time = os.stat(
                 server_config_file, follow_symlinks=True
             ).st_mtime
@@ -102,7 +102,7 @@ class Poller:
         ):
             # # detect the inventory changes
             if os.stat(inventory_file, follow_symlinks=True).st_mtime > self._mod_time:
-                logger.info("[---] Change in inventory detected, reloading")
+                logger.info("[-] Change in inventory detected, reloading")
                 logger.debug(f"[-] Configured the Splunk indexes: {splunk_indexes}")
                 self._mod_time = os.stat(inventory_file, follow_symlinks=True).st_mtime
 
@@ -131,7 +131,7 @@ class Poller:
                         inventory_hosts.add(host)
 
                         logger.info(
-                            f"[---] server_config['profiles']: {server_config['profiles']}"
+                            f"[-] server_config['profiles']: {server_config['profiles']}"
                         )
                         # perform one-time walk for the entire tree for each un-walked host
                         self.one_time_walk(
