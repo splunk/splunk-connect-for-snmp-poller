@@ -27,6 +27,7 @@ from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import
     should_process_inventory_line,
     is_valid_inventory_line_from_dict,
 )
+from splunk_connect_for_snmp_poller.utilities import parse_config_file
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ class Poller:
         self._args = args
         self._server_config = server_config
         self._mod_time = 0
+        self._config_mod_time = 0
         self._jobs_per_host = {}
         self._mongo_walked_hosts_coll = WalkedHostsRepository(
             self._server_config["mongo"]
@@ -55,7 +57,8 @@ class Poller:
         counter = 0
         while True:
             if counter == 0:
-                self.check_inventory()
+                # self.check_inventory()
+                self.check_server_config()
                 counter = int(self._args.refresh_interval)
 
             schedule.run_pending()
@@ -69,13 +72,39 @@ class Poller:
             host, version, community, profile, frequency
         )
 
-    def check_inventory(self):
+    def check_server_config(self):
+        server_config_file = self._args.config
+
+        is_config_changed = False
+        # detect the config changes
+        if (
+            os.stat(server_config_file, follow_symlinks=True).st_mtime
+            > self._config_mod_time
+        ):
+            logger.info("[--] Change in scheduler config detected, reloading")
+            self._config_mod_time = os.stat(
+                server_config_file, follow_symlinks=True
+            ).st_mtime
+            is_config_changed = True
+
+        # get server_config on the runtime
+        runtime_server_config = parse_config_file(server_config_file)
+        self.check_inventory(runtime_server_config, is_config_changed)
+
+    def check_inventory(self, server_config, is_config_changed):
         inventory_file = self._args.inventory
         splunk_indexes = self.get_splunk_indexes()
-        if os.stat(inventory_file, follow_symlinks=True).st_mtime > self._mod_time:
-            logger.info("Change in inventory detected, reloading")
-            logger.debug(f"[-] Configured the Splunk indexes: {splunk_indexes}")
-            self._mod_time = os.stat(inventory_file, follow_symlinks=True).st_mtime
+
+        # update job when either inventory changes or config changes
+        if (
+            os.stat(inventory_file, follow_symlinks=True).st_mtime > self._mod_time
+            or is_config_changed
+        ):
+            # # detect the inventory changes
+            if os.stat(inventory_file, follow_symlinks=True).st_mtime > self._mod_time:
+                logger.info("[---] Change in inventory detected, reloading")
+                logger.debug(f"[-] Configured the Splunk indexes: {splunk_indexes}")
+                self._mod_time = os.stat(inventory_file, follow_symlinks=True).st_mtime
 
             with open(inventory_file, newline="") as csvfile:
                 inventory = csv.DictReader(csvfile, delimiter=",")
@@ -101,13 +130,16 @@ class Poller:
 
                         inventory_hosts.add(host)
 
+                        logger.info(
+                            f"[---] server_config['profiles']: {server_config['profiles']}"
+                        )
                         # perform one-time walk for the entire tree for each un-walked host
                         self.one_time_walk(
                             host,
                             version,
                             community,
                             Poller.universal_base_oid,
-                            self._server_config,
+                            server_config,
                             splunk_indexes,
                         )
 
@@ -119,7 +151,7 @@ class Poller:
                                 version,
                                 community,
                                 profile,
-                                self._server_config,
+                                server_config,
                                 splunk_indexes,
                             )
                             self._jobs_per_host[host] = job_reference
@@ -132,7 +164,7 @@ class Poller:
                                     version,
                                     community,
                                     profile,
-                                    self._server_config,
+                                    server_config,
                                     splunk_indexes,
                                 )
                                 or frequency != self._jobs_per_host.get(host).interval
@@ -143,7 +175,7 @@ class Poller:
                                     host,
                                     profile,
                                     version,
-                                    self._server_config,
+                                    server_config,
                                     splunk_indexes,
                                 )
                 for host in list(self._jobs_per_host):
