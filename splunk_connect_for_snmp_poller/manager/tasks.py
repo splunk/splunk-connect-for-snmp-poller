@@ -16,7 +16,10 @@
 import os
 import threading
 from celery.utils.log import get_task_logger
-from pysnmp.hlapi import *
+
+# from pysnmp.hlapi import *
+from pysnmp.hlapi import SnmpEngine
+
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
