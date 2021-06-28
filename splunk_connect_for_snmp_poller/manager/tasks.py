@@ -13,23 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from celery.utils.log import get_task_logger
-
 import os
+import threading
+from celery.utils.log import get_task_logger
+from pysnmp.hlapi import *
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
-    get_handler,
-    walk_handler,
-    mib_string_handler,
-    parse_port,
     build_authData,
     build_contextData,
+    get_handler,
+    mib_string_handler,
+    parse_port,
+    walk_handler,
 )
-from pysnmp.hlapi import *
-import os
-
-import threading
 
 # Used to store a single SnmpEngine() instance for each Celery task
 thread_local = threading.local()
