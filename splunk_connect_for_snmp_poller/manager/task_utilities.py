@@ -19,16 +19,15 @@ logger = get_task_logger(__name__)
 
 import json
 import os
-from pysmi import debug as pysmi_debug
 
-# from pysnmp.hlapi import *
+from pysmi import debug as pysmi_debug
 from pysnmp.hlapi import (
     CommunityData,
     ContextData,
-    getCmd,
-    nextCmd,
     UdpTransportTarget,
     UsmUserData,
+    getCmd,
+    nextCmd,
 )
 from pysnmp.proto import rfc1902
 from pysnmp.smi import builder, compiler, view
@@ -37,8 +36,12 @@ from splunk_connect_for_snmp_poller.manager.const import (
     AuthProtocolMap,
     PrivProtocolMap,
 )
-from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
-from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
+from splunk_connect_for_snmp_poller.manager.hec_sender import (
+    post_data_to_splunk_hec,
+)
+from splunk_connect_for_snmp_poller.manager.mib_server_client import (
+    get_translation,
+)
 
 pysmi_debug.setLogger(pysmi_debug.Debug("compiler"))
 
