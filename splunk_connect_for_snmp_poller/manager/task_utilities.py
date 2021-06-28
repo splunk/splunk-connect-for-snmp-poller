@@ -20,9 +20,19 @@ logger = get_task_logger(__name__)
 import json
 import os
 from pysmi import debug as pysmi_debug
-from pysnmp.hlapi import *
+
+# from pysnmp.hlapi import *
+from pysnmp.hlapi import (
+    CommunityData,
+    ContextData,
+    getCmd,
+    nextCmd,
+    UdpTransportTarget,
+    UsmUserData,
+)
 from pysnmp.proto import rfc1902
 from pysnmp.smi import builder, compiler, view
+from pysnmp.smi.rfc1902 import ObjectIdentity, ObjectType
 from splunk_connect_for_snmp_poller.manager.const import (
     AuthProtocolMap,
     PrivProtocolMap,
