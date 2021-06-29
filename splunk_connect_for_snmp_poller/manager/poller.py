@@ -17,9 +17,9 @@ import csv
 import functools
 import logging.config
 import os
-import schedule
 import time
 
+import schedule
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     is_valid_inventory_line_from_dict,
