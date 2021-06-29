@@ -13,25 +13,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import json
+import os
+
 from celery.utils.log import get_task_logger
-
-logger = get_task_logger(__name__)
-
-from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
-from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
+from pysmi import debug as pysmi_debug
+from pysnmp.hlapi import (
+    CommunityData,
+    ContextData,
+    UdpTransportTarget,
+    UsmUserData,
+    getCmd,
+    nextCmd,
+)
+from pysnmp.proto import rfc1902
+from pysnmp.smi import builder, compiler, view
+from pysnmp.smi.rfc1902 import ObjectIdentity, ObjectType
 from splunk_connect_for_snmp_poller.manager.const import (
     AuthProtocolMap,
     PrivProtocolMap,
 )
-from pysnmp.hlapi import *
-from pysnmp.proto import rfc1902
-import json
-import os
-
-from pysnmp.smi import builder, view, compiler
-from pysmi import debug as pysmi_debug
+from splunk_connect_for_snmp_poller.manager.hec_sender import (
+    post_data_to_splunk_hec,
+)
+from splunk_connect_for_snmp_poller.manager.mib_server_client import (
+    get_translation,
+)
 
 pysmi_debug.setLogger(pysmi_debug.Debug("compiler"))
+logger = get_task_logger(__name__)
 
 
 # TODO remove the debugging statement later
@@ -192,7 +202,11 @@ def mib_string_handler(
 
         else:
             raise Exception(
-                f"Invalid mib string - {mib_string}. Please provide a valid mib string in the correct format."
+                (
+                    f"Invalid mib string - {mib_string}."
+                    f"\nPlease provide a valid mib string in the correct format. "
+                    f"Learn more about the format at https://bit.ly/3qtqzQc"
+                )
             )
     except Exception as e:
         logger.error(f"Error happened while polling for mib string: {mib_string}: {e}")
@@ -430,7 +444,12 @@ def build_authData(version, community, server_config):
                     "securityName", None
                 )
             logger.debug(
-                f"=============\ncommunityName - {communityName}, communityIndex - {communityIndex}, contextEngineId - {contextEngineId}, contextName - {contextName}, tag - {tag}, securityName - {securityName}"
+                f"\ncommunityName - {communityName}, "
+                f"communityIndex - {communityIndex}, "
+                f"contextEngineId - {contextEngineId}, "
+                f"contextName - {contextName}, "
+                f"tag - {tag}, "
+                f"securityName - {securityName}"
             )
         except Exception as e:
             logger.error(
