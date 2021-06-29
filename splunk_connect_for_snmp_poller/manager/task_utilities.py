@@ -13,13 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from celery.utils.log import get_task_logger
-
-logger = get_task_logger(__name__)
-
 import json
 import os
 
+from celery.utils.log import get_task_logger
 from pysmi import debug as pysmi_debug
 from pysnmp.hlapi import (
     CommunityData,
@@ -44,6 +41,7 @@ from splunk_connect_for_snmp_poller.manager.mib_server_client import (
 )
 
 pysmi_debug.setLogger(pysmi_debug.Debug("compiler"))
+logger = get_task_logger(__name__)
 
 
 # TODO remove the debugging statement later
@@ -204,7 +202,11 @@ def mib_string_handler(
 
         else:
             raise Exception(
-                f"Invalid mib string - {mib_string}. Please provide a valid mib string in the correct format. Learn more about the format at https://bit.ly/3qtqzQc"
+                (
+                    f"Invalid mib string - {mib_string}."
+                    f"\nPlease provide a valid mib string in the correct format. "
+                    f"Learn more about the format at https://bit.ly/3qtqzQc"
+                )
             )
     except Exception as e:
         logger.error(f"Error happened while polling for mib string: {mib_string}: {e}")
@@ -442,7 +444,12 @@ def build_authData(version, community, server_config):
                     "securityName", None
                 )
             logger.debug(
-                f"=============\ncommunityName - {communityName}, communityIndex - {communityIndex}, contextEngineId - {contextEngineId}, contextName - {contextName}, tag - {tag}, securityName - {securityName}"
+                f"\ncommunityName - {communityName}, "
+                f"communityIndex - {communityIndex}, "
+                f"contextEngineId - {contextEngineId}, "
+                f"contextName - {contextName}, "
+                f"tag - {tag}, "
+                f"securityName - {securityName}"
             )
         except Exception as e:
             logger.error(
