@@ -17,16 +17,15 @@ import csv
 import functools
 import logging.config
 import os
+import schedule
 import time
 
-import schedule
-
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
-from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
-    should_process_inventory_line,
     is_valid_inventory_line_from_dict,
+    should_process_inventory_line,
 )
+from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 from splunk_connect_for_snmp_poller.utilities import parse_config_file
 
 logger = logging.getLogger(__name__)
@@ -124,7 +123,10 @@ class Poller:
 
                         if host in inventory_hosts:
                             logger.error(
-                                f"{host},{version},{community},{profile},{frequency_str} has duplicated hostame {host} in the inventory, please use profile for multiple OIDs per host"
+                                (
+                                    f"{host},{version},{community},{profile},{frequency_str} has duplicated hostame "
+                                    f"{host} in the inventory, please use profile for multiple OIDs per host"
+                                )
                             )
                             continue
 
