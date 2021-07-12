@@ -34,6 +34,7 @@
 
 import argparse
 import logging
+import os
 import signal
 
 import yaml
@@ -100,7 +101,7 @@ def parse_command_line_arguments():
 
 
 def parse_config_file(config_file_path):
-    logger.info(f"Config file is {config_file_path}")
+    logger.debug(f"Config file is {config_file_path}")
     try:
         with open(config_file_path, "r") as yaml_file:
             server_config = yaml.safe_load(yaml_file)
@@ -130,3 +131,12 @@ def format_value_for_mib_server(value, value_type):
         return value.prettyPrint()
     else:
         return str(value)
+
+
+def file_was_modified(file_path, last_mod_time):
+    if os.stat(file_path, follow_symlinks=True).st_mtime > last_mod_time:
+        logger.info(f"[-] Change in {file_path} detected, reloading")
+        # update last_mod_time
+        last_mod_time = os.stat(file_path, follow_symlinks=True).st_mtime
+        return True, last_mod_time
+    return False, last_mod_time
