@@ -76,7 +76,7 @@ def get_translation(var_binds, mib_server_url, metric=False):
         session.mount("https://", adapter)
         session.mount("http://", adapter)
         resp = session.post(
-            TRANSLATION_URL, headers=headers, data=payload, params=params
+            TRANSLATION_URL, headers=headers, data=payload, params=params, timeout=60
         )
 
     except Exception as e:
