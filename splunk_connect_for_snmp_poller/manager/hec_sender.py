@@ -13,11 +13,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #   ########################################################################
+import json
 import time
 
 import requests
-import json
-
 from celery.utils.log import get_logger
 
 logger = get_logger(__name__)
