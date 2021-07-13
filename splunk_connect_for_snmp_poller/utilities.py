@@ -36,6 +36,7 @@ import argparse
 import logging
 import os
 import signal
+import sys
 
 import yaml
 
@@ -44,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 def default_signal_handler(signal_number, frame):
     logger.info(f"Received Signal: {signal_number}")
-    exit(signal_number)
+    sys.exit(signal_number)
     return
 
 

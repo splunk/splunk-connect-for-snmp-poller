@@ -13,14 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import logging
 import json
-import requests
+import logging
 import os
+
+import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from splunk_connect_for_snmp_poller.utilities import format_value_for_mib_server
-
+from splunk_connect_for_snmp_poller.utilities import (
+    format_value_for_mib_server,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +78,7 @@ def get_translation(var_binds, mib_server_url, metric=False):
         session.mount("https://", adapter)
         session.mount("http://", adapter)
         resp = session.post(
-            TRANSLATION_URL, headers=headers, data=payload, params=params
+            TRANSLATION_URL, headers=headers, data=payload, params=params, timeout=60
         )
 
     except Exception as e:

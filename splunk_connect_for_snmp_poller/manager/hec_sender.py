@@ -13,11 +13,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #   ########################################################################
+import json
 import time
 
 import requests
-import json
-
 from celery.utils.log import get_logger
 
 logger = get_logger(__name__)
@@ -71,7 +70,7 @@ def post_event_data(endpoint, host, variables_binds, index, one_time_flag=False)
 
     try:
         logger.debug(f"+++++++++endpoint+++++++++\n{endpoint}")
-        response = requests.post(url=endpoint, json=data)
+        response = requests.post(url=endpoint, json=data, timeout=60)
         logger.debug(f"Response code is {response.status_code}")
         logger.debug(f"Response is {response.text}")
     except requests.ConnectionError as e:
@@ -97,7 +96,7 @@ def post_metric_data(endpoint, host, variables_binds, index):
 
     try:
         logger.debug(f"-----endpoint------\n{endpoint}")
-        response = requests.post(url=endpoint, json=data)
+        response = requests.post(url=endpoint, json=data, timeout=60)
         logger.debug(f"Response code is {response.status_code}")
         logger.debug(f"Response is {response.text}")
     except requests.ConnectionError as e:
