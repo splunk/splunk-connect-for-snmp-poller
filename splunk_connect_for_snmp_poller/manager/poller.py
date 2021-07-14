@@ -39,7 +39,7 @@ class Poller:
         self._args = args
         self._server_config = server_config
         self._mod_time = 0
-        self._jobs_per_host = {}
+        self._jobs_map = {}
         self._mongo_walked_hosts_coll = WalkedHostsRepository(
             self._server_config["mongo"]
         )
@@ -91,15 +91,16 @@ class Poller:
                     if self.should_process_current_line(
                         host, version, community, profile, frequency_str
                     ):
+                        entry_key = host + '#' + profile
                         frequency = int(agent["freqinseconds"])
 
-                        if host in inventory_hosts:
+                        if entry_key in inventory_hosts:
                             logger.error(
-                                f"{host},{version},{community},{profile},{frequency_str} has duplicated hostame {host} in the inventory, please use profile for multiple OIDs per host"
+                                f"{host},{version},{community},{profile},{frequency_str} has duplicated hostname {host} and {profile} in the inventory, cannot use the same profile twice for the same device"
                             )
                             continue
 
-                        inventory_hosts.add(host)
+                        inventory_hosts.add(entry_key)
 
                         # perform one-time walk for the entire tree for each un-walked host
                         self.one_time_walk(
@@ -111,8 +112,8 @@ class Poller:
                             splunk_indexes,
                         )
 
-                        if host not in self._jobs_per_host:
-                            logger.debug(f"Adding configuration for host {host}")
+                        if entry_key not in self._jobs_map:
+                            logger.debug(f"Adding configuration for job {entry_key}")
                             job_reference = schedule.every(int(frequency)).seconds.do(
                                 scheduled_task,
                                 host,
@@ -122,9 +123,9 @@ class Poller:
                                 self._server_config,
                                 splunk_indexes,
                             )
-                            self._jobs_per_host[host] = job_reference
+                            self._jobs_map[entry_key] = job_reference
                         else:
-                            old_conf = self._jobs_per_host.get(host).job_func.args
+                            old_conf = self._jobs_map.get(entry_key).job_func.args
                             if (
                                 old_conf
                                 != (
@@ -135,7 +136,7 @@ class Poller:
                                     self._server_config,
                                     splunk_indexes,
                                 )
-                                or frequency != self._jobs_per_host.get(host).interval
+                                or frequency != self._jobs_map.get(entry_key).interval
                             ):
                                 self.update_schedule(
                                     community,
@@ -146,11 +147,11 @@ class Poller:
                                     self._server_config,
                                     splunk_indexes,
                                 )
-                for host in list(self._jobs_per_host):
-                    if host not in inventory_hosts:
-                        logger.debug(f"Removing host {host}")
-                        schedule.cancel_job(self._jobs_per_host.get(host))
-                        del self._jobs_per_host[host]
+                for entry_key in list(self._jobs_map):
+                    if entry_key not in inventory_hosts:
+                        logger.debug(f"Removing job for {entry_key}")
+                        schedule.cancel_job(self._jobs_map.get(entry_key))
+                        del self._jobs_map[entry_key]
 
     def update_schedule(
         self,
@@ -162,7 +163,9 @@ class Poller:
         server_config,
         splunk_indexes,
     ):
-        logger.debug(f"Updating configuration for host {host}")
+        entry_key = host + '#' + profile
+
+        logger.debug(f"Updating configuration for job {entry_key}")
         new_job_func = functools.partial(
             scheduled_task,
             host,
@@ -174,13 +177,13 @@ class Poller:
         )
         functools.update_wrapper(new_job_func, scheduled_task)
 
-        self._jobs_per_host.get(host).job_func = new_job_func
-        self._jobs_per_host.get(host).interval = frequency
-        old_next_run = self._jobs_per_host.get(host).next_run
-        self._jobs_per_host.get(host)._schedule_next_run()
-        new_next_run = self._jobs_per_host.get(host).next_run
+        self._jobs_map.get(entry_key).job_func = new_job_func
+        self._jobs_map.get(entry_key).interval = frequency
+        old_next_run = self._jobs_map.get(entry_key).next_run
+        self._jobs_map.get(entry_key)._schedule_next_run()
+        new_next_run = self._jobs_map.get(entry_key).next_run
 
-        self._jobs_per_host.get(host).next_run = (
+        self._jobs_map.get(entry_key).next_run = (
             old_next_run if new_next_run > old_next_run else new_next_run
         )
 
