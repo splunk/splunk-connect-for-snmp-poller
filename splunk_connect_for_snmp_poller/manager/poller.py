@@ -110,7 +110,8 @@ class Poller:
                             logger.error(
                                 (
                                     f"{host},{version},{community},{profile},{frequency_str} has duplicated "
-                                    f"hostname {host} and {profile} in the inventory, cannot use the same profile twice for the same device"
+                                    f"hostname {host} and {profile} in the inventory,"
+                                    f" cannot use the same profile twice for the same device"
                                 )
                             )
                             continue
