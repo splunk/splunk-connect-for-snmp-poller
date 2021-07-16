@@ -93,6 +93,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Lint Code Base
     steps:
+      - name: Install MyPy
+        run: pip install mypy
       - name: Install types
         run: mypy --install-types
       - uses: actions/checkout@v2
