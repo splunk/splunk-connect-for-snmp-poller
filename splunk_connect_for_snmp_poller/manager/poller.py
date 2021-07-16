@@ -103,7 +103,7 @@ class Poller:
                     if self.should_process_current_line(
                         host, version, community, profile, frequency_str
                     ):
-                        entry_key = host + '#' + profile
+                        entry_key = host + "#" + profile
                         frequency = int(agent["freqinseconds"])
 
                         if entry_key in inventory_hosts:
@@ -182,7 +182,7 @@ class Poller:
         server_config,
         splunk_indexes,
     ):
-        entry_key = host + '#' + profile
+        entry_key = host + "#" + profile
 
         logger.debug(f"Updating configuration for job {entry_key}")
         new_job_func = functools.partial(
