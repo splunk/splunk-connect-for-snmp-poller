@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Lint Code Base
     steps:
-      - name: Install MyPy
+      - name: Install missing stubs
         run: python3 -m pip install types-PyYAML
       - uses: actions/checkout@v2
         with:
