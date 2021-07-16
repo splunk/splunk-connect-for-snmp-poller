@@ -94,9 +94,7 @@ jobs:
     name: Lint Code Base
     steps:
       - name: Install MyPy
-        run: pip install mypy
-      - name: Install types
-        run: mypy --install-types
+        run: python3 -m pip install types-PyYAML
       - uses: actions/checkout@v2
         with:
           # Full git history is needed to get a proper list of changed files within `super-linter`
