@@ -97,6 +97,12 @@ def parse_command_line_arguments():
     parser.add_argument(
         "--meta_index", default="##META_INDEX##", help="Meta index for polling data"
     )
+    parser.add_argument(
+        "--realtime_task_frequency",
+        type=int,
+        default=60,
+        help="Frequency in seconds for each real-time scheduler task",
+    )
 
     return parser.parse_args()
 

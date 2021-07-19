@@ -31,7 +31,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from pymongo import MongoClient
+from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import ConnectionFailure
 import os
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
@@ -109,9 +109,10 @@ class WalkedHostsRepository:
 
     def real_time_data_for(self, host):
         full_collection = self._walked_hosts.find_one({"_id": host})
-        return multi_key_lookup(
-            full_collection, (WalkedHostsRepository.MIB_REAL_TIME_DATA)
-        )
+        if WalkedHostsRepository.MIB_REAL_TIME_DATA in full_collection:
+            return full_collection[WalkedHostsRepository.MIB_REAL_TIME_DATA]
+        else:
+            return None
 
     def update_real_time_data_for(self, host, input_dictionary):
         if input_dictionary:
@@ -120,6 +121,6 @@ class WalkedHostsRepository:
             }
             self._walked_hosts.find_one_and_update(
                 {"_id": host},
-                {"$set": kvargs_updated_fields},
+                {"$set": real_time_data_dictionary},
                 return_document=ReturnDocument.AFTER,
             )
