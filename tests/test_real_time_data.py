@@ -14,10 +14,12 @@
 # limitations under the License.
 #
 from unittest import TestCase
+from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import (
+    OidConstant,
+)
 from splunk_connect_for_snmp_poller.manager.realtime.real_time_data import (
     should_redo_walk,
 )
-from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 
 
 class ShouldRedoWalkTest(TestCase):

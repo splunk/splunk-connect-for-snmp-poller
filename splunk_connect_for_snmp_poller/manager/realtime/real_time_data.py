@@ -15,7 +15,9 @@
 #
 
 from pysnmp.proto.rfc1902 import TimeTicks
-from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
+from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import (
+    OidConstant,
+)
 
 
 class __RealTimeData:

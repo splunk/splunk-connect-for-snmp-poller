@@ -14,10 +14,12 @@
 # limitations under the License.
 #
 import csv
-import schedule
 import logging.config
+import schedule
 from pysnmp.hlapi import ObjectIdentity, ObjectType, UdpTransportTarget, getCmd
-from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
+from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import (
+    OidConstant,
+)
 from splunk_connect_for_snmp_poller.manager.realtime.real_time_data import (
     should_redo_walk,
 )
@@ -71,7 +73,9 @@ def parse_inventory_file(inventory_file_path):
 def _extract_sys_uptime_instance(
     local_snmp_engine, host, version, community, server_config
 ):
-    from splunk_connect_for_snmp_poller.manager.task_utilities import parse_port
+    from splunk_connect_for_snmp_poller.manager.task_utilities import (
+        parse_port,
+    )
     from splunk_connect_for_snmp_poller.manager.tasks import (
         build_authData,
         build_contextData,

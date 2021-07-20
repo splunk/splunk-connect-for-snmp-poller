@@ -30,10 +30,9 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
+import os
 from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import ConnectionFailure
-import os
 
 """
 In order to store some general data into Mongo we use the following structure.
