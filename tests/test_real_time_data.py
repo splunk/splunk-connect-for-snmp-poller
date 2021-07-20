@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 from unittest import TestCase
+
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import (
     OidConstant,
 )
