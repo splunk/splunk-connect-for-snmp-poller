@@ -160,3 +160,7 @@ def automatic_realtime_task(
         _update_mongo(
             all_walked_hosts_collection, host, host_already_walked, sys_up_time
         )
+
+
+def create_poller_scheduler_entry_key(host, profile):
+    return host + "#" + profile

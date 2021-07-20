@@ -25,10 +25,13 @@ from splunk_connect_for_snmp_poller.utilities import (
     file_was_modified,
     parse_config_file,
 )
-from splunk_connect_for_snmp_poller.manager.poller_utilities import parse_inventory_file, automatic_realtime_task
+from splunk_connect_for_snmp_poller.manager.poller_utilities import (
+    parse_inventory_file,
+    automatic_realtime_task,
+    create_poller_scheduler_entry_key,
+)
 
 logger = logging.getLogger(__name__)
-
 
 
 class Poller:
@@ -88,7 +91,7 @@ class Poller:
                 profile,
                 frequency_str,
             ) in parse_inventory_file(self._args.inventory):
-                entry_key = host + "#" + profile
+                entry_key = create_poller_scheduler_entry_key(host, profile)
                 frequency = int(frequency_str)
                 if entry_key in inventory_hosts:
                     logger.error(
@@ -197,5 +200,3 @@ def scheduled_task(host, version, community, profile, server_config, splunk_inde
     )
 
     snmp_polling.delay(host, version, community, profile, server_config, splunk_indexes)
-
-
