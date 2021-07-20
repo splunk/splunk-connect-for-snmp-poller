@@ -34,10 +34,9 @@
 from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import ConnectionFailure
 import os
-from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
 """
-In order to store some general data into Mongo we use the following structure. 
+In order to store some general data into Mongo we use the following structure.
 Each WalkedHostsRepository can contain the following fields:
 * _id: a unique key that represents a concrete host (always present)
 * MIB-STATIC-DATA: a dictionary that contains some required-MIB data for further processing. For example, when
@@ -45,28 +44,28 @@ Each WalkedHostsRepository can contain the following fields:
   in this dictionary -at least- the following information:
   "MIB-STATIC-DATA": {              <----- GENERAL STATIC MIB DATA
     "IF-MIB": {                     <----- NETWORK INTERFACES DATA
-      "ifNumber": 2,                <----- TOTAL NUMBER OF NETWORK INTERFACES 
+      "ifNumber": 2,                <----- TOTAL NUMBER OF NETWORK INTERFACES
       "ifIndex": [1, 2],            <----- INDEX MAPPING FOR OIDs
-      "ifDescr": ["lo", "eth0"],    <----- INDEX MAPPING FOR OIDs (IF-MIB*.1 -> "lo", IF-MIB*.2 -> "eth0", ...)  
+      "ifDescr": ["lo", "eth0"],    <----- INDEX MAPPING FOR OIDs (IF-MIB*.1 -> "lo", IF-MIB*.2 -> "eth0", ...)
     }
   }
-  
+
   For example:
   IF-MIB::ifNumber.0 = INTEGER: 2
   IF-MIB::ifIndex.1 = INTEGER: 1
   IF-MIB::ifIndex.2 = INTEGER: 2
   IF-MIB::ifDescr.1 = STRING: lo
   IF-MIB::ifDescr.2 = STRING: eth0
-  IF-MIB::ifType.1 = INTEGER: softwareLoopback(24)    
-  IF-MIB::ifType.2 = INTEGER: ethernetCsmacd(6)       
-  IF-MIB::ifPhysAddress.1 = STRING: 
+  IF-MIB::ifType.1 = INTEGER: softwareLoopback(24)
+  IF-MIB::ifType.2 = INTEGER: ethernetCsmacd(6)
+  IF-MIB::ifPhysAddress.1 = STRING:
   IF-MIB::ifPhysAddress.2 = STRING: 0:12:79:62:f9:40
   IF-MIB::ifAdminStatus.1 = INTEGER: up(1)
   IF-MIB::ifAdminStatus.2 = INTEGER: up(1)
-  
+
 * MIB_STATIC_DATA: a dictionary that contains some MIB real-time data that needs to be collected constantly.
   At the moment, we only need to collect sysUpTimeInstance data in order to decide when we need to re-walk
-  a gove host  
+  a given host.
 """
 
 

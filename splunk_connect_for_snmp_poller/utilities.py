@@ -154,5 +154,5 @@ def multi_key_lookup(dictionary, tuple_of_keys):
 
     try:
         return reduce(dict.get, tuple_of_keys, dictionary)
-    except TypeError as error:
+    except TypeError:
         return None

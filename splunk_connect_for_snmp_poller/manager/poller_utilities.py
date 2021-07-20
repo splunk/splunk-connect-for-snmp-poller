@@ -16,21 +16,16 @@
 import csv
 import schedule
 import logging.config
-from pysnmp.hlapi import (
-    getCmd,
-    UdpTransportTarget,
-    ObjectType,
-    ObjectIdentity,
-)
+from pysnmp.hlapi import ObjectIdentity, ObjectType, UdpTransportTarget, getCmd
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.realtime.real_time_data import (
     should_redo_walk,
 )
+from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     is_valid_inventory_line_from_dict,
     should_process_inventory_line,
 )
-from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 
 
 logger = logging.getLogger(__name__)
@@ -76,11 +71,11 @@ def parse_inventory_file(inventory_file_path):
 def _extract_sys_uptime_instance(
     local_snmp_engine, host, version, community, server_config
 ):
+    from splunk_connect_for_snmp_poller.manager.task_utilities import parse_port
     from splunk_connect_for_snmp_poller.manager.tasks import (
         build_authData,
         build_contextData,
     )
-    from splunk_connect_for_snmp_poller.manager.task_utilities import parse_port
 
     auth_data = build_authData(version, community, server_config)
     context_data = build_contextData(version, community, server_config)

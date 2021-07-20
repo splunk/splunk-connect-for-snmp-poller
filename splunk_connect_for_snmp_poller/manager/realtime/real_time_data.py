@@ -14,8 +14,8 @@
 # limitations under the License.
 #
 
-from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from pysnmp.proto.rfc1902 import TimeTicks
+from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 
 
 class __RealTimeData:
@@ -37,9 +37,9 @@ def _device_probably_restarted(old_sysuptime, new_sysuptime):
 
 
 """"
-With virtualization becoming more and more common, we need some way of detecting when, for the same IP, a new device 
-was redeployed. One common way of doing this is to analyze DISMAN-EVENT-MIB::sysUpTimeInstance. 
-If its new value is less than the previous one, it probably means a device was re-deployed and the DHCP probably 
+With virtualization becoming more and more common, we need some way of detecting when, for the same IP, a new device
+was redeployed. One common way of doing this is to analyze DISMAN-EVENT-MIB::sysUpTimeInstance.
+If its new value is less than the previous one, it probably means a device was re-deployed and the DHCP probably
 assigned it the same IP. In this case we need to re-do an SNMP WALK.
 
 Parameters
@@ -48,7 +48,7 @@ realtime_collection: dict
     This is a dictionary in the format {"OID": {"type": "your-oid-type", "value": "value as string"}, ... }
 input_data_collection: dict
     This is a dictionary in the format {"OID": {"type": "your-oid-type", "value": "value as string"}, ... }
-    
+
 Returns
 -------
 True if both dictionaries have a "SYS_UP_TIME_INSTANCE" key, and the input_data_collection has a value that is

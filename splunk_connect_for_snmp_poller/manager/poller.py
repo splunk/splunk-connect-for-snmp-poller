@@ -26,9 +26,9 @@ from splunk_connect_for_snmp_poller.utilities import (
     parse_config_file,
 )
 from splunk_connect_for_snmp_poller.manager.poller_utilities import (
-    parse_inventory_file,
     automatic_realtime_task,
     create_poller_scheduler_entry_key,
+    parse_inventory_file,
 )
 
 logger = logging.getLogger(__name__)
