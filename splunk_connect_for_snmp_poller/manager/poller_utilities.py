@@ -30,7 +30,6 @@ from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import
     should_process_inventory_line,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
