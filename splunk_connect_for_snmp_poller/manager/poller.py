@@ -183,8 +183,9 @@ class Poller:
         )
 
     def __start_realtime_scheduler_task(self):
-        schedule.every().second.do(
-            # schedule.every(self._args.realtime_task_frequency).seconds.do(
+        # schedule.every().second.do(
+        # For debugging purposes better change it to "one second"
+        schedule.every(self._args.realtime_task_frequency).seconds.do(
             automatic_realtime_task,
             self._mongo_walked_hosts_coll,
             self._args.inventory,
