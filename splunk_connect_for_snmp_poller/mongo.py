@@ -30,13 +30,49 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure
 import os
+
+from pymongo import MongoClient, ReturnDocument
+from pymongo.errors import ConnectionFailure
+
+"""
+In order to store some general data into Mongo we use the following structure.
+Each WalkedHostsRepository can contain the following fields:
+* _id: a unique key that represents a concrete host (always present)
+* MIB-STATIC-DATA: a dictionary that contains some required-MIB data for further processing. For example, when
+  enriching the OIDs related to network interfaces, as part of the intial walk for a given host we plan to store
+  in this dictionary -at least- the following information:
+  "MIB-STATIC-DATA": {              <----- GENERAL STATIC MIB DATA
+    "IF-MIB": {                     <----- NETWORK INTERFACES DATA
+      "ifNumber": 2,                <----- TOTAL NUMBER OF NETWORK INTERFACES
+      "ifIndex": [1, 2],            <----- INDEX MAPPING FOR OIDs
+      "ifDescr": ["lo", "eth0"],    <----- INDEX MAPPING FOR OIDs (IF-MIB*.1 -> "lo", IF-MIB*.2 -> "eth0", ...)
+    }
+  }
+
+  For example:
+  IF-MIB::ifNumber.0 = INTEGER: 2
+  IF-MIB::ifIndex.1 = INTEGER: 1
+  IF-MIB::ifIndex.2 = INTEGER: 2
+  IF-MIB::ifDescr.1 = STRING: lo
+  IF-MIB::ifDescr.2 = STRING: eth0
+  IF-MIB::ifType.1 = INTEGER: softwareLoopback(24)
+  IF-MIB::ifType.2 = INTEGER: ethernetCsmacd(6)
+  IF-MIB::ifPhysAddress.1 = STRING:
+  IF-MIB::ifPhysAddress.2 = STRING: 0:12:79:62:f9:40
+  IF-MIB::ifAdminStatus.1 = INTEGER: up(1)
+  IF-MIB::ifAdminStatus.2 = INTEGER: up(1)
+
+* MIB_STATIC_DATA: a dictionary that contains some MIB real-time data that needs to be collected constantly.
+  At the moment, we only need to collect sysUpTimeInstance data in order to decide when we need to re-walk
+  a given host.
+"""
 
 
 class WalkedHostsRepository:
+    MIB_REAL_TIME_DATA = "MIB-REAL-TIME-DATA"
+    MIB_STATIC_DATA = "MIB-STATIC-DATA"
+
     def __init__(self, mongo_config):
         self._client = MongoClient(
             os.environ["MONGO_SERVICE_SERVICE_HOST"],
@@ -69,3 +105,21 @@ class WalkedHostsRepository:
 
     def clear(self):
         self._walked_hosts.remove()
+
+    def real_time_data_for(self, host):
+        full_collection = self._walked_hosts.find_one({"_id": host})
+        if WalkedHostsRepository.MIB_REAL_TIME_DATA in full_collection:
+            return full_collection[WalkedHostsRepository.MIB_REAL_TIME_DATA]
+        else:
+            return None
+
+    def update_real_time_data_for(self, host, input_dictionary):
+        if input_dictionary:
+            real_time_data_dictionary = {
+                WalkedHostsRepository.MIB_REAL_TIME_DATA: input_dictionary
+            }
+            self._walked_hosts.find_one_and_update(
+                {"_id": host},
+                {"$set": real_time_data_dictionary},
+                return_document=ReturnDocument.AFTER,
+            )
