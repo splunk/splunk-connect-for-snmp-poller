@@ -103,7 +103,7 @@ class Poller:
                 )
                 if entry_key not in self._jobs_map:
                     logger.debug(f"Adding configuration for job {entry_key}")
-                    job_reference = schedule.every(int(frequency)).seconds.do(
+                    job_reference = schedule.every(frequency).seconds.do(
                         scheduled_task,
                         ir.host,
                         ir.version,
