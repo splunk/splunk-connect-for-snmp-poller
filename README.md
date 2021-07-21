@@ -5,7 +5,7 @@ This project contains a community collection of SNMP data on schedule.
 
 ## Usage
 
-This project is only intended to be used as part of a Splunk Connect for SNMP Deployment
+This project is only intended to be used as part of a Splunk Connect for SNMP Deployment.
 
 ## Support
 
