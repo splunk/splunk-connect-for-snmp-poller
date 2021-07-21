@@ -15,8 +15,9 @@
 #
 import csv
 import logging.config
-
 import schedule
+
+from dataclasses import dataclass
 from pysnmp.hlapi import ObjectIdentity, ObjectType, UdpTransportTarget, getCmd
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import (
     OidConstant,
@@ -33,9 +34,24 @@ from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import
 logger = logging.getLogger(__name__)
 
 
-def _should_process_current_line(host, version, community, profile, frequency):
-    return should_process_inventory_line(host) and is_valid_inventory_line_from_dict(
-        host, version, community, profile, frequency
+@dataclass
+class InventoryRecord:
+    host: str
+    version: str
+    community: str
+    profile: str
+    frequency_str: str
+
+
+def _should_process_current_line(inventory_record):
+    return should_process_inventory_line(
+        inventory_record.host
+    ) and is_valid_inventory_line_from_dict(
+        inventory_record.host,
+        inventory_record.version,
+        inventory_record.community,
+        inventory_record.profile,
+        inventory_record.frequency_str,
     )
 
 
@@ -59,15 +75,15 @@ def onetime_task(host, version, community, profile, server_config, splunk_indexe
 def parse_inventory_file(inventory_file_path):
     with open(inventory_file_path, newline="") as inventory_file:
         for agent in csv.DictReader(inventory_file, delimiter=","):
-            host = agent["host"]
-            version = agent["version"]
-            community = agent["community"]
-            profile = agent["profile"]
-            frequency_str = agent["freqinseconds"]
-            if _should_process_current_line(
-                host, version, community, profile, frequency_str
-            ):
-                yield host, version, community, profile, frequency_str
+            inventory_record = InventoryRecord(
+                agent["host"],
+                agent["version"],
+                agent["community"],
+                agent["profile"],
+                agent["freqinseconds"],
+            )
+            if _should_process_current_line(inventory_record):
+                yield inventory_record
 
 
 def _extract_sys_uptime_instance(
@@ -137,27 +153,32 @@ def automatic_realtime_task(
     server_config,
     local_snmp_engine,
 ):
-    for host, version, community, profile, frequency_str in parse_inventory_file(
-        inventory_file_path
-    ):
+    for inventory_record in parse_inventory_file(inventory_file_path):
         sys_up_time = _extract_sys_uptime_instance(
-            local_snmp_engine, host, version, community, server_config
+            local_snmp_engine,
+            inventory_record.host,
+            inventory_record.version,
+            inventory_record.community,
+            server_config,
         )
         host_already_walked, should_do_walk = _walk_info(
-            all_walked_hosts_collection, host, sys_up_time
+            all_walked_hosts_collection, inventory_record.host, sys_up_time
         )
         if should_do_walk:
             schedule.every().second.do(
                 onetime_task,
-                host,
-                version,
-                community,
-                profile,
+                inventory_record.host,
+                inventory_record.version,
+                inventory_record.community,
+                inventory_record.profile,
                 server_config,
                 splunk_indexes,
             )
         _update_mongo(
-            all_walked_hosts_collection, host, host_already_walked, sys_up_time
+            all_walked_hosts_collection,
+            inventory_record.host,
+            host_already_walked,
+            sys_up_time,
         )
 
 

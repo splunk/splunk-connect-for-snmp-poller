@@ -84,20 +84,14 @@ class Poller:
         # update job when either inventory changes or config changes
         if server_config_modified or inventory_config_modified:
             inventory_hosts = set()
-            for (
-                host,
-                version,
-                community,
-                profile,
-                frequency_str,
-            ) in parse_inventory_file(self._args.inventory):
-                entry_key = create_poller_scheduler_entry_key(host, profile)
-                frequency = int(frequency_str)
+            for ir in parse_inventory_file(self._args.inventory):
+                entry_key = create_poller_scheduler_entry_key(ir.host, ir.profile)
+                frequency = int(ir.frequency_str)
                 if entry_key in inventory_hosts:
                     logger.error(
                         (
-                            f"{host},{version},{community},{profile},{frequency_str} has duplicated "
-                            f"hostname {host} and {profile} in the inventory,"
+                            f"{ir.host},{ir.version},{ir.community},{ir.profile},{ir.frequency_str} has duplicated "
+                            f"hostname {ir.host} and {ir.profile} in the inventory,"
                             f" cannot use the same profile twice for the same device"
                         )
                     )
@@ -111,10 +105,10 @@ class Poller:
                     logger.debug(f"Adding configuration for job {entry_key}")
                     job_reference = schedule.every(int(frequency)).seconds.do(
                         scheduled_task,
-                        host,
-                        version,
-                        community,
-                        profile,
+                        ir.host,
+                        ir.version,
+                        ir.community,
+                        ir.profile,
                         self._server_config,
                         self.__get_splunk_indexes(),
                     )
@@ -124,21 +118,21 @@ class Poller:
                     if (
                         old_conf
                         != (
-                            host,
-                            version,
-                            community,
-                            profile,
+                            ir.host,
+                            ir.version,
+                            ir.community,
+                            ir.profile,
                             self._server_config,
                             self.__get_splunk_indexes(),
                         )
                         or frequency != self._jobs_map.get(entry_key).interval
                     ):
                         self.__update_schedule(
-                            community,
-                            frequency,
-                            host,
-                            profile,
-                            version,
+                            ir.community,
+                            ir.frequency,
+                            ir.host,
+                            ir.profile,
+                            ir.version,
                             self._server_config,
                             self.__get_splunk_indexes(),
                         )
