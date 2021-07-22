@@ -18,7 +18,9 @@ import logging
 import os
 from unittest import TestCase
 
-from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
+from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import (
+    InterfaceMib,
+)
 from tests.test_utils import load_test_data
 
 logger = logging.getLogger(__name__)
