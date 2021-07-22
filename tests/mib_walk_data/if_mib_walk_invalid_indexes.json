@@ -1,0 +1,6 @@
+[
+    {"metric_name": "sc4snmp.IF-MIB.ifNumber_0", "_value": "2", "metric_type": "Integer"},
+    {"metric_name": "sc4snmp.IF-MIB.ifIndex_1", "_value": "1", "metric_type": "Integer"},
+    {"metric_name": "sc4snmp.IF-MIB.ifDescr_1", "_value": "lo", "metric_type": "OctetString"},
+    {"metric_name": "sc4snmp.IF-MIB.ifDescr_2", "_value": "eth0", "metric_type": "OctetString"}
+]
