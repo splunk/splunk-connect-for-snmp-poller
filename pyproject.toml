@@ -45,4 +45,6 @@ sc4snmp-poller = "splunk_connect_for_snmp_poller.snmp_poller_server:main"
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
-
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "INFO"
