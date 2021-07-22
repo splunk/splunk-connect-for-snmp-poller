@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-
+# See http://www.net-snmp.org/docs/mibs/interfaces.html for additional implementation details
 def extract_if_mib_only(translated_walk_result):
     return filter(
         lambda translation: all(
