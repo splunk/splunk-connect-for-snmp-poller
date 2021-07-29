@@ -42,7 +42,7 @@ def get_shared_snmp_engine():
 
 
 # TODO remove the debugging statement later
-@app.task
+#@app.task
 def snmp_polling(
     host, version, community, profile, server_config, index, one_time_flag=False
 ):
