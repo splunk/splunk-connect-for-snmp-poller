@@ -105,7 +105,7 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 
 
 # TODO remove the debugging statement later
-#@app.task
+@app.task
 def snmp_polling(
     host, version, community, profile, server_config, index, one_time_flag=False
 ):
