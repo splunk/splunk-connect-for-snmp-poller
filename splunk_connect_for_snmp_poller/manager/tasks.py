@@ -15,7 +15,7 @@
 #
 import os
 import threading
-
+from collections import namedtuple
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import SnmpEngine
 from splunk_connect_for_snmp_poller.manager.celery_client import app
@@ -23,6 +23,7 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
     build_authData,
     build_contextData,
     get_handler,
+    bulk_handler,
     mib_string_handler,
     parse_port,
     walk_handler,
@@ -32,6 +33,8 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
 thread_local = threading.local()
 logger = get_task_logger(__name__)
 
+VarbindCollection = namedtuple('VarbindCollection', 'walk, bulk')
+
 
 def get_shared_snmp_engine():
     if not hasattr(thread_local, "local_snmp_engine"):
@@ -39,6 +42,61 @@ def get_shared_snmp_engine():
         logger.info("Created a single shared instance of an SnmpEngine() object")
 
     return thread_local.local_snmp_engine
+
+
+def get_bulk_data(varBinds,
+                  snmp_engine,
+                    auth_data,
+                    context_data,
+                    host,
+                    port,
+                    mib_server_url,
+                    index,
+                    otel_logs_url,
+                    otel_metrics_url,
+                    one_time_flag):
+    if varBinds:
+        # Perform SNMP polling for mib string
+        try:
+            bulk_handler(
+                snmp_engine,
+                auth_data,
+                context_data,
+                host,
+                port,
+                mib_server_url,
+                index,
+                otel_logs_url,
+                otel_metrics_url,
+                one_time_flag,
+                varBinds
+            )
+        except Exception as e:
+            logger.error(
+                f"Error happend while calling bulk_handler(): {e}"
+            )
+
+
+def sort_varbinds(varbind_list: list) -> VarbindCollection:
+    """
+    This function sorts varbinds based on their final destination.
+    We have 2 possible operations to run on snmp:
+        1. Bulk - when varbind is a list, ex. ['CISCO-FC-MGMT-MIB', 'cfcmPortLcStatsEntry']
+                - when varbind is an element without a '*' as a last element
+        2. Walk - when varbind is an element with a '*' as a last element
+    @param varbind_list:
+    @return:
+    """
+    walk_list, bulk_list = [], []
+    for varbind in varbind_list:
+        if isinstance(varbind, list):
+            bulk_list.append(varbind)
+        else:
+            if varbind[-1] == "*":
+                walk_list.append(varbind)
+            else:
+                bulk_list.append(varbind)
+    return VarbindCollection(walk=walk_list, bulk=bulk_list)
 
 
 # TODO remove the debugging statement later
@@ -63,6 +121,16 @@ def snmp_polling(
     context_data = build_contextData(version, community, server_config)
     logger.debug(f"==========context_data=========\n{context_data}")
 
+    static_parameters = [snmp_engine,
+                    auth_data,
+                    context_data,
+                    host,
+                    port,
+                    mib_server_url,
+                    index,
+                    otel_logs_url,
+                    otel_metrics_url,
+                    one_time_flag]
     try:
         # Perform SNNP Polling for string profile in inventory.csv
         if "." not in profile:
@@ -72,97 +140,28 @@ def snmp_polling(
             mib_profile = server_config["profiles"].get(profile, None)
             if mib_profile:
                 varBinds = mib_profile.get("varBinds", None)
-                if varBinds:
-                    for varbind in varBinds:
-                        # check if the varbind is mib string or oid
-                        if isinstance(varbind, list):
-                            # Perform SNMP polling for mib string
-                            try:
-                                mib_string_handler(
-                                    snmp_engine,
-                                    auth_data,
-                                    context_data,
-                                    host,
-                                    port,
-                                    varbind,
-                                    mib_server_url,
-                                    index,
-                                    otel_logs_url,
-                                    otel_metrics_url,
-                                    one_time_flag,
-                                )
-                            except Exception as e:
-                                logger.error(
-                                    f"Error happend while calling mib_string_handler(): {e}"
-                                )
-                        else:
-                            # Perform SNMP polling for oid
-                            try:
-                                if varbind[-1] == "*":
-                                    walk_handler(
-                                        snmp_engine,
-                                        auth_data,
-                                        context_data,
-                                        host,
-                                        port,
-                                        varbind,
-                                        mib_server_url,
-                                        index,
-                                        otel_logs_url,
-                                        otel_metrics_url,
-                                        one_time_flag,
-                                    )
-                                else:
-                                    get_handler(
-                                        snmp_engine,
-                                        auth_data,
-                                        context_data,
-                                        host,
-                                        port,
-                                        varbind,
-                                        mib_server_url,
-                                        index,
-                                        otel_logs_url,
-                                        otel_metrics_url,
-                                        one_time_flag,
-                                    )
-                            except Exception as e:
-                                logger.error(
-                                    f"Invalid format for oid. Error message: {e}"
-                                )
+                varbind_collection = sort_varbinds(varBinds)
+                get_bulk_data(varbind_collection.bulk, *static_parameters)
+                for varbind in varbind_collection.walk:
+                    walk_handler(
+                        varbind,
+                        *static_parameters
+                    )
         # Perform SNNP Polling for oid profile in inventory.csv
         else:
             # Perform SNNP WALK for oid end with *
             if profile[-1] == "*":
                 logger.info(f"Executing SNMP WALK for {host} profile={profile}")
                 walk_handler(
-                    snmp_engine,
-                    auth_data,
-                    context_data,
-                    host,
-                    port,
                     profile,
-                    mib_server_url,
-                    index,
-                    otel_logs_url,
-                    otel_metrics_url,
-                    one_time_flag,
+                    *static_parameters
                 )
             # Perform SNNP GET for an oid
             else:
                 logger.info(f"Executing SNMP GET for {host} profile={profile}")
                 get_handler(
-                    snmp_engine,
-                    auth_data,
-                    context_data,
-                    host,
-                    port,
                     profile,
-                    mib_server_url,
-                    index,
-                    otel_logs_url,
-                    otel_metrics_url,
-                    one_time_flag,
+                    *static_parameters
                 )
 
         return f"Executing SNMP Polling for {host} version={version} profile={profile}"

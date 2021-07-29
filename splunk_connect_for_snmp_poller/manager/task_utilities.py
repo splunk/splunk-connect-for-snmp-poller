@@ -25,6 +25,7 @@ from pysnmp.hlapi import (
     UsmUserData,
     getCmd,
     nextCmd,
+    bulkCmd
 )
 from pysnmp.proto import rfc1902
 from pysnmp.smi import builder, compiler, view
@@ -89,7 +90,7 @@ def get_translated_string(mib_server_url, varBinds):
                     # Prefix the metric for ux in analytics workspace
                     # Splunk uses . rather than :: for hierarchy.
                     # if the metric name contains a . replace with _
-                    "metric_name": f'sc4snmp.{name.prettyPrint().replace(".","_").replace("::", ".")}',
+                    "metric_name": f'sc4snmp.{name.prettyPrint().replace(".", "_").replace("::", ".")}',
                     "_value": val.prettyPrint(),
                 }
                 result = json.dumps(result)
@@ -127,17 +128,17 @@ def get_translated_string(mib_server_url, varBinds):
 
 
 def mib_string_handler(
-    snmp_engine,
-    auth_data,
-    context_data,
-    host,
-    port,
-    mib_string,
-    mib_server_url,
-    index,
-    otel_logs_url,
-    otel_metrics_url,
-    one_time_flag,
+        snmp_engine,
+        auth_data,
+        context_data,
+        host,
+        port,
+        mib_string,
+        mib_server_url,
+        index,
+        otel_logs_url,
+        otel_metrics_url,
+        one_time_flag,
 ):
     """
     Perform the SNMP Get for mib-name/string, where mib string is a list
@@ -165,12 +166,12 @@ def mib_string_handler(
 
             # call snmpget
             get_handler(
+                oid,
                 snmp_engine,
                 auth_data,
                 context_data,
                 host,
                 port,
-                oid,
                 mib_server_url,
                 index,
                 otel_logs_url,
@@ -187,12 +188,12 @@ def mib_string_handler(
 
             # call snmpwalk
             walk_handler(
+                oid,
                 snmp_engine,
                 auth_data,
                 context_data,
                 host,
                 port,
-                oid,
                 mib_server_url,
                 index,
                 otel_logs_url,
@@ -213,17 +214,17 @@ def mib_string_handler(
 
 
 def get_handler(
-    snmp_engine,
-    auth_data,
-    context_data,
-    host,
-    port,
-    profile,
-    mib_server_url,
-    index,
-    otel_logs_url,
-    otel_metrics_url,
-    one_time_flag,
+        profile,
+        snmp_engine,
+        auth_data,
+        context_data,
+        host,
+        port,
+        mib_server_url,
+        index,
+        otel_logs_url,
+        otel_metrics_url,
+        one_time_flag,
 ):
     """
     Perform the SNMP Get for an oid,
@@ -256,18 +257,67 @@ def get_handler(
     )
 
 
+def bulk_handler(
+        snmp_engine,
+        auth_data,
+        context_data,
+        host,
+        port,
+        mib_server_url,
+        index,
+        otel_logs_url,
+        otel_metrics_url,
+        one_time_flag,
+        var_binds
+):
+    """
+    Perform the SNMP Get for an oid,
+    e.g. 1.3.6.1.2.1.1.9.1.2.1,
+    which queries the info correlated to this specific oid
+    """
+    g = bulkCmd(
+        snmp_engine,
+        auth_data,
+        UdpTransportTarget((host, port)),
+        context_data,
+        0,
+        50,
+        *var_binds,
+        lexicographicMode=False,
+    )
+    results_merge = ""
+    for (errorIndication, errorStatus, errorIndex, varBinds) in g:
+        is_metric = False
+        if errorIndication:
+            result = f"error: {errorIndication}"
+            logger.error(result)
+        elif errorStatus:
+            result = "error: %s at %s" % (
+                errorStatus.prettyPrint(),
+                errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
+            )
+            logger.error(result)
+        else:
+            result, is_metric = get_translated_string(mib_server_url, varBinds)
+        results_merge += result + "\n"
+    print(results_merge)
+        # post_data_to_splunk_hec(
+        #     host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
+        # )
+
+
 def walk_handler(
-    snmp_engine,
-    auth_data,
-    context_data,
-    host,
-    port,
-    profile,
-    mib_server_url,
-    index,
-    otel_logs_url,
-    otel_metrics_url,
-    one_time_flag,
+        profile,
+        snmp_engine,
+        auth_data,
+        context_data,
+        host,
+        port,
+        mib_server_url,
+        index,
+        otel_logs_url,
+        otel_metrics_url,
+        one_time_flag,
 ):
     """
     Perform the SNMP Walk for oid end with *,
@@ -276,12 +326,12 @@ def walk_handler(
     """
 
     for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
-        snmp_engine,
-        auth_data,
-        UdpTransportTarget((host, port)),
-        context_data,
-        ObjectType(ObjectIdentity(profile[:-2])),
-        lexicographicMode=False,
+            snmp_engine,
+            auth_data,
+            UdpTransportTarget((host, port)),
+            context_data,
+            ObjectType(ObjectIdentity(profile[:-2])),
+            lexicographicMode=False,
     ):
         is_metric = False
         if errorIndication:
