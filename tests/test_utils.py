@@ -32,7 +32,7 @@ def fake_walk_handler(simulator_ifmib_walk_data):
 
 
 if __name__ == "__main__":
-    file_path = "mib_walk_data/if_mib_walk.json"
+    file_path = "mib_walk_data/if_mib_walk.json.data"
 
     for metric in fake_walk_handler(load_test_data(file_path)):
         print(f"{metric}")

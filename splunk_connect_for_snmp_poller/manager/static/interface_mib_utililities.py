@@ -13,10 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+()
 import logging
 
-from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
+from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import (
+    InterfaceMib,
+)
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
 logger = logging.getLogger(__name__)
