@@ -285,7 +285,6 @@ def bulk_handler(
         *var_binds,
         lexicographicMode=False,
     )
-    results_merge = ""
     for (errorIndication, errorStatus, errorIndex, varBinds) in g:
         is_metric = False
         if errorIndication:
@@ -299,11 +298,9 @@ def bulk_handler(
             logger.error(result)
         else:
             result, is_metric = get_translated_string(mib_server_url, varBinds)
-        results_merge += result + "\n"
-    print(results_merge)
-        # post_data_to_splunk_hec(
-        #     host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
-        # )
+        post_data_to_splunk_hec(
+            host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
+        )
 
 
 def walk_handler(
