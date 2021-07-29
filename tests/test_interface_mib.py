@@ -38,7 +38,7 @@ def file_data_path(data_file_name):
 
 class TestInterfaceMib(TestCase):
     def test_loaded_walk_data_for_if_mib(self):
-        file_path = file_data_path("if_mib_walk.json.data")
+        file_path = file_data_path("if_mib_walk.json")
         if_mibs = load_test_data(file_path)
         self.assertIsNotNone(if_mibs)
 
@@ -61,8 +61,8 @@ class TestInterfaceMib(TestCase):
 
     def test_walk_data_with_wrong_number_of_interfaces(self):
         for invalid_data_file in [
-            "if_mib_walk_invalid_networks.json.data",
-            "if_mib_walk_invalid_indexes.json.data",
+            "if_mib_walk_invalid_networks.json",
+            "if_mib_walk_invalid_indexes.json",
         ]:
             file_path = file_data_path(invalid_data_file)
             if_mibs = load_test_data(file_path)
