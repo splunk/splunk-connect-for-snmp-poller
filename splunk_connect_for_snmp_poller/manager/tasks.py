@@ -15,6 +15,7 @@
 #
 import os
 import threading
+from pysnmp.hlapi import ObjectIdentity, ObjectType
 from collections import namedtuple
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import SnmpEngine
@@ -95,7 +96,7 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
             if varbind[-1] == "*":
                 walk_list.append(varbind)
             else:
-                bulk_list.append(varbind)
+                bulk_list.append(ObjectType(ObjectIdentity(varbind)))
     return VarbindCollection(walk=walk_list, bulk=bulk_list)
 
 
