@@ -33,10 +33,7 @@ from tests.test_config_input_data import (
     parsed_config_if_mib_without_elements,
     parsed_config_root_with_error,
 )
-from tests.test_utils import (
-    file_data_path,
-    load_test_data,
-)
+from tests.test_utils import file_data_path, load_test_data
 
 logger = logging.getLogger(__name__)
 
