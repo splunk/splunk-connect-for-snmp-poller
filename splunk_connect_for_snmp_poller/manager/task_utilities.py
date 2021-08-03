@@ -18,6 +18,7 @@ import os
 
 from celery.utils.log import get_task_logger
 from pysmi import debug as pysmi_debug
+from collections import namedtuple
 from pysnmp.hlapi import (
     CommunityData,
     ContextData,
@@ -43,6 +44,12 @@ from splunk_connect_for_snmp_poller.manager.mib_server_client import (
 
 pysmi_debug.setLogger(pysmi_debug.Debug("compiler"))
 logger = get_task_logger(__name__)
+
+
+class VarbindCollection(namedtuple('VarbindCollection', 'walk, bulk')):
+
+    def __add__(self, other):
+        return VarbindCollection(bulk=self.bulk+other.bulk, walk=self.walk + other.walk)
 
 
 # TODO remove the debugging statement later
@@ -127,19 +134,7 @@ def get_translated_string(mib_server_url, varBinds):
     return result, is_metric
 
 
-def mib_string_handler(
-        snmp_engine,
-        auth_data,
-        context_data,
-        host,
-        port,
-        mib_string,
-        mib_server_url,
-        index,
-        otel_logs_url,
-        otel_metrics_url,
-        one_time_flag,
-):
+def mib_string_handler(mib_list):
     """
     Perform the SNMP Get for mib-name/string, where mib string is a list
     1) case 1: with mib index - consider it as a single oid -> snmpget
@@ -150,67 +145,41 @@ def mib_string_handler(
     . ['SNMPv2-MIB', 'sysORUpTime'] (syntax -> [<mib_file_name>, <mib_name/string>)
     execute snmpwalk to query all the subtree
     """
+    walk_list, bulk_list = [], []
     mibBuilder = builder.MibBuilder()
     mibViewController = view.MibViewController(mibBuilder)
     config = {"sources": [os.environ["MIBS_FILES_URL"]]}
     compiler.addMibCompiler(mibBuilder, **config)
+    for mib_string in mib_list:
+        try:
+            if len(mib_string) == 3:
+                # convert mib string to oid
+                oid = ObjectIdentity(
+                    mib_string[0], mib_string[1], mib_string[2]
+                ).resolveWithMib(mibViewController)
+                logger.debug(f"[-] oid: {oid}")
+                bulk_list.append(ObjectType(ObjectIdentity(oid)))
 
-    try:
-        if len(mib_string) == 3:
-            # convert mib string to oid
-            oid = ObjectIdentity(
-                mib_string[0], mib_string[1], mib_string[2]
-            ).resolveWithMib(mibViewController)
-            oid = str(oid)
-            logger.debug(f"[-] oid: {oid}")
-
-            # call snmpget
-            get_handler(
-                oid,
-                snmp_engine,
-                auth_data,
-                context_data,
-                host,
-                port,
-                mib_server_url,
-                index,
-                otel_logs_url,
-                otel_metrics_url,
-                one_time_flag,
-            )
-        elif len(mib_string) == 2:
-            # convert mib string to oid
-            oid = ObjectIdentity(mib_string[0], mib_string[1]).resolveWithMib(
-                mibViewController
-            )
-            oid = str(oid) + ".*"
-            logger.debug(f"[-] oid: {oid}")
-
-            # call snmpwalk
-            walk_handler(
-                oid,
-                snmp_engine,
-                auth_data,
-                context_data,
-                host,
-                port,
-                mib_server_url,
-                index,
-                otel_logs_url,
-                otel_metrics_url,
-                one_time_flag,
-            )
-
-        else:
-            raise Exception(
-                (
-                    f"Invalid mib string - {mib_string}."
-                    f"\nPlease provide a valid mib string in the correct format. "
-                    f"Learn more about the format at https://bit.ly/3qtqzQc"
+            elif len(mib_string) == 2:
+                # convert mib string to oid
+                oid = ObjectIdentity(mib_string[0], mib_string[1]).resolveWithMib(
+                    mibViewController
                 )
-            )
-    except Exception as e:
-        logger.error(f"Error happened while polling for mib string: {mib_string}: {e}")
+                oid = str(oid) + ".*"
+                logger.debug(f"[-] oid: {oid}")
+                walk_list.append(oid)
+
+            else:
+                raise Exception(
+                    (
+                        f"Invalid mib string - {mib_string}."
+                        f"\nPlease provide a valid mib string in the correct format. "
+                        f"Learn more about the format at https://bit.ly/3qtqzQc"
+                    )
+                )
+        except Exception as e:
+            logger.error(f"Error happened while polling for mib string: {mib_string}: {e}")
+    return VarbindCollection(walk=walk_list, bulk=bulk_list)
 
 
 def get_handler(
@@ -298,9 +267,10 @@ def bulk_handler(
             logger.error(result)
         else:
             result, is_metric = get_translated_string(mib_server_url, varBinds)
-        post_data_to_splunk_hec(
-            host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
-        )
+            logger.debug(result)
+        # post_data_to_splunk_hec(
+        #     host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
+        # )
 
 
 def walk_handler(

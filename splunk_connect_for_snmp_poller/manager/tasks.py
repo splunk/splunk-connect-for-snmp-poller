@@ -16,7 +16,6 @@
 import os
 import threading
 from pysnmp.hlapi import ObjectIdentity, ObjectType
-from collections import namedtuple
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import SnmpEngine
 from splunk_connect_for_snmp_poller.manager.celery_client import app
@@ -28,13 +27,12 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
     mib_string_handler,
     parse_port,
     walk_handler,
+    VarbindCollection
 )
 
 # Used to store a single SnmpEngine() instance for each Celery task
 thread_local = threading.local()
 logger = get_task_logger(__name__)
-
-VarbindCollection = namedtuple('VarbindCollection', 'walk, bulk')
 
 
 def get_shared_snmp_engine():
@@ -47,15 +45,15 @@ def get_shared_snmp_engine():
 
 def get_bulk_data(varBinds,
                   snmp_engine,
-                    auth_data,
-                    context_data,
-                    host,
-                    port,
-                    mib_server_url,
-                    index,
-                    otel_logs_url,
-                    otel_metrics_url,
-                    one_time_flag):
+                  auth_data,
+                  context_data,
+                  host,
+                  port,
+                  mib_server_url,
+                  index,
+                  otel_logs_url,
+                  otel_metrics_url,
+                  one_time_flag):
     if varBinds:
         # Perform SNMP polling for mib string
         try:
@@ -82,28 +80,34 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
     """
     This function sorts varbinds based on their final destination.
     We have 2 possible operations to run on snmp:
-        1. Bulk - when varbind is a list, ex. ['CISCO-FC-MGMT-MIB', 'cfcmPortLcStatsEntry']
+        1. Bulk - when varbind is a 3-element list, ex. ['SNMPv2-MIB', 'sysUpTime', 0]
                 - when varbind is an element without a '*' as a last element
         2. Walk - when varbind is an element with a '*' as a last element
+                - when varbind is a 2-element list, ex. ['CISCO-FC-MGMT-MIB', 'cfcmPortLcStatsEntry']
     @param varbind_list:
     @return:
     """
+    _tmp_multikey_elements = []
     walk_list, bulk_list = [], []
     for varbind in varbind_list:
         if isinstance(varbind, list):
-            bulk_list.append(varbind)
+            _tmp_multikey_elements.append(varbind)
         else:
             if varbind[-1] == "*":
                 walk_list.append(varbind)
             else:
                 bulk_list.append(ObjectType(ObjectIdentity(varbind)))
-    return VarbindCollection(walk=walk_list, bulk=bulk_list)
+
+    # in case of lists we use mib_string_handler function to divide varbinds on walk/bulk based on number of elements
+    casted_multikey_elements = mib_string_handler(_tmp_multikey_elements) + \
+        VarbindCollection(walk=walk_list, bulk=bulk_list)
+    return casted_multikey_elements
 
 
 # TODO remove the debugging statement later
-@app.task
+# @app.task
 def snmp_polling(
-    host, version, community, profile, server_config, index, one_time_flag=False
+        host, version, community, profile, server_config, index, one_time_flag=False
 ):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
@@ -123,15 +127,15 @@ def snmp_polling(
     logger.debug(f"==========context_data=========\n{context_data}")
 
     static_parameters = [snmp_engine,
-                    auth_data,
-                    context_data,
-                    host,
-                    port,
-                    mib_server_url,
-                    index,
-                    otel_logs_url,
-                    otel_metrics_url,
-                    one_time_flag]
+                         auth_data,
+                         context_data,
+                         host,
+                         port,
+                         mib_server_url,
+                         index,
+                         otel_logs_url,
+                         otel_metrics_url,
+                         one_time_flag]
     try:
         # Perform SNNP Polling for string profile in inventory.csv
         if "." not in profile:
