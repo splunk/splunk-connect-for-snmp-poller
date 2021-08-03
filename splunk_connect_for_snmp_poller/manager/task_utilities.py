@@ -268,9 +268,9 @@ def bulk_handler(
         else:
             result, is_metric = get_translated_string(mib_server_url, varBinds)
             logger.debug(result)
-        # post_data_to_splunk_hec(
-        #     host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
-        # )
+        post_data_to_splunk_hec(
+            host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
+        )
 
 
 def walk_handler(
