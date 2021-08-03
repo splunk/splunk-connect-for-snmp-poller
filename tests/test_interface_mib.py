@@ -15,25 +15,17 @@
 #
 
 import logging
-import os
 from unittest import TestCase
 
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import (
     InterfaceMib,
 )
-from tests.test_utils import load_test_data
+from tests.test_utils import (
+    file_data_path,
+    load_test_data,
+)
 
 logger = logging.getLogger(__name__)
-
-
-def file_data_path(data_file_name):
-    current_dir = os.getcwd()
-    relative_data_file_path = os.path.join("mib_walk_data", data_file_name)
-    if current_dir.endswith("tests"):
-        file_path = os.path.join(current_dir, relative_data_file_path)
-    else:
-        file_path = os.path.join(current_dir, "tests", relative_data_file_path)
-    return file_path
 
 
 class TestInterfaceMib(TestCase):

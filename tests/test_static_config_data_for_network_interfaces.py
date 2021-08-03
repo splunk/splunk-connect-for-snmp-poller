@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import logging
 from unittest import TestCase
 
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import (
@@ -20,53 +21,24 @@ from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import (
 )
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
     extract_network_interface_data_from_config,
+    extract_network_interface_data_from_walk,
+)
+from tests.test_config_input_data import (
+    parsed_config_correct,
+    parsed_config_correct_one_non_existing_field,
+    parsed_config_correct_three_fields,
+    parsed_config_duplicate_keys,
+    parsed_config_family_with_error,
+    parsed_config_if_mib_with_error,
+    parsed_config_if_mib_without_elements,
+    parsed_config_root_with_error,
+)
+from tests.test_utils import (
+    file_data_path,
+    load_test_data,
 )
 
-parsed_config_root_with_error = {
-    "enricher_with_error": {
-        "oidFamily": {
-            "IF-MIB": [
-                {"ifIndex": "interface_index"},
-                {"ifDescr": "interface_desc"},
-            ]
-        }
-    }
-}
-
-parsed_config_family_with_error = {
-    "enricher": {
-        "oidFamily_with_error": {
-            "IF-MIB": [
-                {"ifIndex": "interface_index"},
-                {"ifDescr": "interface_desc"},
-            ]
-        }
-    }
-}
-
-parsed_config_if_mib_with_error = {
-    "enricher": {
-        "oidFamily": {
-            "IF-MIB_with_error": [
-                {"ifIndex": "interface_index"},
-                {"ifDescr": "interface_desc"},
-            ]
-        }
-    }
-}
-
-parsed_config_if_mib_without_elements = {"enricher": {"oidFamily": {"IF-MIB": []}}}
-
-parsed_config_correct = {
-    "enricher": {
-        "oidFamily": {
-            "IF-MIB": [
-                {"ifIndex": "interface_index"},
-                {"ifDescr": "interface_desc"},
-            ]
-        }
-    }
-}
+logger = logging.getLogger(__name__)
 
 
 class ExtractEnricherDataFromConfigTest(TestCase):
@@ -90,12 +62,66 @@ class ExtractEnricherDataFromConfigTest(TestCase):
         self.assertTrue(len(result) == 2)
         expected_result = [
             {
-                "oid_name": f"{InterfaceMib.IF_MIB_METRIC_SUFFIX}ifIndex",
+                "oid_name": f"{InterfaceMib.IF_MIB_METRIC_SUFFIX}ifIndex_",
                 "splunk_dimension_name": "interface_index",
             },
             {
-                "oid_name": f"{InterfaceMib.IF_MIB_METRIC_SUFFIX}ifDescr",
+                "oid_name": f"{InterfaceMib.IF_MIB_METRIC_SUFFIX}ifDescr_",
                 "splunk_dimension_name": "interface_desc",
             },
+        ]
+        self.assertEqual(result, expected_result)
+
+    def test_duplicate_keys(self):
+        result = extract_network_interface_data_from_config(
+            parsed_config_duplicate_keys
+        )
+        self.assertTrue(len(result) == 3)
+        expected_result = [
+            {
+                "oid_name": "sc4snmp.IF-MIB.ifIndex_",
+                "splunk_dimension_name": "interface_index",
+            },
+            {
+                "oid_name": "sc4snmp.IF-MIB.ifIndex_",
+                "splunk_dimension_name": "interface_index",
+            },
+            {
+                "oid_name": "sc4snmp.IF-MIB.ifIndex_",
+                "splunk_dimension_name": "interface_index_2",
+            },
+        ]
+        self.assertEqual(result, expected_result)
+
+
+class ExtractEnricherDataFromSNMPWalkTest(TestCase):
+    def test_basic_integration(self):
+        file_path = file_data_path("if_mib_walk.json")
+        if_mibs = load_test_data(file_path)
+        self.assertIsNotNone(if_mibs)
+
+        result = extract_network_interface_data_from_walk(
+            parsed_config_correct_three_fields, if_mibs
+        )
+        self.assertTrue(len(result) == 3)
+        expected_result = [
+            {"interface_index": ["1", "2"]},
+            {"interface_desc": ["lo", "eth0"]},
+            {"total_in_packets": ["51491148", "108703537"]},
+        ]
+        self.assertEqual(result, expected_result)
+
+    def test_basic_integration_one_non_existing_field(self):
+        file_path = file_data_path("if_mib_walk.json")
+        if_mibs = load_test_data(file_path)
+        self.assertIsNotNone(if_mibs)
+
+        result = extract_network_interface_data_from_walk(
+            parsed_config_correct_one_non_existing_field, if_mibs
+        )
+        self.assertTrue(len(result) == 2)
+        expected_result = [
+            {"interface_index": ["1", "2"]},
+            {"interface_desc": ["lo", "eth0"]},
         ]
         self.assertEqual(result, expected_result)
