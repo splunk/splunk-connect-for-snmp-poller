@@ -96,3 +96,6 @@ class InterfaceMib:
 
     def __extract_interface_names(self):
         return self.__extract_single_field_as_list(InterfaceMib.IF_MIB_IF_DESCR_BASE)
+
+    def extract_custom_field(self, snmp_field_name):
+        return self.__extract_single_field_as_list(snmp_field_name)
