@@ -16,9 +16,7 @@
 
 import os
 
-from jsoncomment import (
-    JsonComment,
-)
+from jsoncomment import JsonComment
 
 
 def load_test_data(data_file_path):
