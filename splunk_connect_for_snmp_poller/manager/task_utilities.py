@@ -106,7 +106,7 @@ def get_translated_string(mib_server_url, varBinds):
                     oid=name.prettyPrint(), value=val.prettyPrint()
                 )
     except Exception as e:
-        logger.info(
+        logger.error(
             f"Exception occurred while logging varBinds name & value. Exception: {e}"
         )
 
@@ -127,7 +127,7 @@ def get_translated_string(mib_server_url, varBinds):
                 is_metric = False
                 result = get_translation(varBinds, mib_server_url, is_metric)
     except Exception as e:
-        logger.info(f"Could not perform translation. Exception: {e}")
+        logger.error(f"Could not perform translation. Exception: {e}")
     logger.info(
         f"###############final result -- metric: {is_metric}#######################\n{result}"
     )
@@ -266,11 +266,12 @@ def bulk_handler(
             )
             logger.error(result)
         else:
-            result, is_metric = get_translated_string(mib_server_url, varBinds)
-            logger.debug(result)
-        post_data_to_splunk_hec(
-            host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
-        )
+            for varbind in varBinds:
+                result, is_metric = get_translated_string(mib_server_url, [varbind])
+                logger.debug(result)
+                post_data_to_splunk_hec(
+                    host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
+                )
 
 
 def walk_handler(

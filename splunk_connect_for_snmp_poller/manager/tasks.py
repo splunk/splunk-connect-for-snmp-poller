@@ -99,8 +99,8 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
                 bulk_list.append(ObjectType(ObjectIdentity(varbind)))
 
     # in case of lists we use mib_string_handler function to divide varbinds on walk/bulk based on number of elements
-    casted_multikey_elements = mib_string_handler(_tmp_multikey_elements) + \
-        VarbindCollection(walk=walk_list, bulk=bulk_list)
+    casted_multikey_elements = mib_string_handler(_tmp_multikey_elements)
+    casted_multikey_elements += VarbindCollection(walk=walk_list, bulk=bulk_list)
     return casted_multikey_elements
 
 
