@@ -158,7 +158,13 @@ def snmp_polling(
                     f"After varBinds: {varBinds}"
                 )
                 varbind_collection = sort_varbinds(varBinds)
+                logger.info(
+                    f"Varbind collection: {varbind_collection}"
+                )
                 get_bulk_data(varbind_collection.bulk, *static_parameters)
+                logger.info(
+                    f"After get_bulk_data"
+                )
                 for varbind in varbind_collection.walk:
                     walk_handler(
                         varbind,
