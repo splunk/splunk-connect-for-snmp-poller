@@ -240,7 +240,7 @@ def bulk_handler(
         var_binds
 ):
     """
-    Perform the SNMP Get for an oid,
+    Perform the SNMP Bulk for an oid,
     e.g. 1.3.6.1.2.1.1.9.1.2.1,
     which queries the info correlated to this specific oid
     """
@@ -255,7 +255,7 @@ def bulk_handler(
         *var_binds,
         lexicographicMode=False,
     )
-    logger.info(f"After bulkCmd")
+    logger.info(f"After bulkCmd {g}")
     for (errorIndication, errorStatus, errorIndex, varBinds) in g:
         logger.info(f"EI: {errorIndication} {errorStatus} {errorIndex} {varBinds}")
         is_metric = False
@@ -273,7 +273,7 @@ def bulk_handler(
             for varbind in varBinds:
                 logger.info(f"Varbind: {varbind}")
                 result, is_metric = get_translated_string(mib_server_url, [varbind])
-                logger.debug(result)
+                logger.info(result)
                 post_data_to_splunk_hec(
                     host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
                 )
