@@ -244,6 +244,7 @@ def bulk_handler(
     e.g. 1.3.6.1.2.1.1.9.1.2.1,
     which queries the info correlated to this specific oid
     """
+    logger.info("BULK HANDLER")
     g = bulkCmd(
         snmp_engine,
         auth_data,
@@ -255,6 +256,7 @@ def bulk_handler(
         lexicographicMode=False,
     )
     for (errorIndication, errorStatus, errorIndex, varBinds) in g:
+        logger.info(f"EI: {errorIndication} {errorStatus} {errorIndex} {varBinds}")
         is_metric = False
         if errorIndication:
             result = f"error: {errorIndication}"
@@ -266,7 +268,9 @@ def bulk_handler(
             )
             logger.error(result)
         else:
+            logger.info(f"In else")
             for varbind in varBinds:
+                logger.info(f"Varbind: {varbind}")
                 result, is_metric = get_translated_string(mib_server_url, [varbind])
                 logger.debug(result)
                 post_data_to_splunk_hec(
