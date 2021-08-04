@@ -143,8 +143,17 @@ def snmp_polling(
                 f"Executing SNMP Polling for Varbinds in config.yaml for {host} profile={profile}"
             )
             mib_profile = server_config["profiles"].get(profile, None)
+            logger.info(
+                f"Mib profile: {mib_profile}"
+            )
             if mib_profile:
+                logger.info(
+                    f"Inside mib profile: {mib_profile}"
+                )
                 varBinds = mib_profile.get("varBinds", None)
+                logger.info(
+                    f"After varBinds: {varBinds}"
+                )
                 varbind_collection = sort_varbinds(varBinds)
                 get_bulk_data(varbind_collection.bulk, *static_parameters)
                 for varbind in varbind_collection.walk:
@@ -154,8 +163,14 @@ def snmp_polling(
                     )
         # Perform SNNP Polling for oid profile in inventory.csv
         else:
+            logger.info(
+                f"Inside else, profile: {profile}"
+            )
             # Perform SNNP WALK for oid end with *
             if profile[-1] == "*":
+                logger.info(
+                    f"Inside else, profile: {profile}"
+                )
                 logger.info(f"Executing SNMP WALK for {host} profile={profile}")
                 walk_handler(
                     profile,
