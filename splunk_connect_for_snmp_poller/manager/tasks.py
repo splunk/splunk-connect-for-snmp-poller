@@ -142,6 +142,9 @@ def snmp_polling(
             logger.info(
                 f"Executing SNMP Polling for Varbinds in config.yaml for {host} profile={profile}"
             )
+            logger.info(
+                f"Server config: {server_config}"
+            )
             mib_profile = server_config["profiles"].get(profile, None)
             logger.info(
                 f"Mib profile: {mib_profile}"
