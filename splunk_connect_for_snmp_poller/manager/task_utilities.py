@@ -244,7 +244,7 @@ def bulk_handler(
     e.g. 1.3.6.1.2.1.1.9.1.2.1,
     which queries the info correlated to this specific oid
     """
-    logger.info("BULK HANDLER")
+    logger.info(f"BULK HANDLER: {var_binds}")
     g = bulkCmd(
         snmp_engine,
         auth_data,
@@ -255,6 +255,7 @@ def bulk_handler(
         *var_binds,
         lexicographicMode=False,
     )
+    logger.info(f"After bulkCmd")
     for (errorIndication, errorStatus, errorIndex, varBinds) in g:
         logger.info(f"EI: {errorIndication} {errorStatus} {errorIndex} {varBinds}")
         is_metric = False
