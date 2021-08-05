@@ -49,7 +49,7 @@ logger = get_task_logger(__name__)
 class VarbindCollection(namedtuple('VarbindCollection', 'get, bulk')):
 
     def __add__(self, other):
-        return VarbindCollection(bulk=self.bulk+other.bulk, get=self.get + other.get)
+        return VarbindCollection(bulk=self.bulk+other.bulk, get=self.get+other.get)
 
 
 # TODO remove the debugging statement later
@@ -164,9 +164,9 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
                 oid = ObjectIdentity(mib_string[0], mib_string[1]).resolveWithMib(
                     mibViewController
                 )
-                oid = str(oid) + ".*"
+                # oid = str(oid) + ".*"
                 logger.debug(f"[-] oid: {oid}")
-                bulk_list.append(oid)
+                bulk_list.append(ObjectIdentity(ObjectType(oid)))
 
             else:
                 raise Exception(
