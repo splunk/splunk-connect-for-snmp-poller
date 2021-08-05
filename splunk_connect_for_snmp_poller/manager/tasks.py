@@ -146,6 +146,7 @@ def snmp_polling(
                 varBinds = mib_profile.get("varBinds", None)
                 # Divide varBinds for WALK/BULK actions
                 varbind_collection = sort_varbinds(varBinds)
+                logger.info(f"Varbind collection: {varbind_collection}")
                 # Perform SNMP BULK
                 get_bulk_data(varbind_collection.bulk, *static_parameters)
                 # Perform SNMP WALK
