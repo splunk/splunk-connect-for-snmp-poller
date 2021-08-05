@@ -72,7 +72,7 @@ def get_data(varBinds,
             )
         except Exception as e:
             logger.error(
-                f"Error happend while calling bulk_handler(): {e}"
+                f"Error happend while calling bulk_handler(): {e} {handler.__name__}"
             )
 
 
@@ -94,7 +94,7 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
             _tmp_multikey_elements.append(varbind)
         else:
             if varbind[-1] == "*":
-                bulk_list.append(varbind)
+                bulk_list.append(ObjectType(ObjectIdentity(varbind[:-2])))
             else:
                 get_list.append(ObjectType(ObjectIdentity(varbind)))
 
