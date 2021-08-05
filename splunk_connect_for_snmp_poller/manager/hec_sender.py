@@ -31,13 +31,13 @@ def post_data_to_splunk_hec(
     index,
     one_time_flag=False,
 ):
-    logger.info(f"[-] logs : {logs_endpoint}, metrics : {metrics_endpoint}")
+    logger.debug(f"[-] logs : {logs_endpoint}, metrics : {metrics_endpoint}")
 
     if is_metric:
-        logger.info(f"+++++++++metric index: {index['metric_index']} +++++++++")
+        logger.debug(f"+++++++++metric index: {index['metric_index']} +++++++++")
         post_metric_data(metrics_endpoint, host, variables_binds, index["metric_index"])
     else:
-        logger.info(f"*********event index: {index['event_index']} ********")
+        logger.debug(f"*********event index: {index['event_index']} ********")
         post_event_data(
             logs_endpoint,
             host,
