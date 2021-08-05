@@ -46,10 +46,10 @@ pysmi_debug.setLogger(pysmi_debug.Debug("compiler"))
 logger = get_task_logger(__name__)
 
 
-class VarbindCollection(namedtuple('VarbindCollection', 'walk, bulk')):
+class VarbindCollection(namedtuple('VarbindCollection', 'get, bulk')):
 
     def __add__(self, other):
-        return VarbindCollection(bulk=self.bulk+other.bulk, walk=self.walk + other.walk)
+        return VarbindCollection(bulk=self.bulk+other.bulk, get=self.get + other.get)
 
 
 # TODO remove the debugging statement later
@@ -144,7 +144,7 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
     2) case 2: without mib index - consider it as a oid with * -> snmpwalk
     . ['SNMPv2-MIB', 'sysORUpTime'] (syntax -> [<mib_file_name>, <mib_name/string>)
     """
-    walk_list, bulk_list = [], []
+    get_list, bulk_list = [], []
     mibBuilder = builder.MibBuilder()
     mibViewController = view.MibViewController(mibBuilder)
     config = {"sources": [os.environ["MIBS_FILES_URL"]]}
@@ -166,7 +166,7 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
                 )
                 oid = str(oid) + ".*"
                 logger.debug(f"[-] oid: {oid}")
-                walk_list.append(oid)
+                get_list.append(oid)
 
             else:
                 raise Exception(
@@ -178,7 +178,7 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
                 )
         except Exception as e:
             logger.error(f"Error happened while polling for mib string: {mib_string}: {e}")
-    return VarbindCollection(walk=walk_list, bulk=bulk_list)
+    return VarbindCollection(get=get_list, bulk=bulk_list)
 
 
 def get_handler(

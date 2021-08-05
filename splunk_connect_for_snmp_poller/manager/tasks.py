@@ -87,19 +87,19 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
     @return: VarbindCollection object with seperate varbinds for walk and bulk
     """
     _tmp_multikey_elements = []
-    walk_list, bulk_list = [], []
+    get_list, bulk_list = [], []
     for varbind in varbind_list:
         if isinstance(varbind, list):
             _tmp_multikey_elements.append(varbind)
         else:
             if varbind[-1] == "*":
-                walk_list.append(varbind)
+                bulk_list.append(varbind)
             else:
-                bulk_list.append(ObjectType(ObjectIdentity(varbind)))
+                get_list.append(ObjectType(ObjectIdentity(varbind)))
 
     # in case of lists we use mib_string_handler function to divide varbinds on walk/bulk based on number of elements
     casted_multikey_elements = mib_string_handler(_tmp_multikey_elements)
-    casted_multikey_elements += VarbindCollection(walk=walk_list, bulk=bulk_list)
+    casted_multikey_elements += VarbindCollection(get=get_list, bulk=bulk_list)
     return casted_multikey_elements
 
 
@@ -150,8 +150,8 @@ def snmp_polling(
                 # Perform SNMP BULK
                 get_bulk_data(varbind_collection.bulk, *static_parameters)
                 # Perform SNMP WALK
-                for varbind in varbind_collection.walk:
-                    walk_handler(
+                for varbind in varbind_collection.get:
+                    get_handler(
                         varbind,
                         *static_parameters
                     )
