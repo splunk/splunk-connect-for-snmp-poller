@@ -106,7 +106,7 @@ def get_translated_string(mib_server_url, varBinds):
                     oid=name.prettyPrint(), value=val.prettyPrint()
                 )
     except Exception as e:
-        logger.error(
+        logger.info(
             f"Exception occurred while logging varBinds name & value. Exception: {e}"
         )
 
@@ -127,14 +127,14 @@ def get_translated_string(mib_server_url, varBinds):
                 is_metric = False
                 result = get_translation(varBinds, mib_server_url, is_metric)
     except Exception as e:
-        logger.error(f"Could not perform translation. Exception: {e}")
+        logger.info(f"Could not perform translation. Exception: {e}")
     logger.info(
         f"###############final result -- metric: {is_metric}#######################\n{result}"
     )
     return result, is_metric
 
 
-def mib_string_handler(mib_list):
+def mib_string_handler(mib_list: list) -> VarbindCollection:
     """
     Perform the SNMP Get for mib-name/string, where mib string is a list
     1) case 1: with mib index - consider it as a single oid -> snmpget
@@ -143,7 +143,6 @@ def mib_string_handler(mib_list):
 
     2) case 2: without mib index - consider it as a oid with * -> snmpwalk
     . ['SNMPv2-MIB', 'sysORUpTime'] (syntax -> [<mib_file_name>, <mib_name/string>)
-    execute snmpwalk to query all the subtree
     """
     walk_list, bulk_list = [], []
     mibBuilder = builder.MibBuilder()
@@ -158,7 +157,7 @@ def mib_string_handler(mib_list):
                     mib_string[0], mib_string[1], mib_string[2]
                 ).resolveWithMib(mibViewController)
                 logger.debug(f"[-] oid: {oid}")
-                bulk_list.append(ObjectType(ObjectIdentity(oid)))
+                bulk_list.append(ObjectType(oid))
 
             elif len(mib_string) == 2:
                 # convert mib string to oid
@@ -240,11 +239,8 @@ def bulk_handler(
         var_binds
 ):
     """
-    Perform the SNMP Bulk for an oid,
-    e.g. 1.3.6.1.2.1.1.9.1.2.1,
-    which queries the info correlated to this specific oid
+    Perform the SNMP Bulk for an array of oids
     """
-    logger.info(f"BULK HANDLER: {var_binds}")
     g = bulkCmd(
         snmp_engine,
         auth_data,
@@ -255,9 +251,7 @@ def bulk_handler(
         *var_binds,
         lexicographicMode=False,
     )
-    logger.info(f"After bulkCmd {g}")
     for (errorIndication, errorStatus, errorIndex, varBinds) in g:
-        logger.info(f"EI: {errorIndication} {errorStatus} {errorIndex} {varBinds}")
         is_metric = False
         if errorIndication:
             result = f"error: {errorIndication}"
@@ -269,9 +263,9 @@ def bulk_handler(
             )
             logger.error(result)
         else:
-            logger.info(f"In else")
+            # Bulk operation returns array of varbinds
             for varbind in varBinds:
-                logger.info(f"Varbind: {varbind}")
+                logger.debug(f"Bulk returned this varbind: {varbind}")
                 result, is_metric = get_translated_string(mib_server_url, [varbind])
                 logger.info(result)
                 post_data_to_splunk_hec(

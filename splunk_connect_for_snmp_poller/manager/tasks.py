@@ -55,7 +55,6 @@ def get_bulk_data(varBinds,
                   otel_metrics_url,
                   one_time_flag):
     if varBinds:
-        # Perform SNMP polling for mib string
         try:
             bulk_handler(
                 snmp_engine,
@@ -84,8 +83,8 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
                 - when varbind is an element without a '*' as a last element
         2. Walk - when varbind is an element with a '*' as a last element
                 - when varbind is a 2-element list, ex. ['CISCO-FC-MGMT-MIB', 'cfcmPortLcStatsEntry']
-    @param varbind_list:
-    @return:
+    @param varbind_list: list of unsorted varbinds given as parameters to make qquery
+    @return: VarbindCollection object with seperate varbinds for walk and bulk
     """
     _tmp_multikey_elements = []
     walk_list, bulk_list = [], []
@@ -142,29 +141,14 @@ def snmp_polling(
             logger.info(
                 f"Executing SNMP Polling for Varbinds in config.yaml for {host} profile={profile}"
             )
-            logger.info(
-                f"Server config: {server_config}"
-            )
             mib_profile = server_config["profiles"].get(profile, None)
-            logger.info(
-                f"Mib profile: {mib_profile}"
-            )
             if mib_profile:
-                logger.info(
-                    f"Inside mib profile: {mib_profile}"
-                )
                 varBinds = mib_profile.get("varBinds", None)
-                logger.info(
-                    f"After varBinds: {varBinds}"
-                )
+                # Divide varBinds for WALK/BULK actions
                 varbind_collection = sort_varbinds(varBinds)
-                logger.info(
-                    f"Varbind collection: {varbind_collection}"
-                )
+                # Perform SNMP BULK
                 get_bulk_data(varbind_collection.bulk, *static_parameters)
-                logger.info(
-                    f"After get_bulk_data"
-                )
+                # Perform SNMP WALK
                 for varbind in varbind_collection.walk:
                     walk_handler(
                         varbind,
@@ -172,14 +156,8 @@ def snmp_polling(
                     )
         # Perform SNNP Polling for oid profile in inventory.csv
         else:
-            logger.info(
-                f"Inside else, profile: {profile}"
-            )
             # Perform SNNP WALK for oid end with *
             if profile[-1] == "*":
-                logger.info(
-                    f"Inside else, profile: {profile}"
-                )
                 logger.info(f"Executing SNMP WALK for {host} profile={profile}")
                 walk_handler(
                     profile,
