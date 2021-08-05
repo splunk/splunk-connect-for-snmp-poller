@@ -166,7 +166,7 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
                 )
                 # oid = str(oid) + ".*"
                 logger.debug(f"[-] oid: {oid}")
-                bulk_list.append(ObjectIdentity(ObjectType(oid)))
+                bulk_list.append(ObjectType(oid))
 
             else:
                 raise Exception(
