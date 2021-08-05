@@ -43,7 +43,8 @@ def get_shared_snmp_engine():
     return thread_local.local_snmp_engine
 
 
-def get_bulk_data(varBinds,
+def get_data(varBinds,
+                  handler,
                   snmp_engine,
                   auth_data,
                   context_data,
@@ -56,7 +57,7 @@ def get_bulk_data(varBinds,
                   one_time_flag):
     if varBinds:
         try:
-            bulk_handler(
+            handler(
                 snmp_engine,
                 auth_data,
                 context_data,
@@ -148,13 +149,9 @@ def snmp_polling(
                 varbind_collection = sort_varbinds(varBinds)
                 logger.info(f"Varbind collection: {varbind_collection}")
                 # Perform SNMP BULK
-                get_bulk_data(varbind_collection.bulk, *static_parameters)
+                get_data(varbind_collection.bulk, bulk_handler, *static_parameters)
                 # Perform SNMP WALK
-                for varbind in varbind_collection.get:
-                    get_handler(
-                        varbind,
-                        *static_parameters
-                    )
+                get_data(varbind_collection.get, get_handler, *static_parameters)
         # Perform SNNP Polling for oid profile in inventory.csv
         else:
             # Perform SNNP WALK for oid end with *

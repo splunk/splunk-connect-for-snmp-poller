@@ -182,7 +182,6 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
 
 
 def get_handler(
-        profile,
         snmp_engine,
         auth_data,
         context_data,
@@ -193,6 +192,7 @@ def get_handler(
         otel_logs_url,
         otel_metrics_url,
         one_time_flag,
+        var_binds
 ):
     """
     Perform the SNMP Get for an oid,
@@ -205,7 +205,7 @@ def get_handler(
             auth_data,
             UdpTransportTarget((host, port)),
             context_data,
-            ObjectType(ObjectIdentity(profile)),
+            *var_binds,
         )
     )
     is_metric = False
@@ -219,10 +219,11 @@ def get_handler(
         )
         logger.error(result)
     else:
-        result, is_metric = get_translated_string(mib_server_url, varBinds)
-    post_data_to_splunk_hec(
-        host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
-    )
+        for varbind in varBinds:
+            result, is_metric = get_translated_string(mib_server_url, [varbind])
+            post_data_to_splunk_hec(
+                host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
+            )
 
 
 def bulk_handler(
