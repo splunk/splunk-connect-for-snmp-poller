@@ -26,7 +26,7 @@ from pysnmp.hlapi import (
     UsmUserData,
     getCmd,
     nextCmd,
-    bulkCmd
+    bulkCmd,
 )
 from pysnmp.proto import rfc1902
 from pysnmp.smi import builder, compiler, view
@@ -46,10 +46,9 @@ pysmi_debug.setLogger(pysmi_debug.Debug("compiler"))
 logger = get_task_logger(__name__)
 
 
-class VarbindCollection(namedtuple('VarbindCollection', 'get, bulk')):
-
+class VarbindCollection(namedtuple("VarbindCollection", "get, bulk")):
     def __add__(self, other):
-        return VarbindCollection(bulk=self.bulk+other.bulk, get=self.get+other.get)
+        return VarbindCollection(bulk=self.bulk + other.bulk, get=self.get + other.get)
 
 
 # TODO remove the debugging statement later
@@ -175,22 +174,24 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
                     )
                 )
         except Exception as e:
-            logger.error(f"Error happened while polling for mib string: {mib_string}: {e}")
+            logger.error(
+                f"Error happened while polling for mib string: {mib_string}: {e}"
+            )
     return VarbindCollection(get=get_list, bulk=bulk_list)
 
 
 def get_handler(
-        snmp_engine,
-        auth_data,
-        context_data,
-        host,
-        port,
-        mib_server_url,
-        index,
-        otel_logs_url,
-        otel_metrics_url,
-        one_time_flag,
-        var_binds
+    snmp_engine,
+    auth_data,
+    context_data,
+    host,
+    port,
+    mib_server_url,
+    index,
+    otel_logs_url,
+    otel_metrics_url,
+    one_time_flag,
+    var_binds,
 ):
     """
     Perform the SNMP Get for an oid,
@@ -220,22 +221,28 @@ def get_handler(
         for varbind in varBinds:
             result, is_metric = get_translated_string(mib_server_url, [varbind])
             post_data_to_splunk_hec(
-                host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
+                host,
+                otel_logs_url,
+                otel_metrics_url,
+                result,
+                is_metric,
+                index,
+                one_time_flag,
             )
 
 
 def bulk_handler(
-        snmp_engine,
-        auth_data,
-        context_data,
-        host,
-        port,
-        mib_server_url,
-        index,
-        otel_logs_url,
-        otel_metrics_url,
-        one_time_flag,
-        var_binds
+    snmp_engine,
+    auth_data,
+    context_data,
+    host,
+    port,
+    mib_server_url,
+    index,
+    otel_logs_url,
+    otel_metrics_url,
+    one_time_flag,
+    var_binds,
 ):
     """
     Perform the SNMP Bulk for an array of oids
@@ -268,22 +275,28 @@ def bulk_handler(
                 result, is_metric = get_translated_string(mib_server_url, [varbind])
                 logger.info(result)
                 post_data_to_splunk_hec(
-                    host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
+                    host,
+                    otel_logs_url,
+                    otel_metrics_url,
+                    result,
+                    is_metric,
+                    index,
+                    one_time_flag,
                 )
 
 
 def walk_handler(
-        profile,
-        snmp_engine,
-        auth_data,
-        context_data,
-        host,
-        port,
-        mib_server_url,
-        index,
-        otel_logs_url,
-        otel_metrics_url,
-        one_time_flag,
+    profile,
+    snmp_engine,
+    auth_data,
+    context_data,
+    host,
+    port,
+    mib_server_url,
+    index,
+    otel_logs_url,
+    otel_metrics_url,
+    one_time_flag,
 ):
     """
     Perform the SNMP Walk for oid end with *,
@@ -292,12 +305,12 @@ def walk_handler(
     """
 
     for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
-            snmp_engine,
-            auth_data,
-            UdpTransportTarget((host, port)),
-            context_data,
-            ObjectType(ObjectIdentity(profile[:-2])),
-            lexicographicMode=False,
+        snmp_engine,
+        auth_data,
+        UdpTransportTarget((host, port)),
+        context_data,
+        ObjectType(ObjectIdentity(profile[:-2])),
+        lexicographicMode=False,
     ):
         is_metric = False
         if errorIndication:

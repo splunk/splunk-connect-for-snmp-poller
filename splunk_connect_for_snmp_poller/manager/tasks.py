@@ -27,7 +27,7 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
     mib_string_handler,
     parse_port,
     walk_handler,
-    VarbindCollection
+    VarbindCollection,
 )
 
 # Used to store a single SnmpEngine() instance for each Celery task
@@ -43,18 +43,20 @@ def get_shared_snmp_engine():
     return thread_local.local_snmp_engine
 
 
-def get_data(varBinds,
-                  handler,
-                  snmp_engine,
-                  auth_data,
-                  context_data,
-                  host,
-                  port,
-                  mib_server_url,
-                  index,
-                  otel_logs_url,
-                  otel_metrics_url,
-                  one_time_flag):
+def get_data(
+    varBinds,
+    handler,
+    snmp_engine,
+    auth_data,
+    context_data,
+    host,
+    port,
+    mib_server_url,
+    index,
+    otel_logs_url,
+    otel_metrics_url,
+    one_time_flag,
+):
     if varBinds:
         try:
             handler(
@@ -68,12 +70,10 @@ def get_data(varBinds,
                 otel_logs_url,
                 otel_metrics_url,
                 one_time_flag,
-                varBinds
+                varBinds,
             )
         except Exception as e:
-            logger.error(
-                f"Error happend while calling {handler.__name__}(): {e}"
-            )
+            logger.error(f"Error happend while calling {handler.__name__}(): {e}")
 
 
 def sort_varbinds(varbind_list: list) -> VarbindCollection:
@@ -107,7 +107,7 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 # TODO remove the debugging statement later
 @app.task
 def snmp_polling(
-        host, version, community, profile, server_config, index, one_time_flag=False
+    host, version, community, profile, server_config, index, one_time_flag=False
 ):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
@@ -126,16 +126,18 @@ def snmp_polling(
     context_data = build_contextData(version, community, server_config)
     logger.debug(f"==========context_data=========\n{context_data}")
 
-    static_parameters = [snmp_engine,
-                         auth_data,
-                         context_data,
-                         host,
-                         port,
-                         mib_server_url,
-                         index,
-                         otel_logs_url,
-                         otel_metrics_url,
-                         one_time_flag]
+    static_parameters = [
+        snmp_engine,
+        auth_data,
+        context_data,
+        host,
+        port,
+        mib_server_url,
+        index,
+        otel_logs_url,
+        otel_metrics_url,
+        one_time_flag,
+    ]
     try:
         # Perform SNNP Polling for string profile in inventory.csv
         if "." not in profile:
@@ -157,17 +159,11 @@ def snmp_polling(
             # Perform SNNP WALK for oid end with *
             if profile[-1] == "*":
                 logger.info(f"Executing SNMP WALK for {host} profile={profile}")
-                walk_handler(
-                    profile,
-                    *static_parameters
-                )
+                walk_handler(profile, *static_parameters)
             # Perform SNNP GET for an oid
             else:
                 logger.info(f"Executing SNMP GET for {host} profile={profile}")
-                get_handler(
-                    *static_parameters,
-                    profile
-                )
+                get_handler(*static_parameters, profile)
 
         return f"Executing SNMP Polling for {host} version={version} profile={profile}"
     except Exception as e:
