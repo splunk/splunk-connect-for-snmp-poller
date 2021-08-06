@@ -96,7 +96,7 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
             if varbind[-1] == "*":
                 bulk_list.append(ObjectType(ObjectIdentity(varbind[:-2])))
             else:
-                get_list.append(ObjectType(ObjectIdentity(varbind)))
+                get_list.append(varbind)
 
     # in case of lists we use mib_string_handler function to divide varbinds on walk/bulk based on number of elements
     casted_multikey_elements = mib_string_handler(_tmp_multikey_elements)

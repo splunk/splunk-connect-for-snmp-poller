@@ -156,7 +156,7 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
                     mib_string[0], mib_string[1], mib_string[2]
                 ).resolveWithMib(mibViewController)
                 logger.debug(f"[-] oid: {oid}")
-                get_list.append(ObjectType(oid))
+                get_list.append(str(oid))
 
             elif len(mib_string) == 2:
                 # convert mib string to oid
