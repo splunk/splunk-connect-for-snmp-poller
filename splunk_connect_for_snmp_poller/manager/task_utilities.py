@@ -180,7 +180,7 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
     return VarbindCollection(get=get_list, bulk=bulk_list)
 
 
-def get_handler(
+def snmp_get_handler(
     snmp_engine,
     auth_data,
     context_data,
@@ -231,7 +231,7 @@ def get_handler(
             )
 
 
-def bulk_handler(
+def snmp_bulk_handler(
     snmp_engine,
     auth_data,
     context_data,

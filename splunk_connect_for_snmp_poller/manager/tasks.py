@@ -22,8 +22,8 @@ from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     build_authData,
     build_contextData,
-    get_handler,
-    bulk_handler,
+    snmp_get_handler,
+    snmp_bulk_handler,
     mib_string_handler,
     parse_port,
     walk_handler,
@@ -43,7 +43,7 @@ def get_shared_snmp_engine():
     return thread_local.local_snmp_engine
 
 
-def get_data(
+def get_snmp_data(
     varBinds,
     handler,
     snmp_engine,
@@ -115,7 +115,7 @@ def snmp_polling(
     host, port = parse_port(host)
     logger.info(f"Using the following MIBS server URL: {mib_server_url}")
 
-    # create one SnmpEngie for get_handler, walk_handler, mib_string_handler
+    # create one SnmpEngie for snmp_get_handler, walk_handler, mib_string_handler
     snmp_engine = get_shared_snmp_engine()
 
     # create auth_data depending on SNMP's version
@@ -151,9 +151,9 @@ def snmp_polling(
                 varbind_collection = sort_varbinds(varBinds)
                 logger.info(f"Varbind collection: {varbind_collection}")
                 # Perform SNMP BULK
-                get_data(varbind_collection.bulk, bulk_handler, *static_parameters)
+                get_snmp_data(varbind_collection.bulk, snmp_bulk_handler, *static_parameters)
                 # Perform SNMP WALK
-                get_data(varbind_collection.get, get_handler, *static_parameters)
+                get_snmp_data(varbind_collection.get, snmp_get_handler, *static_parameters)
         # Perform SNNP Polling for oid profile in inventory.csv
         else:
             # Perform SNNP WALK for oid end with *
@@ -163,7 +163,7 @@ def snmp_polling(
             # Perform SNNP GET for an oid
             else:
                 logger.info(f"Executing SNMP GET for {host} profile={profile}")
-                get_handler(*static_parameters, profile)
+                snmp_get_handler(*static_parameters, profile)
 
         return f"Executing SNMP Polling for {host} version={version} profile={profile}"
     except Exception as e:
