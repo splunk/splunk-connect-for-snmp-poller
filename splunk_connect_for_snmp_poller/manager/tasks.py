@@ -72,7 +72,7 @@ def get_data(varBinds,
             )
         except Exception as e:
             logger.error(
-                f"Error happend while calling bulk_handler(): {e} {handler.__name__}"
+                f"Error happend while calling {handler.__name__}(): {e}"
             )
 
 
@@ -96,7 +96,7 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
             if varbind[-1] == "*":
                 bulk_list.append(ObjectType(ObjectIdentity(varbind[:-2])))
             else:
-                get_list.append(varbind)
+                get_list.append(ObjectType(ObjectIdentity(varbind)))
 
     # in case of lists we use mib_string_handler function to divide varbinds on walk/bulk based on number of elements
     casted_multikey_elements = mib_string_handler(_tmp_multikey_elements)
@@ -165,8 +165,8 @@ def snmp_polling(
             else:
                 logger.info(f"Executing SNMP GET for {host} profile={profile}")
                 get_handler(
-                    profile,
-                    *static_parameters
+                    *static_parameters,
+                    profile
                 )
 
         return f"Executing SNMP Polling for {host} version={version} profile={profile}"
