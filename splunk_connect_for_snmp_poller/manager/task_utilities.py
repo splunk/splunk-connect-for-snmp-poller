@@ -139,9 +139,8 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
     Perform the SNMP Get for mib-name/string, where mib string is a list
     1) case 1: with mib index - consider it as a single oid -> snmpget
     e.g. ['SNMPv2-MIB', 'sysUpTime',0] (syntax -> [<mib_file_name>, <mib_name/string>, <min_index>])
-    execute snmpget to query info correlated to this specific mib-name/string
 
-    2) case 2: without mib index - consider it as a oid with * -> snmpwalk
+    2) case 2: without mib index - consider it as a oid with * -> snmpbulk
     . ['SNMPv2-MIB', 'sysORUpTime'] (syntax -> [<mib_file_name>, <mib_name/string>)
     """
     get_list, bulk_list = [], []
@@ -164,7 +163,6 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
                 oid = ObjectIdentity(mib_string[0], mib_string[1]).resolveWithMib(
                     mibViewController
                 )
-                # oid = str(oid) + ".*"
                 logger.debug(f"[-] oid: {oid}")
                 bulk_list.append(ObjectType(oid))
 

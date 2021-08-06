@@ -80,9 +80,9 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
     """
     This function sorts varbinds based on their final destination.
     We have 2 possible operations to run on snmp:
-        1. Bulk - when varbind is a 3-element list, ex. ['SNMPv2-MIB', 'sysUpTime', 0]
+        1. Get - when varbind is a 3-element list, ex. ['SNMPv2-MIB', 'sysUpTime', 0]
                 - when varbind is an element without a '*' as a last element
-        2. Walk - when varbind is an element with a '*' as a last element
+        2. Bulk - when varbind is an element with a '*' as a last element
                 - when varbind is a 2-element list, ex. ['CISCO-FC-MGMT-MIB', 'cfcmPortLcStatsEntry']
     @param varbind_list: list of unsorted varbinds given as parameters to make qquery
     @return: VarbindCollection object with seperate varbinds for walk and bulk
