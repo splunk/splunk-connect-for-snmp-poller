@@ -14,12 +14,12 @@
 # limitations under the License.
 #
 from unittest import TestCase
-from unittest.mock import patch
-
+from unittest.mock import patch, Mock
+import sys
 from pysnmp.hlapi import ObjectIdentity, ObjectType
 
+sys.modules['splunk_connect_for_snmp_poller.manager.celery_client'] = Mock()
 from splunk_connect_for_snmp_poller.manager.task_utilities import VarbindCollection
-
 from splunk_connect_for_snmp_poller.manager.tasks import sort_varbinds
 
 
@@ -32,8 +32,7 @@ def cast_helper(varbind):
 
 class TestTasks(TestCase):
 
-    @patch('splunk_connect_for_snmp_poller.manager.tasks.app')
-    def test_sort_varbinds_get(self, app):
+    def test_sort_varbinds_get(self):
         varbinds = "1.3.6.1.2.1.2.2"
         get_varbinds_result = VarbindCollection(bulk=[], get=cast_helper(varbinds))
         actual_result = sort_varbinds([varbinds])

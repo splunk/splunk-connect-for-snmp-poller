@@ -142,6 +142,8 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
     2) case 2: without mib index - consider it as a oid with * -> snmpbulk
     . ['SNMPv2-MIB', 'sysORUpTime'] (syntax -> [<mib_file_name>, <mib_name/string>)
     """
+    if not mib_list:
+        return VarbindCollection(get=[], bulk=[])
     get_list, bulk_list = [], []
     mibBuilder = builder.MibBuilder()
     mibViewController = view.MibViewController(mibBuilder)
