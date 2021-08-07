@@ -151,9 +151,13 @@ def snmp_polling(
                 varbind_collection = sort_varbinds(varBinds)
                 logger.info(f"Varbind collection: {varbind_collection}")
                 # Perform SNMP BULK
-                get_snmp_data(varbind_collection.bulk, snmp_bulk_handler, *static_parameters)
+                get_snmp_data(
+                    varbind_collection.bulk, snmp_bulk_handler, *static_parameters
+                )
                 # Perform SNMP WALK
-                get_snmp_data(varbind_collection.get, snmp_get_handler, *static_parameters)
+                get_snmp_data(
+                    varbind_collection.get, snmp_get_handler, *static_parameters
+                )
         # Perform SNNP Polling for oid profile in inventory.csv
         else:
             # Perform SNNP WALK for oid end with *
