@@ -31,13 +31,16 @@ def cast_helper(varbind):
 
 
 class TestTasks(TestCase):
-    def test_sort_varbinds_get(self):
+
+    @patch('splunk_connect_for_snmp_poller.manager.tasks.app')
+    def test_sort_varbinds_get(self, app):
         varbinds = "1.3.6.1.2.1.2.2"
         get_varbinds_result = VarbindCollection(bulk=[], get=cast_helper(varbinds))
         actual_result = sort_varbinds([varbinds])
         self.assertEqual(str(actual_result.get), str(get_varbinds_result.get))
 
-    def test_sort_varbinds_bulk(self):
+    @patch('splunk_connect_for_snmp_poller.manager.tasks.app')
+    def test_sort_varbinds_bulk(self, app):
         varbinds = ["CISCO-FC-MGMT-MIB", "cfcmPortLcStatsEntry"]
         bulk_varbinds_result = VarbindCollection(bulk=cast_helper(varbinds), get=[])
         with patch(
@@ -47,7 +50,8 @@ class TestTasks(TestCase):
             actual_result = sort_varbinds([varbinds])
         self.assertEqual(str(actual_result.bulk), str(bulk_varbinds_result.bulk))
 
-    def test_sort_varbinds_bulk_star(self):
+    @patch('splunk_connect_for_snmp_poller.manager.tasks.app')
+    def test_sort_varbinds_bulk_star(self, app):
         varbinds = ["1.3.6.1.2.1.2.*"]
         bulk_varbinds_result = VarbindCollection(
             bulk=cast_helper("1.3.6.1.2.1.2"), get=[]
@@ -55,7 +59,8 @@ class TestTasks(TestCase):
         actual_result = sort_varbinds(varbinds)
         self.assertEqual(str(actual_result.bulk), str(bulk_varbinds_result.bulk))
 
-    def test_sort_varbinds_bulk_get(self):
+    @patch('splunk_connect_for_snmp_poller.manager.tasks.app')
+    def test_sort_varbinds_bulk_get(self, app):
         varbinds = ["1.3.6.1.2.1.2.*", "1.3.6.1.2.1.2.1"]
         varbinds_bulk = cast_helper("1.3.6.1.2.1.2")
         varbinds_result = VarbindCollection(
@@ -65,7 +70,8 @@ class TestTasks(TestCase):
         self.assertEqual(str(actual_result.bulk), str(varbinds_result.bulk))
         self.assertEqual(str(actual_result.get), str(varbinds_result.get))
 
-    def test_sort_varbinds_empty(self):
+    @patch('splunk_connect_for_snmp_poller.manager.tasks.app')
+    def test_sort_varbinds_empty(self, app):
         varbinds = []
         varbinds_result = VarbindCollection(bulk=[], get=[])
         actual_result = sort_varbinds(varbinds)
