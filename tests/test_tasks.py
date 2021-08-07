@@ -37,8 +37,7 @@ class TestTasks(TestCase):
         actual_result = sort_varbinds([varbinds])
         self.assertEqual(str(actual_result.get), str(get_varbinds_result.get))
 
-    @patch("splunk_connect_for_snmp_poller.manager.tasks.app")
-    def test_sort_varbinds_bulk(self, app):
+    def test_sort_varbinds_bulk(self):
         varbinds = ["CISCO-FC-MGMT-MIB", "cfcmPortLcStatsEntry"]
         bulk_varbinds_result = VarbindCollection(bulk=cast_helper(varbinds), get=[])
         with patch(
@@ -48,8 +47,7 @@ class TestTasks(TestCase):
             actual_result = sort_varbinds([varbinds])
         self.assertEqual(str(actual_result.bulk), str(bulk_varbinds_result.bulk))
 
-    @patch("splunk_connect_for_snmp_poller.manager.tasks.app")
-    def test_sort_varbinds_bulk_star(self, app):
+    def test_sort_varbinds_bulk_star(self):
         varbinds = ["1.3.6.1.2.1.2.*"]
         bulk_varbinds_result = VarbindCollection(
             bulk=cast_helper("1.3.6.1.2.1.2"), get=[]
@@ -57,8 +55,7 @@ class TestTasks(TestCase):
         actual_result = sort_varbinds(varbinds)
         self.assertEqual(str(actual_result.bulk), str(bulk_varbinds_result.bulk))
 
-    @patch("splunk_connect_for_snmp_poller.manager.tasks.app")
-    def test_sort_varbinds_bulk_get(self, app):
+    def test_sort_varbinds_bulk_get(self):
         varbinds = ["1.3.6.1.2.1.2.*", "1.3.6.1.2.1.2.1"]
         varbinds_bulk = cast_helper("1.3.6.1.2.1.2")
         varbinds_result = VarbindCollection(
@@ -68,8 +65,7 @@ class TestTasks(TestCase):
         self.assertEqual(str(actual_result.bulk), str(varbinds_result.bulk))
         self.assertEqual(str(actual_result.get), str(varbinds_result.get))
 
-    @patch("splunk_connect_for_snmp_poller.manager.tasks.app")
-    def test_sort_varbinds_empty(self, app):
+    def test_sort_varbinds_empty(self):
         varbinds = []
         varbinds_result = VarbindCollection(bulk=[], get=[])
         actual_result = sort_varbinds(varbinds)
