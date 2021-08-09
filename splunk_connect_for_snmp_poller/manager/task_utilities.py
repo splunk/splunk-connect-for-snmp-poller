@@ -209,7 +209,9 @@ def snmp_get_handler(
             *var_binds,
         )
     )
-    if not _any_failure_happened(errorIndication, errorStatus, errorIndex, varBinds):
+    if not _any_failure_happened(
+            errorIndication, errorStatus, errorIndex, varBinds
+        ):
         for varbind in varBinds:
             result, is_metric = get_translated_string(mib_server_url, [varbind])
             post_data_to_splunk_hec(
@@ -223,7 +225,9 @@ def snmp_get_handler(
             )
 
 
-def _any_failure_happened(errorIndication, errorStatus: int, errorIndex: int, varBinds: list) -> bool:
+def _any_failure_happened(
+    errorIndication, errorStatus: int, errorIndex: int, varBinds: list
+) -> bool:
     """
     This function checks if any failure happened during GET or BULK operation.
     @param errorIndication:
@@ -273,7 +277,9 @@ def snmp_bulk_handler(
         lexicographicMode=False,
     )
     for (errorIndication, errorStatus, errorIndex, varBinds) in g:
-        if not _any_failure_happened(errorIndication, errorStatus, errorIndex, varBinds):
+        if not _any_failure_happened(
+            errorIndication, errorStatus, errorIndex, varBinds
+        ):
             # Bulk operation returns array of varbinds
             for varbind in varBinds:
                 logger.debug(f"Bulk returned this varbind: {varbind}")
