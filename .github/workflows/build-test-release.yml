@@ -95,8 +95,8 @@ jobs:
     steps:
       - name: Install missing stubs
         run: python3 -m pip install types-PyYAML
-      - name: Install PyYAML 3.9
-        run: python3.9 -m pip install types-PyYAML
+      - name: Mypy install types
+        run: mypy --install-types
       - uses: actions/checkout@v2
         with:
           # Full git history is needed to get a proper list of changed files within `super-linter`
