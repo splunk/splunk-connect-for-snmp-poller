@@ -209,17 +209,7 @@ def snmp_get_handler(
             *var_binds,
         )
     )
-    is_metric = False
-    if errorIndication:
-        result = f"error: {errorIndication}"
-        logger.error(result)
-    elif errorStatus:
-        result = "error: %s at %s" % (
-            errorStatus.prettyPrint(),
-            errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
-        )
-        logger.error(result)
-    else:
+    if not _any_failure_happened(errorIndication, errorStatus, errorIndex, varBinds):
         for varbind in varBinds:
             result, is_metric = get_translated_string(mib_server_url, [varbind])
             post_data_to_splunk_hec(
@@ -231,6 +221,29 @@ def snmp_get_handler(
                 index,
                 one_time_flag,
             )
+
+
+def _any_failure_happened(errorIndication, errorStatus: int, errorIndex: int, varBinds: list) -> bool:
+    """
+    This function checks if any failure happened during GET or BULK operation.
+    @param errorIndication:
+    @param errorStatus:
+    @param errorIndex: index of varbind where error appeared
+    @param varBinds: list of varbinds
+    @return: if any failure happened
+    """
+    if errorIndication:
+        result = f"error: {errorIndication}"
+        logger.error(result)
+    elif errorStatus:
+        result = "error: %s at %s" % (
+            errorStatus.prettyPrint(),
+            errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
+        )
+        logger.error(result)
+    else:
+        return False
+    return True
 
 
 def snmp_bulk_handler(
@@ -260,17 +273,7 @@ def snmp_bulk_handler(
         lexicographicMode=False,
     )
     for (errorIndication, errorStatus, errorIndex, varBinds) in g:
-        is_metric = False
-        if errorIndication:
-            result = f"error: {errorIndication}"
-            logger.error(result)
-        elif errorStatus:
-            result = "error: %s at %s" % (
-                errorStatus.prettyPrint(),
-                errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
-            )
-            logger.error(result)
-        else:
+        if not _any_failure_happened(errorIndication, errorStatus, errorIndex, varBinds):
             # Bulk operation returns array of varbinds
             for varbind in varBinds:
                 logger.debug(f"Bulk returned this varbind: {varbind}")
