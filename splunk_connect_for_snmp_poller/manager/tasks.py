@@ -17,8 +17,7 @@ import os
 import threading
 
 from celery.utils.log import get_task_logger
-from pysnmp.hlapi import SnmpEngine
-from pysnmp.hlapi import ObjectIdentity, ObjectType
+from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     VarbindCollection,
@@ -26,8 +25,8 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
     build_contextData,
     mib_string_handler,
     parse_port,
-    snmp_get_handler,
     snmp_bulk_handler,
+    snmp_get_handler,
     walk_handler,
 )
 
