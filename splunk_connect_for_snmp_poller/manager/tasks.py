@@ -15,19 +15,20 @@
 #
 import os
 import threading
-from pysnmp.hlapi import ObjectIdentity, ObjectType
+
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import SnmpEngine
+from pysnmp.hlapi import ObjectIdentity, ObjectType
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
+    VarbindCollection,
     build_authData,
     build_contextData,
-    snmp_get_handler,
-    snmp_bulk_handler,
     mib_string_handler,
     parse_port,
+    snmp_get_handler,
+    snmp_bulk_handler,
     walk_handler,
-    VarbindCollection,
 )
 
 # Used to store a single SnmpEngine() instance for each Celery task

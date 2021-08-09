@@ -44,8 +44,8 @@ class TestTasks(TestCase):
         varbinds = ["CISCO-FC-MGMT-MIB", "cfcmPortLcStatsEntry"]
         bulk_varbinds_result = VarbindCollection(bulk=cast_helper(varbinds), get=[])
         with patch(
-                "splunk_connect_for_snmp_poller.manager.tasks.mib_string_handler",
-                return_value=bulk_varbinds_result,
+            "splunk_connect_for_snmp_poller.manager.tasks.mib_string_handler",
+            return_value=bulk_varbinds_result,
         ):
             actual_result = sort_varbinds([varbinds])
         self.assertEqual(str(actual_result.bulk), str(bulk_varbinds_result.bulk))

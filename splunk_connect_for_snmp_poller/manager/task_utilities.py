@@ -15,18 +15,18 @@
 #
 import json
 import os
+from collections import namedtuple
 
 from celery.utils.log import get_task_logger
 from pysmi import debug as pysmi_debug
-from collections import namedtuple
 from pysnmp.hlapi import (
     CommunityData,
     ContextData,
     UdpTransportTarget,
     UsmUserData,
+    bulkCmd,
     getCmd,
     nextCmd,
-    bulkCmd,
 )
 from pysnmp.proto import rfc1902
 from pysnmp.smi import builder, compiler, view
