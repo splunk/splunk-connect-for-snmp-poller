@@ -139,7 +139,7 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
     1) case 1: with mib index - consider it as a single oid -> snmpget
     e.g. ['SNMPv2-MIB', 'sysUpTime',0] (syntax -> [<mib_file_name>, <mib_name/string>, <min_index>])
 
-    2) case 2: without mib index - consider it as a oid with * -> snmpbulk
+    2) case 2: without mib index - consider it as a oid with * -> snmpbulkwalk
     . ['SNMPv2-MIB', 'sysORUpTime'] (syntax -> [<mib_file_name>, <mib_name/string>)
     """
     if not mib_list:
