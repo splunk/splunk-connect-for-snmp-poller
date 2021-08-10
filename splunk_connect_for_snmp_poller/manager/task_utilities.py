@@ -15,6 +15,7 @@
 #
 import json
 import os
+from collections import namedtuple
 
 from celery.utils.log import get_task_logger
 from pysmi import debug as pysmi_debug
@@ -23,6 +24,7 @@ from pysnmp.hlapi import (
     ContextData,
     UdpTransportTarget,
     UsmUserData,
+    bulkCmd,
     getCmd,
     nextCmd,
 )
@@ -42,6 +44,11 @@ from splunk_connect_for_snmp_poller.manager.mib_server_client import (
 
 pysmi_debug.setLogger(pysmi_debug.Debug("compiler"))
 logger = get_task_logger(__name__)
+
+
+class VarbindCollection(namedtuple("VarbindCollection", "get, bulk")):
+    def __add__(self, other):
+        return VarbindCollection(bulk=self.bulk + other.bulk, get=self.get + other.get)
 
 
 # TODO remove the debugging statement later
@@ -89,7 +96,7 @@ def get_translated_string(mib_server_url, varBinds):
                     # Prefix the metric for ux in analytics workspace
                     # Splunk uses . rather than :: for hierarchy.
                     # if the metric name contains a . replace with _
-                    "metric_name": f'sc4snmp.{name.prettyPrint().replace(".","_").replace("::", ".")}',
+                    "metric_name": f'sc4snmp.{name.prettyPrint().replace(".", "_").replace("::", ".")}',
                     "_value": val.prettyPrint(),
                 }
                 result = json.dumps(result)
@@ -126,104 +133,67 @@ def get_translated_string(mib_server_url, varBinds):
     return result, is_metric
 
 
-def mib_string_handler(
-    snmp_engine,
-    auth_data,
-    context_data,
-    host,
-    port,
-    mib_string,
-    mib_server_url,
-    index,
-    otel_logs_url,
-    otel_metrics_url,
-    one_time_flag,
-):
+def mib_string_handler(mib_list: list) -> VarbindCollection:
     """
     Perform the SNMP Get for mib-name/string, where mib string is a list
     1) case 1: with mib index - consider it as a single oid -> snmpget
     e.g. ['SNMPv2-MIB', 'sysUpTime',0] (syntax -> [<mib_file_name>, <mib_name/string>, <min_index>])
-    execute snmpget to query info correlated to this specific mib-name/string
 
-    2) case 2: without mib index - consider it as a oid with * -> snmpwalk
+    2) case 2: without mib index - consider it as a oid with * -> snmpbulkwalk
     . ['SNMPv2-MIB', 'sysORUpTime'] (syntax -> [<mib_file_name>, <mib_name/string>)
-    execute snmpwalk to query all the subtree
     """
+    if not mib_list:
+        return VarbindCollection(get=[], bulk=[])
+    get_list, bulk_list = [], []
     mibBuilder = builder.MibBuilder()
     mibViewController = view.MibViewController(mibBuilder)
     config = {"sources": [os.environ["MIBS_FILES_URL"]]}
     compiler.addMibCompiler(mibBuilder, **config)
+    for mib_string in mib_list:
+        try:
+            if len(mib_string) == 3:
+                # convert mib string to oid
+                oid = ObjectIdentity(
+                    mib_string[0], mib_string[1], mib_string[2]
+                ).resolveWithMib(mibViewController)
+                logger.debug(f"[-] oid: {oid}")
+                get_list.append(ObjectType(oid))
 
-    try:
-        if len(mib_string) == 3:
-            # convert mib string to oid
-            oid = ObjectIdentity(
-                mib_string[0], mib_string[1], mib_string[2]
-            ).resolveWithMib(mibViewController)
-            oid = str(oid)
-            logger.debug(f"[-] oid: {oid}")
-
-            # call snmpget
-            get_handler(
-                snmp_engine,
-                auth_data,
-                context_data,
-                host,
-                port,
-                oid,
-                mib_server_url,
-                index,
-                otel_logs_url,
-                otel_metrics_url,
-                one_time_flag,
-            )
-        elif len(mib_string) == 2:
-            # convert mib string to oid
-            oid = ObjectIdentity(mib_string[0], mib_string[1]).resolveWithMib(
-                mibViewController
-            )
-            oid = str(oid) + ".*"
-            logger.debug(f"[-] oid: {oid}")
-
-            # call snmpwalk
-            walk_handler(
-                snmp_engine,
-                auth_data,
-                context_data,
-                host,
-                port,
-                oid,
-                mib_server_url,
-                index,
-                otel_logs_url,
-                otel_metrics_url,
-                one_time_flag,
-            )
-
-        else:
-            raise Exception(
-                (
-                    f"Invalid mib string - {mib_string}."
-                    f"\nPlease provide a valid mib string in the correct format. "
-                    f"Learn more about the format at https://bit.ly/3qtqzQc"
+            elif len(mib_string) == 2:
+                # convert mib string to oid
+                oid = ObjectIdentity(mib_string[0], mib_string[1]).resolveWithMib(
+                    mibViewController
                 )
+                logger.debug(f"[-] oid: {oid}")
+                bulk_list.append(ObjectType(oid))
+
+            else:
+                raise Exception(
+                    (
+                        f"Invalid mib string - {mib_string}."
+                        f"\nPlease provide a valid mib string in the correct format. "
+                        f"Learn more about the format at https://bit.ly/3qtqzQc"
+                    )
+                )
+        except Exception as e:
+            logger.error(
+                f"Error happened while polling for mib string: {mib_string}: {e}"
             )
-    except Exception as e:
-        logger.error(f"Error happened while polling for mib string: {mib_string}: {e}")
+    return VarbindCollection(get=get_list, bulk=bulk_list)
 
 
-def get_handler(
+def snmp_get_handler(
     snmp_engine,
     auth_data,
     context_data,
     host,
     port,
-    profile,
     mib_server_url,
     index,
     otel_logs_url,
     otel_metrics_url,
     one_time_flag,
+    var_binds,
 ):
     """
     Perform the SNMP Get for an oid,
@@ -236,10 +206,34 @@ def get_handler(
             auth_data,
             UdpTransportTarget((host, port)),
             context_data,
-            ObjectType(ObjectIdentity(profile)),
+            *var_binds,
         )
     )
-    is_metric = False
+    if not _any_failure_happened(errorIndication, errorStatus, errorIndex, varBinds):
+        for varbind in varBinds:
+            result, is_metric = get_translated_string(mib_server_url, [varbind])
+            post_data_to_splunk_hec(
+                host,
+                otel_logs_url,
+                otel_metrics_url,
+                result,
+                is_metric,
+                index,
+                one_time_flag,
+            )
+
+
+def _any_failure_happened(
+    errorIndication, errorStatus, errorIndex, varBinds: list
+) -> bool:
+    """
+    This function checks if any failure happened during GET or BULK operation.
+    @param errorIndication:
+    @param errorStatus:
+    @param errorIndex: index of varbind where error appeared
+    @param varBinds: list of varbinds
+    @return: if any failure happened
+    """
     if errorIndication:
         result = f"error: {errorIndication}"
         logger.error(result)
@@ -250,19 +244,63 @@ def get_handler(
         )
         logger.error(result)
     else:
-        result, is_metric = get_translated_string(mib_server_url, varBinds)
-    post_data_to_splunk_hec(
-        host, otel_logs_url, otel_metrics_url, result, is_metric, index, one_time_flag
-    )
+        return False
+    return True
 
 
-def walk_handler(
+def snmp_bulk_handler(
     snmp_engine,
     auth_data,
     context_data,
     host,
     port,
+    mib_server_url,
+    index,
+    otel_logs_url,
+    otel_metrics_url,
+    one_time_flag,
+    var_binds,
+):
+    """
+    Perform the SNMP Bulk for an array of oids
+    """
+    g = bulkCmd(
+        snmp_engine,
+        auth_data,
+        UdpTransportTarget((host, port)),
+        context_data,
+        0,
+        50,
+        *var_binds,
+        lexicographicMode=False,
+    )
+    for (errorIndication, errorStatus, errorIndex, varBinds) in g:
+        if not _any_failure_happened(
+            errorIndication, errorStatus, errorIndex, varBinds
+        ):
+            # Bulk operation returns array of varbinds
+            for varbind in varBinds:
+                logger.debug(f"Bulk returned this varbind: {varbind}")
+                result, is_metric = get_translated_string(mib_server_url, [varbind])
+                logger.info(result)
+                post_data_to_splunk_hec(
+                    host,
+                    otel_logs_url,
+                    otel_metrics_url,
+                    result,
+                    is_metric,
+                    index,
+                    one_time_flag,
+                )
+
+
+def walk_handler(
     profile,
+    snmp_engine,
+    auth_data,
+    context_data,
+    host,
+    port,
     mib_server_url,
     index,
     otel_logs_url,
