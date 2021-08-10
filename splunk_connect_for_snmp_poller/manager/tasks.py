@@ -167,7 +167,8 @@ def snmp_polling(
             # Perform SNNP GET for an oid
             else:
                 logger.info(f"Executing SNMP GET for {host} profile={profile}")
-                snmp_get_handler(*static_parameters, profile)
+                prepared_profile = [ObjectType(ObjectIdentity(profile))]
+                snmp_get_handler(*static_parameters, prepared_profile)
 
         return f"Executing SNMP Polling for {host} version={version} profile={profile}"
     except Exception as e:
