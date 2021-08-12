@@ -110,8 +110,8 @@ class Poller:
                         ir.community,
                         ir.profile,
                         self._server_config,
-                        self._mongo_walked_hosts_coll,
                         self.__get_splunk_indexes(),
+                        self._mongo_walked_hosts_coll,
                     )
                     self._jobs_map[entry_key] = job_reference
                 else:
@@ -165,8 +165,8 @@ class Poller:
             community,
             profile,
             server_config,
-            mongo_connection,
             splunk_indexes,
+            mongo_connection,
         )
         functools.update_wrapper(new_job_func, scheduled_task)
 
