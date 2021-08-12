@@ -19,6 +19,8 @@ import threading
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
 from splunk_connect_for_snmp_poller.manager.celery_client import app
+from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import \
+    extract_network_interface_data_from_config
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     VarbindCollection,
     build_authData,
@@ -107,7 +109,7 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 # TODO remove the debugging statement later
 @app.task
 def snmp_polling(
-    host, version, community, profile, server_config, index, one_time_flag=False
+    host, version, community, profile, server_config, index, mongo_connection, one_time_flag=False
 ):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
@@ -138,6 +140,8 @@ def snmp_polling(
         otel_metrics_url,
         one_time_flag,
     ]
+
+    enricher = extract_network_interface_data_from_config(server_config)
     try:
         # Perform SNNP Polling for string profile in inventory.csv
         if "." not in profile:
@@ -163,7 +167,7 @@ def snmp_polling(
             # Perform SNNP WALK for oid end with *
             if profile[-1] == "*":
                 logger.info(f"Executing SNMP WALK for {host} profile={profile}")
-                walk_handler(profile, *static_parameters)
+                walk_handler(profile, server_config, mongo_connection, *static_parameters)
             # Perform SNNP GET for an oid
             else:
                 logger.info(f"Executing SNMP GET for {host} profile={profile}")

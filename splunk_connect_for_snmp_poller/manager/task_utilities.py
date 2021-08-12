@@ -41,6 +41,11 @@ from splunk_connect_for_snmp_poller.manager.hec_sender import (
 from splunk_connect_for_snmp_poller.manager.mib_server_client import (
     get_translation,
 )
+from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
+from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import \
+    extract_network_interface_data_from_walk
+from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
+from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 
 pysmi_debug.setLogger(pysmi_debug.Debug("compiler"))
 logger = get_task_logger(__name__)
@@ -183,17 +188,17 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
 
 
 def snmp_get_handler(
-    snmp_engine,
-    auth_data,
-    context_data,
-    host,
-    port,
-    mib_server_url,
-    index,
-    otel_logs_url,
-    otel_metrics_url,
-    one_time_flag,
-    var_binds,
+        snmp_engine,
+        auth_data,
+        context_data,
+        host,
+        port,
+        mib_server_url,
+        index,
+        otel_logs_url,
+        otel_metrics_url,
+        one_time_flag,
+        var_binds,
 ):
     """
     Perform the SNMP Get for an oid,
@@ -224,7 +229,7 @@ def snmp_get_handler(
 
 
 def _any_failure_happened(
-    errorIndication, errorStatus, errorIndex, varBinds: list
+        errorIndication, errorStatus, errorIndex, varBinds: list
 ) -> bool:
     """
     This function checks if any failure happened during GET or BULK operation.
@@ -249,17 +254,17 @@ def _any_failure_happened(
 
 
 def snmp_bulk_handler(
-    snmp_engine,
-    auth_data,
-    context_data,
-    host,
-    port,
-    mib_server_url,
-    index,
-    otel_logs_url,
-    otel_metrics_url,
-    one_time_flag,
-    var_binds,
+        snmp_engine,
+        auth_data,
+        context_data,
+        host,
+        port,
+        mib_server_url,
+        index,
+        otel_logs_url,
+        otel_metrics_url,
+        one_time_flag,
+        var_binds,
 ):
     """
     Perform the SNMP Bulk for an array of oids
@@ -276,7 +281,7 @@ def snmp_bulk_handler(
     )
     for (errorIndication, errorStatus, errorIndex, varBinds) in g:
         if not _any_failure_happened(
-            errorIndication, errorStatus, errorIndex, varBinds
+                errorIndication, errorStatus, errorIndex, varBinds
         ):
             # Bulk operation returns array of varbinds
             for varbind in varBinds:
@@ -295,31 +300,34 @@ def snmp_bulk_handler(
 
 
 def walk_handler(
-    profile,
-    snmp_engine,
-    auth_data,
-    context_data,
-    host,
-    port,
-    mib_server_url,
-    index,
-    otel_logs_url,
-    otel_metrics_url,
-    one_time_flag,
+        profile,
+        enricher,
+        mongo_connection,
+        snmp_engine,
+        auth_data,
+        context_data,
+        host,
+        port,
+        mib_server_url,
+        index,
+        otel_logs_url,
+        otel_metrics_url,
+        one_time_flag,
 ):
     """
     Perform the SNMP Walk for oid end with *,
     e.g. 1.3.6.1.2.1.1.9.*,
     which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
     """
-
+    merged_result_metric = []
+    merged_result_non_metric = []
     for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
-        snmp_engine,
-        auth_data,
-        UdpTransportTarget((host, port)),
-        context_data,
-        ObjectType(ObjectIdentity(profile[:-2])),
-        lexicographicMode=False,
+            snmp_engine,
+            auth_data,
+            UdpTransportTarget((host, port)),
+            context_data,
+            ObjectType(ObjectIdentity(profile[:-2])),
+            lexicographicMode=False,
     ):
         is_metric = False
         if errorIndication:
@@ -353,15 +361,35 @@ def walk_handler(
             break
         else:
             result, is_metric = get_translated_string(mib_server_url, varBinds)
-            post_data_to_splunk_hec(
-                host,
-                otel_logs_url,
-                otel_metrics_url,
-                result,
-                is_metric,
-                index,
-                one_time_flag,
-            )
+            if is_metric:
+                merged_result_metric.append(eval(result))
+            else:
+                merged_result_non_metric.append(result)
+
+    processed_result = extract_network_interface_data_from_walk(
+        enricher, merged_result_metric, merged_result_non_metric
+    )
+
+    mongo_connection.update_mib_static_data_for(f"{host}:{port}", processed_result)
+    mib_enricher = MibEnricher(processed_result)
+    post_walk_data_to_splunk_arguments = [host, otel_logs_url, otel_metrics_url, index, one_time_flag, mib_enricher]
+    _post_walk_data_to_splunk(merged_result_metric, True, *post_walk_data_to_splunk_arguments)
+    _post_walk_data_to_splunk(merged_result_non_metric, False, *post_walk_data_to_splunk_arguments)
+
+
+def _post_walk_data_to_splunk(result_list, is_metric, host, otel_logs_url, otel_metrics_url, index, one_time_flag,
+                              mib_enricher):
+    for result in result_list:
+        result = mib_enricher.process_one(result, is_metric)
+        post_data_to_splunk_hec(
+            host,
+            otel_logs_url,
+            otel_metrics_url,
+            json.dumps(result) if is_metric else result,
+            is_metric,
+            index,
+            one_time_flag,
+        )
 
 
 def parse_port(host):

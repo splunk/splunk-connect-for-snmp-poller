@@ -133,12 +133,13 @@ class WalkedHostsRepository:
 
     # Input is what extract_network_interface_data_from_walk() returns
     def update_mib_static_data_for(self, host, if_mib_data):
-        if input_dictionary:
+        if if_mib_data:
             real_time_data_dictionary = {
                 WalkedHostsRepository.MIB_STATIC_DATA: if_mib_data
             }
             self._walked_hosts.find_one_and_update(
                 {"_id": host},
                 {"$set": real_time_data_dictionary},
+                upsert=True,
                 return_document=ReturnDocument.AFTER,
             )
