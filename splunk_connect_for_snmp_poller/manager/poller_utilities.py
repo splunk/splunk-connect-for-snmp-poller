@@ -55,7 +55,7 @@ def _should_process_current_line(inventory_record):
     )
 
 
-def onetime_task(host, version, community, profile, server_config, splunk_indexes):
+def onetime_task(host, version, community, profile, server_config, splunk_indexes, mongo_connection):
     logger.debug(
         f"Executing onetime_task for {host} version={version} community={community} profile={profile}"
     )
@@ -67,6 +67,7 @@ def onetime_task(host, version, community, profile, server_config, splunk_indexe
         profile,
         server_config,
         splunk_indexes,
+        mongo_connection,
         one_time_flag=True,
     )
     return schedule.CancelJob
@@ -151,7 +152,7 @@ def automatic_realtime_task(
     inventory_file_path,
     splunk_indexes,
     server_config,
-    local_snmp_engine,
+    local_snmp_engine
 ):
     for inventory_record in parse_inventory_file(inventory_file_path):
         sys_up_time = _extract_sys_uptime_instance(
@@ -173,6 +174,7 @@ def automatic_realtime_task(
                 inventory_record.profile,
                 server_config,
                 splunk_indexes,
+                all_walked_hosts_collection,
             )
         _update_mongo(
             all_walked_hosts_collection,

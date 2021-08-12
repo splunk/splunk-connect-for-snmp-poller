@@ -199,5 +199,5 @@ def scheduled_task(host, version, community, profile, server_config, mongo_conne
     )
 
     # snmp_polling(host, version, community, profile, server_config, splunk_indexes)
-    snmp_polling.delay(host, version, community, profile, server_config, mongo_connection, splunk_indexes)
+    snmp_polling.delay(host, version, community, profile, server_config, splunk_indexes, mongo_connection)
     # snmp_polling(host, version, community, profile, server_config, splunk_indexes, mongo_connection)
