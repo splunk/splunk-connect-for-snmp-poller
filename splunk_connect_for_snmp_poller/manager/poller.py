@@ -193,7 +193,7 @@ class Poller:
         )
 
 
-def scheduled_task(host, version, community, profile, server_config, mongo_connection, splunk_indexes):
+def scheduled_task(host, version, community, profile, server_config, splunk_indexes, mongo_connection):
     logger.debug(
         f"Executing scheduled_task for {host} version={version} community={community} profile={profile}"
     )
