@@ -366,10 +366,12 @@ def walk_handler(
             else:
                 merged_result_non_metric.append(result)
 
+    logger.info(f"merged_result_metric: {merged_result_metric}")
+    logger.info(f"merged_result_non_metric: {merged_result_non_metric}")
     processed_result = extract_network_interface_data_from_walk(
         enricher, merged_result_metric, merged_result_non_metric
     )
-
+    logger.info(f"Processed result: {processed_result}")
     mongo_connection.update_mib_static_data_for(f"{host}:{port}", processed_result)
     mib_enricher = MibEnricher(processed_result)
     post_walk_data_to_splunk_arguments = [host, otel_logs_url, otel_metrics_url, index, one_time_flag, mib_enricher]

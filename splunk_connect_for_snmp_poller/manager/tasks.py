@@ -146,7 +146,6 @@ def snmp_polling(
         one_time_flag,
     ]
 
-    enricher = extract_network_interface_data_from_config(server_config)
     try:
         # Perform SNNP Polling for string profile in inventory.csv
         if "." not in profile:
