@@ -111,7 +111,6 @@ class Poller:
                         ir.profile,
                         self._server_config,
                         self.__get_splunk_indexes(),
-                        self._mongo_walked_hosts_coll,
                     )
                     self._jobs_map[entry_key] = job_reference
                 else:
@@ -135,7 +134,6 @@ class Poller:
                             ir.profile,
                             ir.version,
                             self._server_config,
-                            self._mongo_walked_hosts_coll,
                             self.__get_splunk_indexes(),
                         )
                 for entry_key in list(self._jobs_map):
@@ -152,7 +150,6 @@ class Poller:
         profile,
         version,
         server_config,
-        mongo_connection,
         splunk_indexes,
     ):
         entry_key = host + "#" + profile
@@ -166,7 +163,6 @@ class Poller:
             profile,
             server_config,
             splunk_indexes,
-            mongo_connection,
         )
         functools.update_wrapper(new_job_func, scheduled_task)
 
@@ -193,11 +189,11 @@ class Poller:
         )
 
 
-def scheduled_task(host, version, community, profile, server_config, splunk_indexes, mongo_connection):
+def scheduled_task(host, version, community, profile, server_config, splunk_indexes):
     logger.debug(
         f"Executing scheduled_task for {host} version={version} community={community} profile={profile}"
     )
 
     # snmp_polling(host, version, community, profile, server_config, splunk_indexes)
-    snmp_polling.delay(host, version, community, profile, server_config, splunk_indexes, mongo_connection)
+    snmp_polling.delay(host, version, community, profile, server_config, splunk_indexes)
     # snmp_polling(host, version, community, profile, server_config, splunk_indexes, mongo_connection)

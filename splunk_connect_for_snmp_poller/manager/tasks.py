@@ -33,6 +33,8 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
 )
 
 # Used to store a single SnmpEngine() instance for each Celery task
+from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
+
 thread_local = threading.local()
 logger = get_task_logger(__name__)
 
@@ -109,7 +111,7 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 # TODO remove the debugging statement later
 @app.task
 def snmp_polling(
-    host, version, community, profile, server_config, index, mongo_connection, one_time_flag=False
+    host, version, community, profile, server_config, index, one_time_flag=False
 ):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
@@ -128,6 +130,9 @@ def snmp_polling(
     context_data = build_contextData(version, community, server_config)
     logger.debug(f"==========context_data=========\n{context_data}")
 
+    mongo_connection = WalkedHostsRepository(
+            server_config["mongo"]
+        )
     static_parameters = [
         snmp_engine,
         auth_data,
