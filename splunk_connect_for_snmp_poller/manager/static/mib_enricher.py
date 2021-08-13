@@ -68,6 +68,13 @@ def extract_dimension_name_and_value(dimension, index):
 class MibEnricher:
     def __init__(self, mib_static_data_collection):
         self._mib_static_data_collection = mib_static_data_collection
+        self.dimensions_fields = self.__collect_if_mib_fields(mib_static_data_collection)
+
+    def __collect_if_mib_fields(self, mib_static_data_collection):
+        fields = []
+        for el in mib_static_data_collection:
+            fields += list(el.keys())
+        return fields
 
     def __enrich_if_mib(self, metric_name):
         result = []
@@ -83,33 +90,33 @@ class MibEnricher:
                         result.append({dimension_name: dimension_value})
         return result
 
-    def process_one(self, translated_var_bind, is_metric=True):
+    def process_one(self, translated_var_bind):
         if translated_var_bind:
-            metric_name = self._get_metric_name(translated_var_bind, is_metric)
+            metric_name = translated_var_bind[InterfaceMib.METRIC_NAME_KEY]
             additional_if_mib_dimensions = self.__enrich_if_mib(metric_name)
             if additional_if_mib_dimensions:
-                if is_metric:
-                    for more_data in additional_if_mib_dimensions:
-                        translated_var_bind.update(more_data)
-                else:
-                    for more_data in additional_if_mib_dimensions:
-                        for key, value in more_data.items():
-                            translated_var_bind += f""" {key}="{value}" """
+                for more_data in additional_if_mib_dimensions:
+                    translated_var_bind.update(more_data)
             return translated_var_bind
         else:
             logger.warning("None translated var binds, enrichment process will be skip")
 
-    def _get_metric_name(self, translated_var_bind, is_metric):
-        if is_metric:
-            return translated_var_bind[InterfaceMib.METRIC_NAME_KEY]
-        else:
-            return self._process_non_metric_data(translated_var_bind)
-
-    def _process_non_metric_data(self, translated_var_bind):
-        if_mib_var = translated_var_bind.strip().split(" ")[-1]
-        if_mib_name = if_mib_var.replace("::", "__to_delete__").replace("=", "__to_delete__")
-        if_mib_transformed = if_mib_name.split("__to_delete__")
-        prefix, varbind, _ = if_mib_transformed
-        varbind_type, index = varbind.split(".")
-        return f"sc4snmp.{prefix}.{varbind_type}_{index}"
+    # def _get_metric_name(self, translated_var_bind, is_metric):
+    #     if is_metric:
+    #         return translated_var_bind[InterfaceMib.METRIC_NAME_KEY]
+    #     else:
+    #         return self._process_non_metric_data(translated_var_bind)
+    #
+    # def _process_non_metric_data(self, translated_var_bind):
+    #     logger.info(f"translated_var_bind: {translated_var_bind}")
+    #     if_mib_var = translated_var_bind.strip().split(" ")[-1]
+    #     logger.info(f"if_mib_var: {if_mib_var}")
+    #     if_mib_name = if_mib_var.replace("::", "__to_delete__").replace("=", "__to_delete__")
+    #     logger.info(f"if_mib_name: {if_mib_name}")
+    #     if_mib_transformed = if_mib_name.split("__to_delete__")
+    #     logger.info(f"if_mib_transformed: {if_mib_transformed}")
+    #     prefix, varbind, _ = if_mib_transformed
+    #     logger.info(f"prefix, varbind, _: {prefix} {varbind}")
+    #     varbind_type, index = varbind.split(".")
+    #     return f"sc4snmp.{prefix}.{varbind_type}_{index}"
 

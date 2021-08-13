@@ -34,7 +34,7 @@ class SharedException(Exception):
         super().__init__(msg, *args)
 
 
-def get_translation(var_binds, mib_server_url, metric=False):
+def get_translation(var_binds, mib_server_url, metric=False, return_multimetric=False):
     """
     @param var_binds: var_binds object getting from SNMP agents
     @param mib_server_url: URL of SNMP MIB server
@@ -50,7 +50,7 @@ def get_translation(var_binds, mib_server_url, metric=False):
             "oid": str(name),
             "oid_type": name.__class__.__name__,
             "val": format_value_for_mib_server(val, val.__class__.__name__),
-            "val_type": val.__class__.__name__,
+            "val_type": val.__class__.__name__
         }
         var_binds_list.append(var_bind)
     payload["var_binds"] = var_binds_list
@@ -63,7 +63,7 @@ def get_translation(var_binds, mib_server_url, metric=False):
     logger.debug(f"[-] TRANSLATION_URL: {TRANSLATION_URL}")
 
     # Set up the request params
-    params = {"metric": metric}
+    params = {"metric": metric, "return_multimetric": return_multimetric}
 
     try:
         # use Session with Retry

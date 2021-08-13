@@ -40,21 +40,23 @@ def _transform_non_metric_data(non_metric_data):
 
 
 def make_non_metric_data_iterable(translated_walk_result):
-    return [_transform_non_metric_data(result) for result in translated_walk_result if "ifDescr" in result]
+    return [_transform_non_metric_data(result) for result in translated_walk_result if
+            InterfaceMib.NON_METRIC_IDENTIFIER in result]
 
 
 class InterfaceMib:
     METRIC_NAME_KEY = "metric_name"
     METRIC_VALUE_KEY = "_value"
     METRIC_TYPE_KEY = "metric_type"
+    NON_METRIC_IDENTIFIER = "ifDescr"
     IF_MIB_METRIC_SUFFIX = "sc4snmp.IF-MIB."
     IF_MIB_IF_NUMBER = "sc4snmp.IF-MIB.ifNumber_0"
     IF_MIB_IF_INDEX_BASE = "sc4snmp.IF-MIB.ifIndex_"
     IF_MIB_IF_DESCR_BASE = "sc4snmp.IF-MIB.ifDescr_"
 
-    def __init__(self, if_mib_metric_walk_data, if_mib_non_metric_walk_data):
-        if_mib_non_metric_walk_data_transformed = make_non_metric_data_iterable(if_mib_non_metric_walk_data)
-        self._if_mib_walk_data = extract_if_mib_only(if_mib_metric_walk_data+if_mib_non_metric_walk_data_transformed)
+    def __init__(self, if_mib_metric_walk_data):
+        # if_mib_non_metric_walk_data_transformed = make_non_metric_data_iterable(if_mib_non_metric_walk_data)
+        self._if_mib_walk_data = extract_if_mib_only(if_mib_metric_walk_data)
         self._full_dictionary = self.__build_in_memory_dictionary()
         self._network_interfaces = self.__extract_number_of_network_interfaces()
         self._network_indexes = self.__extract_interface_indexes()

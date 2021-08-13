@@ -77,7 +77,7 @@ def is_metric_data(value):
         return False
 
 
-def get_translated_string(mib_server_url, varBinds):
+def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
     """
     Get the translated/formatted var_binds string depending on whether the varBinds is an event or metric
     Note: if it failed to get translation, return the the original varBinds
@@ -119,7 +119,7 @@ def get_translated_string(mib_server_url, varBinds):
         logger.debug(
             f"==========result before translated -- is_metric={is_metric}============\n{result}"
         )
-        result = get_translation(varBinds, mib_server_url, is_metric)
+        result = get_translation(varBinds, mib_server_url, is_metric, return_multimetric)
         logger.info(f"=========result=======\n{result}")
         # TODO double check the result to handle the edge case,
         # where the value of an metric data was translated from int to string
@@ -129,7 +129,7 @@ def get_translated_string(mib_server_url, varBinds):
             logger.debug(f"=========_value=======\n{_value}")
             if not is_metric_data(_value):
                 is_metric = False
-                result = get_translation(varBinds, mib_server_url, is_metric)
+                result = get_translation(varBinds, mib_server_url, is_metric, return_multimetric)
     except Exception as e:
         logger.info(f"Could not perform translation. Exception: {e}")
     logger.info(
@@ -320,7 +320,7 @@ def walk_handler(
     which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
     """
     merged_result_metric = []
-    merged_result_non_metric = []
+    merged_result_non_metric = {}
     for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
             snmp_engine,
             auth_data,
@@ -360,29 +360,42 @@ def walk_handler(
             )
             break
         else:
-            result, is_metric = get_translated_string(mib_server_url, varBinds)
+            result, is_metric = get_translated_string(mib_server_url, varBinds, True)
             if is_metric:
                 merged_result_metric.append(eval(result))
             else:
-                merged_result_non_metric.append(result)
+                result = eval(result)
+                merged_result_metric.append(eval(result["metric"]))
+                merged_result_non_metric[result["metric_name"]] = result["non_metric"]
 
-    logger.info(f"merged_result_metric: {merged_result_metric}")
-    logger.info(f"merged_result_non_metric: {merged_result_non_metric}")
     processed_result = extract_network_interface_data_from_walk(
-        enricher, merged_result_metric, merged_result_non_metric
+        enricher, merged_result_metric
     )
     logger.info(f"Processed result: {processed_result}")
     mongo_connection.update_mib_static_data_for(f"{host}:{port}", processed_result)
+    logger.info(f"After mongo")
     mib_enricher = MibEnricher(processed_result)
+    logger.info(f"After mib: {mib_enricher}")
     post_walk_data_to_splunk_arguments = [host, otel_logs_url, otel_metrics_url, index, one_time_flag, mib_enricher]
-    _post_walk_data_to_splunk(merged_result_metric, True, *post_walk_data_to_splunk_arguments)
-    _post_walk_data_to_splunk(merged_result_non_metric, False, *post_walk_data_to_splunk_arguments)
+    _post_walk_data_to_splunk(merged_result_metric, merged_result_non_metric, True, *post_walk_data_to_splunk_arguments)
+    logger.info(f"***************** After metric *****************")
+    # _post_walk_data_to_splunk(merged_result_non_metric, False, *post_walk_data_to_splunk_arguments)
+    # logger.info(f"***************** After non-metric *****************")
 
 
-def _post_walk_data_to_splunk(result_list, is_metric, host, otel_logs_url, otel_metrics_url, index, one_time_flag,
+def _post_walk_data_to_splunk(result_list, non_metric_list, is_metric, host, otel_logs_url, otel_metrics_url, index,
+                              one_time_flag,
                               mib_enricher):
     for result in result_list:
-        result = mib_enricher.process_one(result, is_metric)
+        mib_enricher.process_one(result)
+        if result["metric_name"] in non_metric_list:
+            str_result = non_metric_list[result["metric_name"]]
+            for additional_element in mib_enricher.dimensions_fields:
+                if additional_element in result:
+                    str_result += f"{additional_element}=\"{result[additional_element]}\" "
+            result = str_result
+            is_metric = False
+        logger.info(f"Result: {result}")
         post_data_to_splunk_hec(
             host,
             otel_logs_url,

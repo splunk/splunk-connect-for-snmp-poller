@@ -49,9 +49,9 @@ def extract_network_interface_data_from_config(config_as_dict):
     return result
 
 
-def extract_network_interface_data_from_walk(config_as_dict, if_mib_metric_walk_data, if_mib_non_metric_walk_data):
+def extract_network_interface_data_from_walk(config_as_dict, if_mib_metric_walk_data):
     result = []
-    network_data = InterfaceMib(if_mib_metric_walk_data, if_mib_non_metric_walk_data)
+    network_data = InterfaceMib(if_mib_metric_walk_data)
     if network_data.has_consistent_data():
         enricher_fields = extract_network_interface_data_from_config(config_as_dict)
         for data in enricher_fields:
