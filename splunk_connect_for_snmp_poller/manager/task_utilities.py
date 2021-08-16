@@ -121,7 +121,7 @@ def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
         )
         result = get_translation(varBinds, mib_server_url, is_metric, return_multimetric)
         if not is_metric and return_multimetric:
-            result = result["metric_name"]
+            result = json.loads(result)["metric"]
             logger.info(f"=========result=======\n{result}")
         # TODO double check the result to handle the edge case,
         # where the value of an metric data was translated from int to string
