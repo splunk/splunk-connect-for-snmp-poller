@@ -190,6 +190,7 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
 
 
 def snmp_get_handler(
+        mongo_connection,
         snmp_engine,
         auth_data,
         context_data,
@@ -217,8 +218,10 @@ def snmp_get_handler(
         )
     )
     if not _any_failure_happened(errorIndication, errorStatus, errorIndex, varBinds):
+        processed_data = mongo_connection.static_data_for(f"{host}:{port}")
+        mib_enricher, return_multimetric = _enrich_response(processed_data)
         for varbind in varBinds:
-            result, is_metric = get_translated_string(mib_server_url, [varbind])
+            result, is_metric = get_translated_string(mib_server_url, [varbind], return_multimetric)
             post_data_to_splunk_hec(
                 host,
                 otel_logs_url,
@@ -227,7 +230,18 @@ def snmp_get_handler(
                 is_metric,
                 index,
                 one_time_flag,
+                mib_enricher
             )
+
+
+def _enrich_response(processed_data):
+    if processed_data:
+        mib_enricher = MibEnricher(processed_data)
+        return_multimetric = True
+    else:
+        mib_enricher = None
+        return_multimetric = False
+    return mib_enricher, return_multimetric
 
 
 def _any_failure_happened(
@@ -256,6 +270,7 @@ def _any_failure_happened(
 
 
 def snmp_bulk_handler(
+        mongo_connection,
         snmp_engine,
         auth_data,
         context_data,
@@ -287,8 +302,10 @@ def snmp_bulk_handler(
         ):
             # Bulk operation returns array of varbinds
             for varbind in varBinds:
+                processed_data = mongo_connection.static_data_for(f"{host}:{port}")
+                mib_enricher, return_multimetric = _enrich_response(processed_data)
                 logger.debug(f"Bulk returned this varbind: {varbind}")
-                result, is_metric = get_translated_string(mib_server_url, [varbind])
+                result, is_metric = get_translated_string(mib_server_url, [varbind], return_multimetric)
                 logger.info(result)
                 post_data_to_splunk_hec(
                     host,
@@ -298,6 +315,7 @@ def snmp_bulk_handler(
                     is_metric,
                     index,
                     one_time_flag,
+                    mib_enricher,
                 )
 
 
@@ -321,8 +339,9 @@ def walk_handler(
     e.g. 1.3.6.1.2.1.1.9.*,
     which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
     """
+    merged_result = []
     merged_result_metric = []
-    merged_result_non_metric = {}
+    merged_result_non_metric = []
     for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
             snmp_engine,
             auth_data,
@@ -364,50 +383,47 @@ def walk_handler(
         else:
             result, is_metric = get_translated_string(mib_server_url, varBinds, True)
             if is_metric:
-                merged_result_metric.append(eval(result))
+                merged_result_metric.append(result)
+                merged_result.append(eval(result))
             else:
+                merged_result_non_metric.append(result)
                 result = eval(result)
-                merged_result_metric.append(eval(result["metric"]))
-                merged_result_non_metric[result["metric_name"]] = result["non_metric"]
+                merged_result.append(eval(result["metric"]))
 
     processed_result = extract_network_interface_data_from_walk(
-        enricher, merged_result_metric
+        enricher, merged_result
     )
     logger.info(f"Processed result: {processed_result}")
     mongo_connection.update_mib_static_data_for(f"{host}:{port}", processed_result)
     logger.info(f"After mongo")
-    mib_enricher = MibEnricher(processed_result)
+    mib_enricher = _return_mib_enricher_for_walk(mongo_connection, processed_result, f"{host}:{port}")
     logger.info(f"After mib: {mib_enricher}")
     post_walk_data_to_splunk_arguments = [host, otel_logs_url, otel_metrics_url, index, one_time_flag, mib_enricher]
-    _post_walk_data_to_splunk(merged_result_metric, merged_result_non_metric, True, *post_walk_data_to_splunk_arguments)
+    _post_walk_data_to_splunk(merged_result_metric, True, *post_walk_data_to_splunk_arguments)
     logger.info(f"***************** After metric *****************")
-    # _post_walk_data_to_splunk(merged_result_non_metric, False, *post_walk_data_to_splunk_arguments)
-    # logger.info(f"***************** After non-metric *****************")
+    _post_walk_data_to_splunk(merged_result_non_metric, False, *post_walk_data_to_splunk_arguments)
+    logger.info(f"***************** After metric *****************")
 
 
-def _post_walk_data_to_splunk(result_list, non_metric_list, is_metric, host, otel_logs_url, otel_metrics_url, index,
+def _return_mib_enricher_for_walk(mongo_connection, processed_result, hostname):
+    if processed_result:
+        mongo_connection.update_mib_static_data_for(hostname, processed_result)
+        return MibEnricher(processed_result)
+    else:
+        processed_data = mongo_connection.static_data_for(hostname)
+        return MibEnricher(processed_data)
+
+
+def _post_walk_data_to_splunk(result_list, is_metric, host, otel_logs_url, otel_metrics_url, index,
                               one_time_flag,
                               mib_enricher):
-    for result in result_list:
-        mib_enricher.process_one(result)
-        if result["metric_name"] in non_metric_list:
-            str_result = non_metric_list[result["metric_name"]]
-            logger.info(f"NON METRIC LIST: {str_result}")
-            logger.info(f"mib_enricher.dimensions_fields: {mib_enricher.dimensions_fields}")
-            logger.info(f"result: {result}")
-            for additional_element in mib_enricher.dimensions_fields:
-                if additional_element in result:
-                    str_result += f"{additional_element}=\"{result[additional_element]}\" "
-                    logger.info(f"str_result: {str_result}")
-            result = str_result
-            is_metric = False
-        logger.info(f"Result: {result}")
 
+    for result in result_list:
         post_data_to_splunk_hec(
             host,
             otel_logs_url,
             otel_metrics_url,
-            json.dumps(result) if is_metric else result,
+            result,
             is_metric,
             index,
             one_time_flag,

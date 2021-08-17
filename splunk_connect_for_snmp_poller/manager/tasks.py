@@ -50,6 +50,7 @@ def get_shared_snmp_engine():
 def get_snmp_data(
     varBinds,
     handler,
+    mongo_connection,
     snmp_engine,
     auth_data,
     context_data,
@@ -64,6 +65,7 @@ def get_snmp_data(
     if varBinds:
         try:
             handler(
+                mongo_connection,
                 snmp_engine,
                 auth_data,
                 context_data,
@@ -134,6 +136,7 @@ def snmp_polling(
             server_config["mongo"]
         )
     static_parameters = [
+        mongo_connection,
         snmp_engine,
         auth_data,
         context_data,
@@ -171,7 +174,7 @@ def snmp_polling(
             # Perform SNNP WALK for oid end with *
             if profile[-1] == "*":
                 logger.info(f"Executing SNMP WALK for {host} profile={profile}")
-                walk_handler(profile, server_config, mongo_connection, *static_parameters)
+                walk_handler(profile, server_config, *static_parameters)
             # Perform SNNP GET for an oid
             else:
                 logger.info(f"Executing SNMP GET for {host} profile={profile}")
