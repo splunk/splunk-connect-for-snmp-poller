@@ -72,6 +72,8 @@ class MibEnricher:
 
     def __collect_if_mib_fields(self, mib_static_data_collection):
         fields = []
+        if not mib_static_data_collection:
+            return []
         for el in mib_static_data_collection:
             fields += list(el.keys())
         logger.info(f"_mib_static_data_collection: {mib_static_data_collection}")

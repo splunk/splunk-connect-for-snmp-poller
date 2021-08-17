@@ -49,6 +49,7 @@ class InterfaceMib:
     METRIC_VALUE_KEY = "_value"
     METRIC_TYPE_KEY = "metric_type"
     NON_METRIC_IDENTIFIER = "ifDescr"
+    MONGO_IDENTIFIER = "IF-MIB"
     IF_MIB_METRIC_SUFFIX = "sc4snmp.IF-MIB."
     IF_MIB_IF_NUMBER = "sc4snmp.IF-MIB.ifNumber_0"
     IF_MIB_IF_INDEX_BASE = "sc4snmp.IF-MIB.ifIndex_"

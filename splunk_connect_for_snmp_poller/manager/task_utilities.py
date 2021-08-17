@@ -218,8 +218,7 @@ def snmp_get_handler(
         )
     )
     if not _any_failure_happened(errorIndication, errorStatus, errorIndex, varBinds):
-        processed_data = mongo_connection.static_data_for(f"{host}:{port}")
-        mib_enricher, return_multimetric = _enrich_response(processed_data)
+        mib_enricher, return_multimetric = _enrich_response(mongo_connection, f"{host}:{port}")
         for varbind in varBinds:
             result, is_metric = get_translated_string(mib_server_url, [varbind], return_multimetric)
             post_data_to_splunk_hec(
@@ -234,7 +233,8 @@ def snmp_get_handler(
             )
 
 
-def _enrich_response(processed_data):
+def _enrich_response(mongo_connection, hostname):
+    processed_data = mongo_connection.static_data_for(hostname)
     if processed_data:
         mib_enricher = MibEnricher(processed_data)
         return_multimetric = True
@@ -303,7 +303,7 @@ def snmp_bulk_handler(
             # Bulk operation returns array of varbinds
             for varbind in varBinds:
                 processed_data = mongo_connection.static_data_for(f"{host}:{port}")
-                mib_enricher, return_multimetric = _enrich_response(processed_data)
+                mib_enricher, return_multimetric = _enrich_response(processed_data, f"{host}:{port}")
                 logger.debug(f"Bulk returned this varbind: {varbind}")
                 result, is_metric = get_translated_string(mib_server_url, [varbind], return_multimetric)
                 logger.info(result)
@@ -382,13 +382,7 @@ def walk_handler(
             break
         else:
             result, is_metric = get_translated_string(mib_server_url, varBinds, True)
-            if is_metric:
-                merged_result_metric.append(result)
-                merged_result.append(eval(result))
-            else:
-                merged_result_non_metric.append(result)
-                result = eval(result)
-                merged_result.append(eval(result["metric"]))
+            _sort_walk_data(is_metric, merged_result_metric, merged_result_non_metric, merged_result, result)
 
     processed_result = extract_network_interface_data_from_walk(
         enricher, merged_result
@@ -405,12 +399,39 @@ def walk_handler(
     logger.info(f"***************** After metric *****************")
 
 
+def _sort_walk_data(is_metric: bool, merged_result_metric: list, merged_result_non_metric: list, merged_result: list,
+                    varbind):
+    """
+    In WALK operation we can have three scenarios:
+        1. mongo db is empty and we want to insert enricher mapping into it
+        2. mongo db already has some data and we just need to use it
+        3. we don't have any enricher given in config so we're not adding any extra dimensions
+    Because of different structure of metric/non-metric data we need to divide varbinds on 3 categories.
+    @param is_metric: is current varbind metric
+    @param merged_result_metric: list containing metric varbinds
+    @param merged_result_non_metric: list containing non-metric varbinds
+    @param merged_result: list containing metric varbinds and metric versions of non-metric varbinds (necessary for 1st
+    scenario.
+    @param varbind: current varbind
+    @return:
+    """
+    if is_metric:
+        merged_result_metric.append(varbind)
+        merged_result.append(eval(varbind))
+    else:
+        merged_result_non_metric.append(varbind)
+        result = eval(varbind)
+        merged_result.append(eval(result["metric"]))
+
+
 def _return_mib_enricher_for_walk(mongo_connection, processed_result, hostname):
     if processed_result:
         mongo_connection.update_mib_static_data_for(hostname, processed_result)
         return MibEnricher(processed_result)
     else:
         processed_data = mongo_connection.static_data_for(hostname)
+        if not processed_data:
+            return None
         return MibEnricher(processed_data)
 
 
