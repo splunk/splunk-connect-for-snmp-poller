@@ -392,12 +392,17 @@ def _post_walk_data_to_splunk(result_list, non_metric_list, is_metric, host, ote
         mib_enricher.process_one(result)
         if result["metric_name"] in non_metric_list:
             str_result = non_metric_list[result["metric_name"]]
+            logger.info(f"NON METRIC LIST: {str_result}")
+            logger.info(f"mib_enricher.dimensions_fields: {mib_enricher.dimensions_fields}")
+            logger.info(f"result: {result}")
             for additional_element in mib_enricher.dimensions_fields:
                 if additional_element in result:
                     str_result += f"{additional_element}=\"{result[additional_element]}\" "
+                    logger.info(f"str_result: {str_result}")
             result = str_result
             is_metric = False
         logger.info(f"Result: {result}")
+
         post_data_to_splunk_hec(
             host,
             otel_logs_url,
@@ -406,6 +411,7 @@ def _post_walk_data_to_splunk(result_list, non_metric_list, is_metric, host, ote
             is_metric,
             index,
             one_time_flag,
+            mib_enricher,
         )
 
 

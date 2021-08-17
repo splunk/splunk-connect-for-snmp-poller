@@ -30,12 +30,13 @@ def post_data_to_splunk_hec(
     is_metric,
     index,
     one_time_flag=False,
+    mib_enricher=None
 ):
     logger.debug(f"[-] logs : {logs_endpoint}, metrics : {metrics_endpoint}")
 
     if is_metric:
         logger.debug(f"+++++++++metric index: {index['metric_index']} +++++++++")
-        post_metric_data(metrics_endpoint, host, variables_binds, index["metric_index"])
+        post_metric_data(metrics_endpoint, host, variables_binds, index["metric_index"], mib_enricher)
     else:
         logger.debug(f"*********event index: {index['event_index']} ********")
         post_event_data(
@@ -77,12 +78,16 @@ def post_event_data(endpoint, host, variables_binds, index, one_time_flag=False)
         logger.error(f"Connection error when sending data to HEC index - {index}: {e}")
 
 
-def post_metric_data(endpoint, host, variables_binds, index):
+def post_metric_data(endpoint, host, variables_binds, index, mib_enricher=None):
 
     json_val = json.loads(variables_binds)
     metric_name = json_val["metric_name"]
     metric_value = json_val["_value"]
     fields = {"metric_name:" + metric_name: metric_value}
+    if mib_enricher:
+        for field_name in mib_enricher.dimensions_fields:
+            if field_name in json_val:
+                fields[field_name] = json_val[field_name]
 
     data = {
         "time": time.time(),

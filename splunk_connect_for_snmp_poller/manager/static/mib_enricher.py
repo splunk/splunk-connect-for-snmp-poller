@@ -74,6 +74,8 @@ class MibEnricher:
         fields = []
         for el in mib_static_data_collection:
             fields += list(el.keys())
+        logger.info(f"_mib_static_data_collection: {mib_static_data_collection}")
+        logger.info(f"__collect_if_mib_fields: {fields}")
         return fields
 
     def __enrich_if_mib(self, metric_name):
@@ -93,11 +95,12 @@ class MibEnricher:
     def process_one(self, translated_var_bind):
         if translated_var_bind:
             metric_name = translated_var_bind[InterfaceMib.METRIC_NAME_KEY]
+            logger.info(f"metric_name: {metric_name}")
             additional_if_mib_dimensions = self.__enrich_if_mib(metric_name)
+            logger.info(f"ADDITIONAL_IF_DIMENSIONS: {additional_if_mib_dimensions}")
             if additional_if_mib_dimensions:
                 for more_data in additional_if_mib_dimensions:
                     translated_var_bind.update(more_data)
-            return translated_var_bind
         else:
             logger.warning("None translated var binds, enrichment process will be skip")
 
