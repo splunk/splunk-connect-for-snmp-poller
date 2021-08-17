@@ -60,7 +60,8 @@ def post_event_data(endpoint, host, variables_binds, index, one_time_flag=False,
         non_metric_result = variables_binds["non_metric"]
         mib_enricher.process_one(metric_result)
         for field_name in mib_enricher.dimensions_fields:
-            non_metric_result += f"{field_name}=\"{metric_result[field_name]}\" "
+            if field_name in metric_result:
+                non_metric_result += f"{field_name}=\"{metric_result[field_name]}\" "
         variables_binds = non_metric_result
 
     data = {
