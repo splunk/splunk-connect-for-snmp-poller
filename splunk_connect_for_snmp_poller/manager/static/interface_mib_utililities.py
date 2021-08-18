@@ -57,7 +57,7 @@ def extract_network_interface_data_from_walk(config_as_dict, if_mib_metric_walk_
         for data in enricher_fields:
             splunk_dimension = data["splunk_dimension_name"]
             current_result = network_data.extract_custom_field(data["oid_name"])
-            if len(current_result) > 0:
+            if current_result:
                 result.append({f"{splunk_dimension}": current_result})
 
     return result

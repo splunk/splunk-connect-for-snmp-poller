@@ -15,6 +15,7 @@
 #
 import re
 
+
 # See http://www.net-snmp.org/docs/mibs/interfaces.html for additional implementation details
 def extract_if_mib_only(translated_walk_result):
     return filter(
@@ -35,13 +36,22 @@ def extract_if_mib_only(translated_walk_result):
 
 def _transform_non_metric_data(non_metric_data):
     regex_pattern = """value1-type="(\w*).*value1="(\w*)"\s*IF-MIB::ifDescr.(\d)*"""
-    value_type, interface_name, number = re.search(regex_pattern, non_metric_data).groups()
-    return {'metric_name': f'sc4snmp.IF-MIB.ifDescr_{number}', '_value': interface_name, 'metric_type': value_type}
+    value_type, interface_name, number = re.search(
+        regex_pattern, non_metric_data
+    ).groups()
+    return {
+        "metric_name": f"sc4snmp.IF-MIB.ifDescr_{number}",
+        "_value": interface_name,
+        "metric_type": value_type,
+    }
 
 
 def make_non_metric_data_iterable(translated_walk_result):
-    return [_transform_non_metric_data(result) for result in translated_walk_result if
-            InterfaceMib.NON_METRIC_IDENTIFIER in result]
+    return [
+        _transform_non_metric_data(result)
+        for result in translated_walk_result
+        if InterfaceMib.NON_METRIC_IDENTIFIER in result
+    ]
 
 
 class InterfaceMib:

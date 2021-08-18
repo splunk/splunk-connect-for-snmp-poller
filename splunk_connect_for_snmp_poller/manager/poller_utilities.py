@@ -151,7 +151,7 @@ def automatic_realtime_task(
     inventory_file_path,
     splunk_indexes,
     server_config,
-    local_snmp_engine
+    local_snmp_engine,
 ):
     for inventory_record in parse_inventory_file(inventory_file_path):
         sys_up_time = _extract_sys_uptime_instance(

@@ -25,20 +25,22 @@ logger = get_logger(__name__)
 
 
 def post_data_to_splunk_hec(
-        host,
-        logs_endpoint,
-        metrics_endpoint,
-        variables_binds,
-        is_metric,
-        index,
-        one_time_flag=False,
-        mib_enricher=None
+    host,
+    logs_endpoint,
+    metrics_endpoint,
+    variables_binds,
+    is_metric,
+    index,
+    one_time_flag=False,
+    mib_enricher=None,
 ):
     logger.debug(f"[-] logs : {logs_endpoint}, metrics : {metrics_endpoint}")
 
     if is_metric:
         logger.debug(f"+++++++++metric index: {index['metric_index']} +++++++++")
-        post_metric_data(metrics_endpoint, host, variables_binds, index["metric_index"], mib_enricher)
+        post_metric_data(
+            metrics_endpoint, host, variables_binds, index["metric_index"], mib_enricher
+        )
     else:
         logger.debug(f"*********event index: {index['event_index']} ********")
         post_event_data(
@@ -52,7 +54,9 @@ def post_data_to_splunk_hec(
 
 
 # TODO Discuss the format of event data payload
-def post_event_data(endpoint, host, variables_binds, index, one_time_flag=False, mib_enricher=None):
+def post_event_data(
+    endpoint, host, variables_binds, index, one_time_flag=False, mib_enricher=None
+):
     if "NoSuchInstance" in str(variables_binds):
         variables_binds = "error: " + str(variables_binds)
 
@@ -111,7 +115,7 @@ def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
     mib_enricher.process_one(metric_result)
     for field_name in mib_enricher.dimensions_fields:
         if field_name in metric_result:
-            non_metric_result += f"{field_name}=\"{metric_result[field_name]}\" "
+            non_metric_result += f'{field_name}="{metric_result[field_name]}" '
     return non_metric_result
 
 
@@ -142,7 +146,9 @@ def post_metric_data(endpoint, host, variables_binds, index, mib_enricher=None):
         logger.error(f"Connection error when sending data to HEC index - {index}: {e}")
 
 
-def _enrich_metric_data(mib_enricher: MibEnricher, variables_binds: dict, fields: dict) -> None:
+def _enrich_metric_data(
+    mib_enricher: MibEnricher, variables_binds: dict, fields: dict
+) -> None:
     mib_enricher.process_one(variables_binds)
     for field_name in mib_enricher.dimensions_fields:
         if field_name in variables_binds:

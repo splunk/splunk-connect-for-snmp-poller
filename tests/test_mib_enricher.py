@@ -2,12 +2,10 @@ from unittest import TestCase
 
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
-mib_static_data_coll = {
-    "IF-MIB": [
-        {"interface_index": ["1", "2"]},
-        {"interface_desc": ["lo", "eth0"]},
-    ]
-}
+mib_static_data_coll = [
+    {"interface_index": ["1", "2"]},
+    {"interface_desc": ["lo", "eth0"]},
+]
 
 
 class TestMibEnricher(TestCase):

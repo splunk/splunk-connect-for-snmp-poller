@@ -140,7 +140,9 @@ class WalkedHostsRepository:
     def update_mib_static_data_for(self, host, if_mib_data):
         if if_mib_data:
             real_time_data_dictionary = {
-                WalkedHostsRepository.MIB_STATIC_DATA: {InterfaceMib.MONGO_IDENTIFIER: if_mib_data}
+                WalkedHostsRepository.MIB_STATIC_DATA: {
+                    InterfaceMib.MONGO_IDENTIFIER: if_mib_data
+                }
             }
             self._walked_hosts.find_one_and_update(
                 {"_id": host},

@@ -130,9 +130,7 @@ def snmp_polling(
     context_data = build_contextData(version, community, server_config)
     logger.debug(f"==========context_data=========\n{context_data}")
 
-    mongo_connection = WalkedHostsRepository(
-            server_config["mongo"]
-        )
+    mongo_connection = WalkedHostsRepository(server_config["mongo"])
     static_parameters = [
         mongo_connection,
         snmp_engine,
