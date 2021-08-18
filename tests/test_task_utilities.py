@@ -73,20 +73,40 @@ class TestTaskUtilities(TestCase):
 
     def test__sort_walk_data_metric(self):
         varbind = '{"metric_name": "sc4snmp.IF-MIB.ifIndex_1", "_value": "1", "metric_type": "Integer"}'
-        varbind_dict = {"metric_name": "sc4snmp.IF-MIB.ifIndex_1", "_value": "1", "metric_type": "Integer"}
+        varbind_dict = {
+            "metric_name": "sc4snmp.IF-MIB.ifIndex_1",
+            "_value": "1",
+            "metric_type": "Integer",
+        }
         is_metric = True
         merged_result_metric, merged_result_non_metric, merged_result = [], [], []
-        _sort_walk_data(is_metric, merged_result_metric, merged_result_non_metric, merged_result, varbind)
+        _sort_walk_data(
+            is_metric,
+            merged_result_metric,
+            merged_result_non_metric,
+            merged_result,
+            varbind,
+        )
         self.assertEqual(merged_result_metric, [varbind])
         self.assertEqual(merged_result, [varbind_dict])
         self.assertEqual(merged_result_non_metric, [])
 
     def test__sort_walk_data_non_metric(self):
         varbind = '{"metric":"{\\"metric_name\\": \\"sc4snmp.IF-MIB.ifDescr_1\\", \\"_value\\": \\"lo\\", \\"metric_type\\": \\"OctetString\\"}","metric_name":"sc4snmp.IF-MIB.ifDescr_1","non_metric":"oid-type1=\\"ObjectIdentity\\" value1-type=\\"OctetString\\" 1.3.6.1.2.1.2.2.1.2.1=\\"lo\\" value1=\\"lo\\" IF-MIB::ifDescr.1=\\"lo\\" "}'
-        varbind_metric_dict = {"metric_name": "sc4snmp.IF-MIB.ifDescr_1", "_value": "lo", "metric_type": "OctetString"}
+        varbind_metric_dict = {
+            "metric_name": "sc4snmp.IF-MIB.ifDescr_1",
+            "_value": "lo",
+            "metric_type": "OctetString",
+        }
         is_metric = False
         merged_result_metric, merged_result_non_metric, merged_result = [], [], []
-        _sort_walk_data(is_metric, merged_result_metric, merged_result_non_metric, merged_result, varbind)
+        _sort_walk_data(
+            is_metric,
+            merged_result_metric,
+            merged_result_non_metric,
+            merged_result,
+            varbind,
+        )
         self.assertEqual(merged_result_metric, [])
         self.assertEqual(merged_result, [varbind_metric_dict])
         self.assertEqual(merged_result_non_metric, [varbind])

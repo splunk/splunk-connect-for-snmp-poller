@@ -41,12 +41,10 @@ from splunk_connect_for_snmp_poller.manager.hec_sender import (
 from splunk_connect_for_snmp_poller.manager.mib_server_client import (
     get_translation,
 )
-from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
     extract_network_interface_data_from_walk,
 )
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
-from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 
 pysmi_debug.setLogger(pysmi_debug.Debug("compiler"))
 logger = get_task_logger(__name__)

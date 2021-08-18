@@ -19,7 +19,9 @@ import time
 import requests
 from celery.utils.log import get_logger
 
-from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
+from splunk_connect_for_snmp_poller.manager.static.mib_enricher import (
+    MibEnricher,
+)
 
 logger = get_logger(__name__)
 
