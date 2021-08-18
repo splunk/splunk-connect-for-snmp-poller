@@ -66,7 +66,6 @@ class InterfaceMib:
     IF_MIB_IF_DESCR_BASE = "sc4snmp.IF-MIB.ifDescr_"
 
     def __init__(self, if_mib_metric_walk_data):
-        # if_mib_non_metric_walk_data_transformed = make_non_metric_data_iterable(if_mib_non_metric_walk_data)
         self._if_mib_walk_data = extract_if_mib_only(if_mib_metric_walk_data)
         self._full_dictionary = self.__build_in_memory_dictionary()
         self._network_interfaces = self.__extract_number_of_network_interfaces()
@@ -93,7 +92,6 @@ class InterfaceMib:
     def __build_in_memory_dictionary(self):
         all_keys = dict()
         for mib in self.unprocessed_if_mib_data():
-            print(mib)
             all_keys[mib[InterfaceMib.METRIC_NAME_KEY]] = {
                 InterfaceMib.METRIC_VALUE_KEY: mib[InterfaceMib.METRIC_VALUE_KEY],
                 InterfaceMib.METRIC_TYPE_KEY: mib[InterfaceMib.METRIC_TYPE_KEY],
