@@ -43,7 +43,7 @@ def extract_dimension_name_and_value(dimension, index):
         dimension_values = dimension[dimension_name]
         # We need to enrich only table data. Static values like IF-MIB::ifNumber.0 won't be enriched (it doesn't
         # make sense for those)
-        if index != 0 and index < len(dimension_values):
+        if index >= 0 and index < len(dimension_values):
             return dimension_name, dimension_values[index]
     return None, None
 
