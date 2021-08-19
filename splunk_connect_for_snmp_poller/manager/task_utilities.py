@@ -115,13 +115,14 @@ def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
 
     # Override the varBinds string with translated varBinds string
     try:
+        data_format = _get_data_format(is_metric, return_multimetric)
         logger.debug(
             f"==========result before translated -- is_metric={is_metric}============\n{result}"
         )
         result = get_translation(
-            varBinds, mib_server_url, is_metric, return_multimetric
+            varBinds, mib_server_url, data_format
         )
-        if not is_metric and return_multimetric:
+        if data_format == "MULTIMETRIC":
             result = json.loads(result)["metric"]
             logger.info(f"=========result=======\n{result}")
         # TODO double check the result to handle the edge case,
@@ -133,7 +134,7 @@ def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
             if not is_metric_data(_value):
                 is_metric = False
                 result = get_translation(
-                    varBinds, mib_server_url, is_metric, return_multimetric
+                    varBinds, mib_server_url, data_format
                 )
     except Exception as e:
         logger.info(f"Could not perform translation. Exception: {e}")
@@ -141,6 +142,17 @@ def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
         f"###############final result -- metric: {is_metric}#######################\n{result}"
     )
     return result, is_metric
+
+
+def _get_data_format(is_metric: bool, return_multimetric: bool):
+    # if is_metric is true, return_multimetric doesn't matter
+    if is_metric:
+        return "METRIC"
+    else:
+        if return_multimetric:
+            return "MULTIMETRIC"
+        else:
+            return "TEXT"
 
 
 def mib_string_handler(mib_list: list) -> VarbindCollection:
