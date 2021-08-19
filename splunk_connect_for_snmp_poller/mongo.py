@@ -113,10 +113,29 @@ class WalkedHostsRepository:
         else:
             return None
 
+    def static_data_for(self, host):
+        full_collection = self._walked_hosts.find_one({"_id": host})
+        if WalkedHostsRepository.MIB_STATIC_DATA in full_collection:
+            return full_collection[WalkedHostsRepository.MIB_STATIC_DATA]
+        else:
+            return None
+
     def update_real_time_data_for(self, host, input_dictionary):
         if input_dictionary:
             real_time_data_dictionary = {
                 WalkedHostsRepository.MIB_REAL_TIME_DATA: input_dictionary
+            }
+            self._walked_hosts.find_one_and_update(
+                {"_id": host},
+                {"$set": real_time_data_dictionary},
+                return_document=ReturnDocument.AFTER,
+            )
+
+    # Input is what extract_network_interface_data_from_walk() returns
+    def update_mib_static_data_for(self, host, if_mib_data):
+        if if_mib_data:
+            real_time_data_dictionary = {
+                WalkedHostsRepository.MIB_STATIC_DATA: if_mib_data
             }
             self._walked_hosts.find_one_and_update(
                 {"_id": host},

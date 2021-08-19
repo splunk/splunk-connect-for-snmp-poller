@@ -26,7 +26,7 @@ def extract_if_mib_only(translated_walk_result):
             )
         )
         and translation[InterfaceMib.METRIC_NAME_KEY].startswith(
-            InterfaceMib.IF_MIB_METRIC_SUFFIX
+            InterfaceMib.IF_MIB_METRIC_PREFIX
         ),
         translated_walk_result,
     )
@@ -36,7 +36,7 @@ class InterfaceMib:
     METRIC_NAME_KEY = "metric_name"
     METRIC_VALUE_KEY = "_value"
     METRIC_TYPE_KEY = "metric_type"
-    IF_MIB_METRIC_SUFFIX = "sc4snmp.IF-MIB."
+    IF_MIB_METRIC_PREFIX = "sc4snmp.IF-MIB."
     IF_MIB_IF_NUMBER = "sc4snmp.IF-MIB.ifNumber_0"
     IF_MIB_IF_INDEX_BASE = "sc4snmp.IF-MIB.ifIndex_"
     IF_MIB_IF_DESCR_BASE = "sc4snmp.IF-MIB.ifDescr_"
@@ -96,3 +96,6 @@ class InterfaceMib:
 
     def __extract_interface_names(self):
         return self.__extract_single_field_as_list(InterfaceMib.IF_MIB_IF_DESCR_BASE)
+
+    def extract_custom_field(self, snmp_field_name):
+        return self.__extract_single_field_as_list(snmp_field_name)

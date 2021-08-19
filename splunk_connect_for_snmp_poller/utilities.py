@@ -147,3 +147,12 @@ def file_was_modified(file_path, last_mod_time):
         last_mod_time = os.stat(file_path, follow_symlinks=True).st_mtime
         return True, last_mod_time
     return False, last_mod_time
+
+
+def multi_key_lookup(dictionary, tuple_of_keys):
+    from functools import reduce
+
+    try:
+        return reduce(dict.get, tuple_of_keys, dictionary)
+    except TypeError:
+        return None
