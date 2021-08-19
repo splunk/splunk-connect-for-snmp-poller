@@ -66,7 +66,7 @@ class MibEnricher:
 
     def __enrich_if_mib(self, metric_name):
         result = []
-        if metric_name and metric_name.startswith(InterfaceMib.IF_MIB_METRIC_SUFFIX):
+        if metric_name and metric_name.startswith(InterfaceMib.IF_MIB_METRIC_PREFIX):
             if self._mib_static_data_collection:
                 for dimension in self._mib_static_data_collection:
                     index = extract_current_index_from_metric(metric_name)
