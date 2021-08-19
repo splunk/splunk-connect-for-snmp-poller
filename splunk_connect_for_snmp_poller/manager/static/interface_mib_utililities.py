@@ -41,7 +41,7 @@ def extract_network_interface_data_from_config(config_as_dict):
             for key in splunk_dimension.keys():
                 result.append(
                     {
-                        "oid_name": f"{InterfaceMib.IF_MIB_METRIC_SUFFIX}{key}_",
+                        "oid_name": f"{InterfaceMib.IF_MIB_METRIC_PREFIX}{key}_",
                         "splunk_dimension_name": splunk_dimension[key],
                     }
                 )

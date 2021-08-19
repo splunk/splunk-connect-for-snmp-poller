@@ -59,11 +59,11 @@ class ExtractEnricherDataFromConfigTest(TestCase):
         self.assertTrue(len(result) == 2)
         expected_result = [
             {
-                "oid_name": f"{InterfaceMib.IF_MIB_METRIC_SUFFIX}ifIndex_",
+                "oid_name": f"{InterfaceMib.IF_MIB_METRIC_PREFIX}ifIndex_",
                 "splunk_dimension_name": "interface_index",
             },
             {
-                "oid_name": f"{InterfaceMib.IF_MIB_METRIC_SUFFIX}ifDescr_",
+                "oid_name": f"{InterfaceMib.IF_MIB_METRIC_PREFIX}ifDescr_",
                 "splunk_dimension_name": "interface_desc",
             },
         ]
