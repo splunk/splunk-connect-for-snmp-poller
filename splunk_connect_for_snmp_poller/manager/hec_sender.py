@@ -104,7 +104,7 @@ def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
     'non_metric': 'oid-type1="ObjectIdentity" value1-type="OctetString" 1.3.6.1.2.1.2.2.1.6.1=""
     value1="" IF-MIB::ifPhysAddress.1="" '}
 
-    We need both formats because process_one function was designed to work on metric data only and non metric format is
+    We need both formats because append_additional_dimensions function was designed to work on metric data only and non metric format is
     difficult to process because of the nature of string type.
 
     @return: non metric varbind with values from additional dimension added. For ex. for additional dimensions:
@@ -114,7 +114,7 @@ def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
     """
     metric_result = json.loads(variables_binds["metric"])
     non_metric_result = variables_binds["non_metric"]
-    mib_enricher.process_one(metric_result)
+    mib_enricher.append_additional_dimensions(metric_result)
     for field_name in mib_enricher.dimensions_fields:
         if field_name in metric_result:
             non_metric_result += f'{field_name}="{metric_result[field_name]}" '
@@ -151,7 +151,7 @@ def post_metric_data(endpoint, host, variables_binds, index, mib_enricher=None):
 def _enrich_metric_data(
     mib_enricher: MibEnricher, variables_binds: dict, fields: dict
 ) -> None:
-    mib_enricher.process_one(variables_binds)
+    mib_enricher.append_additional_dimensions(variables_binds)
     for field_name in mib_enricher.dimensions_fields:
         if field_name in variables_binds:
             fields[field_name] = variables_binds[field_name]

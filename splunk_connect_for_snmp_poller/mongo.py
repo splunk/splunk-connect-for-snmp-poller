@@ -119,8 +119,8 @@ class WalkedHostsRepository:
         full_collection = self._walked_hosts.find_one({"_id": host})
         if WalkedHostsRepository.MIB_STATIC_DATA in full_collection:
             mib_static_data = full_collection[WalkedHostsRepository.MIB_STATIC_DATA]
-            if InterfaceMib.MONGO_IDENTIFIER in mib_static_data:
-                return mib_static_data[InterfaceMib.MONGO_IDENTIFIER]
+            if InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER in mib_static_data:
+                return mib_static_data[InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER]
             return None
         else:
             return None
@@ -141,7 +141,7 @@ class WalkedHostsRepository:
         if if_mib_data:
             real_time_data_dictionary = {
                 WalkedHostsRepository.MIB_STATIC_DATA: {
-                    InterfaceMib.MONGO_IDENTIFIER: if_mib_data
+                    InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER: if_mib_data
                 }
             }
             self._walked_hosts.find_one_and_update(

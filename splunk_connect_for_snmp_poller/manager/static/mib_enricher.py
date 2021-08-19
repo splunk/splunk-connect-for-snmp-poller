@@ -78,7 +78,7 @@ class MibEnricher:
                         result.append({dimension_name: dimension_value})
         return result
 
-    def process_one(self, translated_var_bind):
+    def append_additional_dimensions(self, translated_var_bind):
         if translated_var_bind:
             metric_name = translated_var_bind[InterfaceMib.METRIC_NAME_KEY]
             logger.info(f"metric_name: {metric_name}")
