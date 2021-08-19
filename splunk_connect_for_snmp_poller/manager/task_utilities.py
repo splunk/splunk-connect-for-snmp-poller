@@ -133,6 +133,7 @@ def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
             logger.debug(f"=========_value=======\n{_value}")
             if not is_metric_data(_value):
                 is_metric = False
+                data_format = _get_data_format(is_metric, return_multimetric)
                 result = get_translation(
                     varBinds, mib_server_url, data_format
                 )
