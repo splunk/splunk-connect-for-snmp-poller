@@ -207,6 +207,7 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
 
 def snmp_get_handler(
     mongo_connection,
+    enricher_presence,
     snmp_engine,
     auth_data,
     context_data,
@@ -235,7 +236,7 @@ def snmp_get_handler(
     )
     if not _any_failure_happened(errorIndication, errorStatus, errorIndex, varBinds):
         mib_enricher, return_multimetric = _enrich_response(
-            mongo_connection, f"{host}:{port}"
+            mongo_connection, enricher_presence, f"{host}:{port}"
         )
         for varbind in varBinds:
             result, is_metric = get_translated_string(
@@ -253,7 +254,9 @@ def snmp_get_handler(
             )
 
 
-def _enrich_response(mongo_connection, hostname):
+def _enrich_response(mongo_connection, enricher_presence, hostname):
+    if not enricher_presence:
+        return None, False
     processed_data = mongo_connection.static_data_for(hostname)
     if processed_data:
         mib_enricher = MibEnricher(processed_data)
@@ -291,6 +294,7 @@ def _any_failure_happened(
 
 def snmp_bulk_handler(
     mongo_connection,
+    enricher_presence,
     snmp_engine,
     auth_data,
     context_data,
@@ -323,7 +327,7 @@ def snmp_bulk_handler(
             # Bulk operation returns array of varbinds
             for varbind in varBinds:
                 mib_enricher, return_multimetric = _enrich_response(
-                    mongo_connection, f"{host}:{port}"
+                    mongo_connection, enricher_presence, f"{host}:{port}"
                 )
                 logger.debug(f"Bulk returned this varbind: {varbind}")
                 result, is_metric = get_translated_string(
@@ -343,6 +347,76 @@ def snmp_bulk_handler(
 
 
 def walk_handler(
+    profile,
+    snmp_engine,
+    auth_data,
+    context_data,
+    host,
+    port,
+    mib_server_url,
+    index,
+    otel_logs_url,
+    otel_metrics_url,
+    one_time_flag,
+):
+    """
+    Perform the SNMP Walk for oid end with *,
+    e.g. 1.3.6.1.2.1.1.9.*,
+    which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
+    """
+
+    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+        snmp_engine,
+        auth_data,
+        UdpTransportTarget((host, port)),
+        context_data,
+        ObjectType(ObjectIdentity(profile[:-2])),
+        lexicographicMode=False,
+    ):
+        is_metric = False
+        if errorIndication:
+            result = f"error: {errorIndication}"
+            logger.info(result)
+            post_data_to_splunk_hec(
+                host,
+                otel_logs_url,
+                otel_metrics_url,
+                result,
+                is_metric,
+                index,
+                one_time_flag,
+            )
+            break
+        elif errorStatus:
+            result = "error: %s at %s" % (
+                errorStatus.prettyPrint(),
+                errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
+            )
+            logger.info(result)
+            post_data_to_splunk_hec(
+                host,
+                otel_logs_url,
+                otel_metrics_url,
+                result,
+                is_metric,
+                index,
+                one_time_flag,
+            )
+            break
+        else:
+            result, is_metric = get_translated_string(mib_server_url, varBinds)
+            post_data_to_splunk_hec(
+                host,
+                otel_logs_url,
+                otel_metrics_url,
+                result,
+                is_metric,
+                index,
+                one_time_flag,
+            )
+
+
+def walk_handler_with_enricher(
     profile,
     enricher,
     mongo_connection,
