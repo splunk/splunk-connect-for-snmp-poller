@@ -322,9 +322,8 @@ def snmp_bulk_handler(
         ):
             # Bulk operation returns array of varbinds
             for varbind in varBinds:
-                processed_data = mongo_connection.static_data_for(f"{host}:{port}")
                 mib_enricher, return_multimetric = _enrich_response(
-                    processed_data, f"{host}:{port}"
+                    mongo_connection, f"{host}:{port}"
                 )
                 logger.debug(f"Bulk returned this varbind: {varbind}")
                 result, is_metric = get_translated_string(
