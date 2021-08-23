@@ -29,6 +29,11 @@ Get involved, try it out, ask questions, contribute filters, and make new friend
 
 > Refer to [BUILD_STEPS.md](build.md) for development aspects of poller.
 
+This repository is using `pre-commit`. After installing dependencies, please do
+```bash
+pre-commit install
+```
+
 ## Contributing
 
 We welcome feedback and contributions from the community! Please see our [contribution guidelines](CONTRIBUTING.md)
