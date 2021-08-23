@@ -18,6 +18,7 @@ import threading
 
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
+
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     VarbindCollection,
@@ -30,8 +31,6 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
     walk_handler,
     walk_handler_with_enricher,
 )
-
-# Used to store a single SnmpEngine() instance for each Celery task
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 
 thread_local = threading.local()

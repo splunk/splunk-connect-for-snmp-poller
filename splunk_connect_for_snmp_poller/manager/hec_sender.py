@@ -19,9 +19,7 @@ import time
 import requests
 from celery.utils.log import get_logger
 
-from splunk_connect_for_snmp_poller.manager.static.mib_enricher import (
-    MibEnricher,
-)
+from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
 logger = get_logger(__name__)
 
@@ -104,7 +102,8 @@ def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
     'non_metric': 'oid-type1="ObjectIdentity" value1-type="OctetString" 1.3.6.1.2.1.2.2.1.6.1=""
     value1="" IF-MIB::ifPhysAddress.1="" '}
 
-    We need both formats because append_additional_dimensions function was designed to work on metric data only and non metric format is
+    We need both formats because append_additional_dimensions function was designed to work on metric data only and non
+    metric format is
     difficult to process because of the nature of string type.
 
     @return: non metric varbind with values from additional dimension added. For ex. for additional dimensions:

@@ -19,7 +19,6 @@ from splunk_connect_for_snmp_poller.manager.hec_sender import (
     _enrich_event_data,
     _enrich_metric_data,
 )
-
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
 MibEnricher = MibEnricher(

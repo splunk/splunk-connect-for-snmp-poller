@@ -13,13 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from celery import Celery
-import os
 import logging.config
+import os
+
+from celery import Celery
 
 logger = logging.getLogger(__name__)
 
-logger.info(f"Start Celery Client")
+logger.info("Start Celery Client")
 
 app = Celery(__name__)
 

@@ -20,9 +20,8 @@ import os
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from splunk_connect_for_snmp_poller.utilities import (
-    format_value_for_mib_server,
-)
+
+from splunk_connect_for_snmp_poller.utilities import format_value_for_mib_server
 
 logger = logging.getLogger(__name__)
 

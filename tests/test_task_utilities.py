@@ -16,9 +16,9 @@
 from unittest import TestCase
 
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
+    _sort_walk_data,
     is_metric_data,
     parse_port,
-    _sort_walk_data,
 )
 
 

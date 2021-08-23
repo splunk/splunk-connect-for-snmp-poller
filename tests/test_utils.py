@@ -21,15 +21,14 @@ from jsoncomment import JsonComment
 
 def load_test_data(data_file_path):
     if data_file_path and os.path.exists(data_file_path):
-        with open(data_file_path, "r") as sample_simulator_walk_data:
+        with open(data_file_path) as sample_simulator_walk_data:
             walk_data = JsonComment().load(sample_simulator_walk_data)
             return walk_data
     return None
 
 
 def fake_walk_handler(simulator_ifmib_walk_data):
-    for translated_metric in simulator_ifmib_walk_data:
-        yield translated_metric
+    yield from simulator_ifmib_walk_data
 
 
 def file_data_path(data_file_name):

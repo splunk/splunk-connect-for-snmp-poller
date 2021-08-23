@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import re
 
 
 # See http://www.net-snmp.org/docs/mibs/interfaces.html for additional implementation details

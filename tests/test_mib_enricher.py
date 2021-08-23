@@ -37,7 +37,7 @@ class TestMibEnricher(TestCase):
         enricher.append_additional_dimensions(translated_metric)
         self.assertTrue(len(translated_metric) == 3)
         self.assertEqual(
-            set(["metric_name", "_value", "metric_type"]), translated_metric.keys()
+            {"metric_name", "_value", "metric_type"}, translated_metric.keys()
         )
 
     def test_process_one_valid_if_mib_entry_iwith_zero_index(self):
@@ -50,7 +50,7 @@ class TestMibEnricher(TestCase):
         enricher.append_additional_dimensions(translated_metric)
         self.assertTrue(len(translated_metric) == 3)
         self.assertEqual(
-            set(["metric_name", "_value", "metric_type"]), translated_metric.keys()
+            {"metric_name", "_value", "metric_type"}, translated_metric.keys()
         )
 
     def test_process_one_valid_if_mib_entry_without_proper_mongo_static_data(self):
@@ -63,7 +63,7 @@ class TestMibEnricher(TestCase):
         enricher.append_additional_dimensions(translated_metric)
         self.assertTrue(len(translated_metric) == 3)
         self.assertEqual(
-            set(["metric_name", "_value", "metric_type"]), translated_metric.keys()
+            {"metric_name", "_value", "metric_type"}, translated_metric.keys()
         )
 
     def test_process_one_valid_if_mib_entry(self):
