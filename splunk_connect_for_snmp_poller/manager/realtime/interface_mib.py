@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import re
+
 
 # See http://www.net-snmp.org/docs/mibs/interfaces.html for additional implementation details
 def extract_if_mib_only(translated_walk_result):
@@ -37,12 +39,14 @@ class InterfaceMib:
     METRIC_VALUE_KEY = "_value"
     METRIC_TYPE_KEY = "metric_type"
     IF_MIB_METRIC_PREFIX = "sc4snmp.IF-MIB."
+    NON_METRIC_IDENTIFIER = "ifDescr"
+    IF_MIB_DATA_MONGO_IDENTIFIER = "IF-MIB"
     IF_MIB_IF_NUMBER = "sc4snmp.IF-MIB.ifNumber_0"
     IF_MIB_IF_INDEX_BASE = "sc4snmp.IF-MIB.ifIndex_"
     IF_MIB_IF_DESCR_BASE = "sc4snmp.IF-MIB.ifDescr_"
 
-    def __init__(self, if_mib_walk_data):
-        self._if_mib_walk_data = extract_if_mib_only(if_mib_walk_data)
+    def __init__(self, if_mib_metric_walk_data):
+        self._if_mib_walk_data = extract_if_mib_only(if_mib_metric_walk_data)
         self._full_dictionary = self.__build_in_memory_dictionary()
         self._network_interfaces = self.__extract_number_of_network_interfaces()
         self._network_indexes = self.__extract_interface_indexes()

@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import logging
 
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
@@ -51,15 +50,25 @@ def extract_dimension_name_and_value(dimension, index):
 class MibEnricher:
     def __init__(self, mib_static_data_collection):
         self._mib_static_data_collection = mib_static_data_collection
+        self.dimensions_fields = self.__collect_if_mib_fields(
+            mib_static_data_collection
+        )
+
+    def __collect_if_mib_fields(self, mib_static_data_collection):
+        fields = []
+        if not mib_static_data_collection:
+            return []
+        for el in mib_static_data_collection:
+            fields += list(el.keys())
+        logger.info(f"_mib_static_data_collection: {mib_static_data_collection}")
+        logger.info(f"__collect_if_mib_fields: {fields}")
+        return fields
 
     def __enrich_if_mib(self, metric_name):
         result = []
         if metric_name and metric_name.startswith(InterfaceMib.IF_MIB_METRIC_PREFIX):
-            if (
-                self._mib_static_data_collection
-                and "IF-MIB" in self._mib_static_data_collection
-            ):
-                for dimension in self._mib_static_data_collection["IF-MIB"]:
+            if self._mib_static_data_collection:
+                for dimension in self._mib_static_data_collection:
                     index = extract_current_index_from_metric(metric_name)
                     (
                         dimension_name,
@@ -69,10 +78,12 @@ class MibEnricher:
                         result.append({dimension_name: dimension_value})
         return result
 
-    def process_one(self, translated_var_bind):
+    def append_additional_dimensions(self, translated_var_bind):
         if translated_var_bind:
             metric_name = translated_var_bind[InterfaceMib.METRIC_NAME_KEY]
+            logger.info(f"metric_name: {metric_name}")
             additional_if_mib_dimensions = self.__enrich_if_mib(metric_name)
+            logger.info(f"ADDITIONAL_IF_DIMENSIONS: {additional_if_mib_dimensions}")
             if additional_if_mib_dimensions:
                 for more_data in additional_if_mib_dimensions:
                     translated_var_bind.update(more_data)

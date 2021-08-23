@@ -28,9 +28,12 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
     snmp_bulk_handler,
     snmp_get_handler,
     walk_handler,
+    walk_handler_with_enricher,
 )
 
 # Used to store a single SnmpEngine() instance for each Celery task
+from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
+
 thread_local = threading.local()
 logger = get_task_logger(__name__)
 
@@ -46,6 +49,8 @@ def get_shared_snmp_engine():
 def get_snmp_data(
     varBinds,
     handler,
+    mongo_connection,
+    enricher_presence,
     snmp_engine,
     auth_data,
     context_data,
@@ -60,6 +65,8 @@ def get_snmp_data(
     if varBinds:
         try:
             handler(
+                mongo_connection,
+                enricher_presence,
                 snmp_engine,
                 auth_data,
                 context_data,
@@ -126,6 +133,8 @@ def snmp_polling(
     context_data = build_contextData(version, community, server_config)
     logger.debug(f"==========context_data=========\n{context_data}")
 
+    mongo_connection = WalkedHostsRepository(server_config["mongo"])
+    enricher_presence = True if "enricher" in server_config else False
     static_parameters = [
         snmp_engine,
         auth_data,
@@ -138,6 +147,8 @@ def snmp_polling(
         otel_metrics_url,
         one_time_flag,
     ]
+    get_bulk_specific_parameters = [mongo_connection, enricher_presence]
+
     try:
         # Perform SNNP Polling for string profile in inventory.csv
         if "." not in profile:
@@ -152,23 +163,26 @@ def snmp_polling(
                 logger.info(f"Varbind collection: {varbind_collection}")
                 # Perform SNMP BULK
                 get_snmp_data(
-                    varbind_collection.bulk, snmp_bulk_handler, *static_parameters
+                    varbind_collection.bulk, snmp_bulk_handler, *get_bulk_specific_parameters, *static_parameters
                 )
                 # Perform SNMP WALK
                 get_snmp_data(
-                    varbind_collection.get, snmp_get_handler, *static_parameters
+                    varbind_collection.get, snmp_get_handler, *get_bulk_specific_parameters, *static_parameters
                 )
         # Perform SNNP Polling for oid profile in inventory.csv
         else:
             # Perform SNNP WALK for oid end with *
             if profile[-1] == "*":
                 logger.info(f"Executing SNMP WALK for {host} profile={profile}")
-                walk_handler(profile, *static_parameters)
+                if enricher_presence:
+                    walk_handler_with_enricher(profile, server_config, mongo_connection, *static_parameters)
+                else:
+                    walk_handler(profile, *static_parameters)
             # Perform SNNP GET for an oid
             else:
                 logger.info(f"Executing SNMP GET for {host} profile={profile}")
                 prepared_profile = [ObjectType(ObjectIdentity(profile))]
-                snmp_get_handler(*static_parameters, prepared_profile)
+                snmp_get_handler(*get_bulk_specific_parameters, *static_parameters, prepared_profile)
 
         return f"Executing SNMP Polling for {host} version={version} profile={profile}"
     except Exception as e:

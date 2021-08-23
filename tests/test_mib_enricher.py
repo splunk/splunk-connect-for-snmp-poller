@@ -17,17 +17,15 @@ from unittest import TestCase
 
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
-mib_static_data_coll = {
-    "IF-MIB": [
-        {"interface_index": ["1", "2"]},
-        {"interface_desc": ["lo", "eth0"]},
-    ]
-}
+mib_static_data_coll = [
+    {"interface_index": ["1", "2"]},
+    {"interface_desc": ["lo", "eth0"]},
+]
 
 
 class TestMibEnricher(TestCase):
     def test_process_one_none_input_parameter(self):
-        MibEnricher(mib_static_data_coll).process_one(None)
+        MibEnricher(mib_static_data_coll).append_additional_dimensions(None)
 
     def test_process_one_valid_no_if_mib_entry(self):
         translated_metric = {
@@ -36,7 +34,7 @@ class TestMibEnricher(TestCase):
             "metric_type": "Counter32",
         }
         enricher = MibEnricher(mib_static_data_coll)
-        enricher.process_one(translated_metric)
+        enricher.append_additional_dimensions(translated_metric)
         self.assertTrue(len(translated_metric) == 3)
         self.assertEqual(
             set(["metric_name", "_value", "metric_type"]), translated_metric.keys()
@@ -49,7 +47,7 @@ class TestMibEnricher(TestCase):
             "metric_type": "Integer",
         }
         enricher = MibEnricher(mib_static_data_coll)
-        enricher.process_one(translated_metric)
+        enricher.append_additional_dimensions(translated_metric)
         self.assertTrue(len(translated_metric) == 3)
         self.assertEqual(
             set(["metric_name", "_value", "metric_type"]), translated_metric.keys()
@@ -62,7 +60,7 @@ class TestMibEnricher(TestCase):
             "metric_type": "Integer",
         }
         enricher = MibEnricher(None)
-        enricher.process_one(translated_metric)
+        enricher.append_additional_dimensions(translated_metric)
         self.assertTrue(len(translated_metric) == 3)
         self.assertEqual(
             set(["metric_name", "_value", "metric_type"]), translated_metric.keys()
@@ -75,6 +73,6 @@ class TestMibEnricher(TestCase):
             "metric_type": "Integer",
         }
         enricher = MibEnricher(mib_static_data_coll)
-        enricher.process_one(translated_metric)
+        enricher.append_additional_dimensions(translated_metric)
         self.assertTrue("interface_index" in translated_metric)
         self.assertTrue("interface_desc" in translated_metric)

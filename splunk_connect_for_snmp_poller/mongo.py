@@ -35,6 +35,8 @@ import os
 from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import ConnectionFailure
 
+from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
+
 """
 In order to store some general data into Mongo we use the following structure.
 Each WalkedHostsRepository can contain the following fields:
@@ -116,7 +118,10 @@ class WalkedHostsRepository:
     def static_data_for(self, host):
         full_collection = self._walked_hosts.find_one({"_id": host})
         if WalkedHostsRepository.MIB_STATIC_DATA in full_collection:
-            return full_collection[WalkedHostsRepository.MIB_STATIC_DATA]
+            mib_static_data = full_collection[WalkedHostsRepository.MIB_STATIC_DATA]
+            if InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER in mib_static_data:
+                return mib_static_data[InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER]
+            return None
         else:
             return None
 
@@ -135,10 +140,13 @@ class WalkedHostsRepository:
     def update_mib_static_data_for(self, host, if_mib_data):
         if if_mib_data:
             real_time_data_dictionary = {
-                WalkedHostsRepository.MIB_STATIC_DATA: if_mib_data
+                WalkedHostsRepository.MIB_STATIC_DATA: {
+                    InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER: if_mib_data
+                }
             }
             self._walked_hosts.find_one_and_update(
                 {"_id": host},
                 {"$set": real_time_data_dictionary},
+                upsert=True,
                 return_document=ReturnDocument.AFTER,
             )

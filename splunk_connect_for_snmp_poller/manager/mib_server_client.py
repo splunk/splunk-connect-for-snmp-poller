@@ -34,7 +34,7 @@ class SharedException(Exception):
         super().__init__(msg, *args)
 
 
-def get_translation(var_binds, mib_server_url, metric=False):
+def get_translation(var_binds, mib_server_url, data_format):
     """
     @param var_binds: var_binds object getting from SNMP agents
     @param mib_server_url: URL of SNMP MIB server
@@ -63,7 +63,7 @@ def get_translation(var_binds, mib_server_url, metric=False):
     logger.debug(f"[-] TRANSLATION_URL: {TRANSLATION_URL}")
 
     # Set up the request params
-    params = {"metric": metric}
+    params = {"data_format": data_format}
 
     try:
         # use Session with Retry

@@ -41,6 +41,10 @@ from splunk_connect_for_snmp_poller.manager.hec_sender import (
 from splunk_connect_for_snmp_poller.manager.mib_server_client import (
     get_translation,
 )
+from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
+    extract_network_interface_data_from_walk,
+)
+from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
 pysmi_debug.setLogger(pysmi_debug.Debug("compiler"))
 logger = get_task_logger(__name__)
@@ -72,7 +76,7 @@ def is_metric_data(value):
         return False
 
 
-def get_translated_string(mib_server_url, varBinds):
+def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
     """
     Get the translated/formatted var_binds string depending on whether the varBinds is an event or metric
     Note: if it failed to get translation, return the the original varBinds
@@ -111,11 +115,16 @@ def get_translated_string(mib_server_url, varBinds):
 
     # Override the varBinds string with translated varBinds string
     try:
+        data_format = _get_data_format(is_metric, return_multimetric)
         logger.debug(
             f"==========result before translated -- is_metric={is_metric}============\n{result}"
         )
-        result = get_translation(varBinds, mib_server_url, is_metric)
-        logger.info(f"=========result=======\n{result}")
+        result = get_translation(
+            varBinds, mib_server_url, data_format
+        )
+        if data_format == "MULTIMETRIC":
+            result = json.loads(result)["metric"]
+            logger.info(f"=========result=======\n{result}")
         # TODO double check the result to handle the edge case,
         # where the value of an metric data was translated from int to string
         if "metric_name" in result:
@@ -124,13 +133,27 @@ def get_translated_string(mib_server_url, varBinds):
             logger.debug(f"=========_value=======\n{_value}")
             if not is_metric_data(_value):
                 is_metric = False
-                result = get_translation(varBinds, mib_server_url, is_metric)
+                data_format = _get_data_format(is_metric, return_multimetric)
+                result = get_translation(
+                    varBinds, mib_server_url, data_format
+                )
     except Exception as e:
         logger.info(f"Could not perform translation. Exception: {e}")
     logger.info(
         f"###############final result -- metric: {is_metric}#######################\n{result}"
     )
     return result, is_metric
+
+
+def _get_data_format(is_metric: bool, return_multimetric: bool):
+    # if is_metric is true, return_multimetric doesn't matter
+    if is_metric:
+        return "METRIC"
+    else:
+        if return_multimetric:
+            return "MULTIMETRIC"
+        else:
+            return "TEXT"
 
 
 def mib_string_handler(mib_list: list) -> VarbindCollection:
@@ -183,6 +206,8 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
 
 
 def snmp_get_handler(
+    mongo_connection,
+    enricher_presence,
     snmp_engine,
     auth_data,
     context_data,
@@ -210,8 +235,13 @@ def snmp_get_handler(
         )
     )
     if not _any_failure_happened(errorIndication, errorStatus, errorIndex, varBinds):
+        mib_enricher, return_multimetric = _enrich_response(
+            mongo_connection, enricher_presence, f"{host}:{port}"
+        )
         for varbind in varBinds:
-            result, is_metric = get_translated_string(mib_server_url, [varbind])
+            result, is_metric = get_translated_string(
+                mib_server_url, [varbind], return_multimetric
+            )
             post_data_to_splunk_hec(
                 host,
                 otel_logs_url,
@@ -220,7 +250,21 @@ def snmp_get_handler(
                 is_metric,
                 index,
                 one_time_flag,
+                mib_enricher,
             )
+
+
+def _enrich_response(mongo_connection, enricher_presence, hostname):
+    if not enricher_presence:
+        return None, False
+    processed_data = mongo_connection.static_data_for(hostname)
+    if processed_data:
+        mib_enricher = MibEnricher(processed_data)
+        return_multimetric = True
+    else:
+        mib_enricher = None
+        return_multimetric = False
+    return mib_enricher, return_multimetric
 
 
 def _any_failure_happened(
@@ -249,6 +293,8 @@ def _any_failure_happened(
 
 
 def snmp_bulk_handler(
+    mongo_connection,
+    enricher_presence,
     snmp_engine,
     auth_data,
     context_data,
@@ -280,8 +326,13 @@ def snmp_bulk_handler(
         ):
             # Bulk operation returns array of varbinds
             for varbind in varBinds:
+                mib_enricher, return_multimetric = _enrich_response(
+                    mongo_connection, enricher_presence, f"{host}:{port}"
+                )
                 logger.debug(f"Bulk returned this varbind: {varbind}")
-                result, is_metric = get_translated_string(mib_server_url, [varbind])
+                result, is_metric = get_translated_string(
+                    mib_server_url, [varbind], return_multimetric
+                )
                 logger.info(result)
                 post_data_to_splunk_hec(
                     host,
@@ -291,6 +342,7 @@ def snmp_bulk_handler(
                     is_metric,
                     index,
                     one_time_flag,
+                    mib_enricher,
                 )
 
 
@@ -362,6 +414,164 @@ def walk_handler(
                 index,
                 one_time_flag,
             )
+
+
+def walk_handler_with_enricher(
+    profile,
+    enricher,
+    mongo_connection,
+    snmp_engine,
+    auth_data,
+    context_data,
+    host,
+    port,
+    mib_server_url,
+    index,
+    otel_logs_url,
+    otel_metrics_url,
+    one_time_flag,
+):
+    """
+    Perform the SNMP Walk for oid end with *,
+    e.g. 1.3.6.1.2.1.1.9.*,
+    which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
+    """
+    merged_result = []
+    merged_result_metric = []
+    merged_result_non_metric = []
+    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+        snmp_engine,
+        auth_data,
+        UdpTransportTarget((host, port)),
+        context_data,
+        ObjectType(ObjectIdentity(profile[:-2])),
+        lexicographicMode=False,
+    ):
+        is_metric = False
+        if errorIndication:
+            result = f"error: {errorIndication}"
+            logger.info(result)
+            post_data_to_splunk_hec(
+                host,
+                otel_logs_url,
+                otel_metrics_url,
+                result,
+                is_metric,
+                index,
+                one_time_flag,
+            )
+            break
+        elif errorStatus:
+            result = "error: %s at %s" % (
+                errorStatus.prettyPrint(),
+                errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
+            )
+            logger.info(result)
+            post_data_to_splunk_hec(
+                host,
+                otel_logs_url,
+                otel_metrics_url,
+                result,
+                is_metric,
+                index,
+                one_time_flag,
+            )
+            break
+        else:
+            result, is_metric = get_translated_string(mib_server_url, varBinds, True)
+            _sort_walk_data(
+                is_metric,
+                merged_result_metric,
+                merged_result_non_metric,
+                merged_result,
+                result,
+            )
+
+    processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
+    mongo_connection.update_mib_static_data_for(f"{host}:{port}", processed_result)
+    mib_enricher = _return_mib_enricher_for_walk(
+        mongo_connection, processed_result, f"{host}:{port}"
+    )
+    post_walk_data_to_splunk_arguments = [
+        host,
+        otel_logs_url,
+        otel_metrics_url,
+        index,
+        one_time_flag,
+        mib_enricher,
+    ]
+    _post_walk_data_to_splunk(
+        merged_result_metric, True, *post_walk_data_to_splunk_arguments
+    )
+    logger.info(f"***************** After metric *****************")
+    _post_walk_data_to_splunk(
+        merged_result_non_metric, False, *post_walk_data_to_splunk_arguments
+    )
+    logger.info(f"***************** After metric *****************")
+
+
+def _sort_walk_data(
+    is_metric: bool,
+    merged_result_metric: list,
+    merged_result_non_metric: list,
+    merged_result: list,
+    varbind,
+):
+    """
+    In WALK operation we can have three scenarios:
+        1. mongo db is empty and we want to insert enricher mapping into it
+        2. mongo db already has some data and we just need to use it
+        3. we don't have any enricher given in config so we're not adding any extra dimensions
+    Because of different structure of metric/non-metric data we need to divide varbinds on 3 categories.
+    @param is_metric: is current varbind metric
+    @param merged_result_metric: list containing metric varbinds
+    @param merged_result_non_metric: list containing non-metric varbinds
+    @param merged_result: list containing metric varbinds and metric versions of non-metric varbinds (necessary for 1st
+    scenario.
+    @param varbind: current varbind
+    @return:
+    """
+    if is_metric:
+        merged_result_metric.append(varbind)
+        merged_result.append(eval(varbind))
+    else:
+        merged_result_non_metric.append(varbind)
+        result = eval(varbind)
+        merged_result.append(eval(result["metric"]))
+
+
+def _return_mib_enricher_for_walk(mongo_connection, processed_result, hostname):
+    if processed_result:
+        mongo_connection.update_mib_static_data_for(hostname, processed_result)
+        return MibEnricher(processed_result)
+    else:
+        processed_data = mongo_connection.static_data_for(hostname)
+        if not processed_data:
+            return None
+        return MibEnricher(processed_data)
+
+
+def _post_walk_data_to_splunk(
+    result_list,
+    is_metric,
+    host,
+    otel_logs_url,
+    otel_metrics_url,
+    index,
+    one_time_flag,
+    mib_enricher,
+):
+    for result in result_list:
+        post_data_to_splunk_hec(
+            host,
+            otel_logs_url,
+            otel_metrics_url,
+            result,
+            is_metric,
+            index,
+            one_time_flag,
+            mib_enricher,
+        )
 
 
 def parse_port(host):
