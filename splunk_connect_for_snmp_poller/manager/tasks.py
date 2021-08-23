@@ -163,11 +163,17 @@ def snmp_polling(
                 logger.info(f"Varbind collection: {varbind_collection}")
                 # Perform SNMP BULK
                 get_snmp_data(
-                    varbind_collection.bulk, snmp_bulk_handler, *get_bulk_specific_parameters, *static_parameters
+                    varbind_collection.bulk,
+                    snmp_bulk_handler,
+                    *get_bulk_specific_parameters,
+                    *static_parameters,
                 )
                 # Perform SNMP WALK
                 get_snmp_data(
-                    varbind_collection.get, snmp_get_handler, *get_bulk_specific_parameters, *static_parameters
+                    varbind_collection.get,
+                    snmp_get_handler,
+                    *get_bulk_specific_parameters,
+                    *static_parameters,
                 )
         # Perform SNNP Polling for oid profile in inventory.csv
         else:
@@ -175,14 +181,18 @@ def snmp_polling(
             if profile[-1] == "*":
                 logger.info(f"Executing SNMP WALK for {host} profile={profile}")
                 if enricher_presence:
-                    walk_handler_with_enricher(profile, server_config, mongo_connection, *static_parameters)
+                    walk_handler_with_enricher(
+                        profile, server_config, mongo_connection, *static_parameters
+                    )
                 else:
                     walk_handler(profile, *static_parameters)
             # Perform SNNP GET for an oid
             else:
                 logger.info(f"Executing SNMP GET for {host} profile={profile}")
                 prepared_profile = [ObjectType(ObjectIdentity(profile))]
-                snmp_get_handler(*get_bulk_specific_parameters, *static_parameters, prepared_profile)
+                snmp_get_handler(
+                    *get_bulk_specific_parameters, *static_parameters, prepared_profile
+                )
 
         return f"Executing SNMP Polling for {host} version={version} profile={profile}"
     except Exception as e:
