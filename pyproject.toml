@@ -39,6 +39,7 @@ pytest = "*"
 black = "21.6b0"
 pytest-cov = "^2.12.1"
 jsoncomment = "^0.4.2"
+pre-commit = "^2.14.0"
 
 [tool.poetry.scripts]
 sc4snmp-poller = "splunk_connect_for_snmp_poller.snmp_poller_server:main"
