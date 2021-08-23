@@ -113,10 +113,10 @@ class TestHecSender(TestCase):
     def test__enrich_event_data_index_1(self):
         variables_binds = {
             "metric": '{"metric_name": "sc4snmp.IF-MIB.ifDescr_1", "_value": "lo", '
-                      '"metric_type": "OctetString"}',
+            '"metric_type": "OctetString"}',
             "metric_name": "sc4snmp.IF-MIB.ifDescr_1",
             "non_metric": 'oid-type1="ObjectIdentity" value1-type="OctetString" '
-                          '1.3.6.1.2.1.2.2.1.2.1="lo" value1="lo" IF-MIB::ifDescr.1="lo" ',
+            '1.3.6.1.2.1.2.2.1.2.1="lo" value1="lo" IF-MIB::ifDescr.1="lo" ',
         }
         variables_binds_result = (
             'oid-type1="ObjectIdentity" value1-type="OctetString" 1.3.6.1.2.1.2.2.1.2.1="lo" '
@@ -128,10 +128,10 @@ class TestHecSender(TestCase):
     def test__enrich_event_data_index_2(self):
         variables_binds = {
             "metric": '{"metric_name": "sc4snmp.IF-MIB.ifDescr_2", "_value": "eth0", '
-                      '"metric_type": "OctetString"}',
+            '"metric_type": "OctetString"}',
             "metric_name": "sc4snmp.IF-MIB.ifDescr_2",
             "non_metric": 'oid-type1="ObjectIdentity" value1-type="OctetString" '
-                          '1.3.6.1.2.1.2.2.1.2.1="lo" value1="eth0" IF-MIB::ifDescr.2="eth0" ',
+            '1.3.6.1.2.1.2.2.1.2.1="lo" value1="eth0" IF-MIB::ifDescr.2="eth0" ',
         }
         variables_binds_result = (
             'oid-type1="ObjectIdentity" value1-type="OctetString" 1.3.6.1.2.1.2.2.1.2.1="lo" '
@@ -143,10 +143,10 @@ class TestHecSender(TestCase):
     def test__enrich_event_data_index_3(self):
         variables_binds = {
             "metric": '{"metric_name": "sc4snmp.IF-MIB.ifDescr_3", "_value": "eth1", '
-                      '"metric_type": "OctetString"}',
+            '"metric_type": "OctetString"}',
             "metric_name": "sc4snmp.IF-MIB.ifDescr_3",
             "non_metric": 'oid-type1="ObjectIdentity" value1-type="OctetString" '
-                          '1.3.6.1.2.1.2.2.1.2.1="lo" value1="eth1" IF-MIB::ifDescr.3="eth1" ',
+            '1.3.6.1.2.1.2.2.1.2.1="lo" value1="eth1" IF-MIB::ifDescr.3="eth1" ',
         }
         variables_binds_result = (
             'oid-type1="ObjectIdentity" value1-type="OctetString" 1.3.6.1.2.1.2.2.1.2.1="lo" '
