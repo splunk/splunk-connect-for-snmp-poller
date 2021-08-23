@@ -28,5 +28,6 @@ header:
     - "LICENSE"
     - "NOTICE"
     - "*.lock"
+    - "tests/mib_walk_data/*.json"
 
   comment: on-failure
