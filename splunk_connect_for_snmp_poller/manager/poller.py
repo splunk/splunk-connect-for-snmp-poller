@@ -19,6 +19,7 @@ import time
 
 import schedule
 from pysnmp.hlapi import SnmpEngine
+
 from splunk_connect_for_snmp_poller.manager.poller_utilities import (
     automatic_realtime_task,
     create_poller_scheduler_entry_key,
@@ -89,11 +90,9 @@ class Poller:
                 frequency = int(ir.frequency_str)
                 if entry_key in inventory_hosts:
                     logger.error(
-                        (
-                            f"{ir.host},{ir.version},{ir.community},{ir.profile},{ir.frequency_str} has duplicated "
-                            f"hostname {ir.host} and {ir.profile} in the inventory,"
-                            f" cannot use the same profile twice for the same device"
-                        )
+                        f"{ir.host},{ir.version},{ir.community},{ir.profile},{ir.frequency_str} has duplicated "
+                        f"hostname {ir.host} and {ir.profile} in the inventory,"
+                        f" cannot use the same profile twice for the same device"
                     )
                     continue
 

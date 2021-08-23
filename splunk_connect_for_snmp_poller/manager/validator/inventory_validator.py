@@ -81,7 +81,7 @@ def resolve_host(hostname):
     try:
         socket.gethostbyname(hostname)
         return True if hostname else False
-    except socket.error:
+    except OSError:
         logger.error(f"Cannot resolve {hostname}")
         return False
 
@@ -117,7 +117,8 @@ def is_valid_profile(profile):
 
 def is_valid_inventory_line_from_dict(host, version, community, profile, seconds):
     logger.info(
-        f"Validating host = [{host}], version = [{version}], community = [{community}], profile = [{profile}], seconds = [{seconds}]"
+        f"Validating host = [{host}], version = [{version}], community = [{community}], profile = [{profile}], "
+        f"seconds = [{seconds}]"
     )
 
     if None in [host, version, community, profile, seconds]:
@@ -131,5 +132,5 @@ def is_valid_inventory_line_from_dict(host, version, community, profile, seconds
         and is_valid_second_quantity(seconds.strip())
     )
     if not valid_inventory_line:
-        logger.error(f"Invalid inventory line")
+        logger.error("Invalid inventory line")
     return valid_inventory_line

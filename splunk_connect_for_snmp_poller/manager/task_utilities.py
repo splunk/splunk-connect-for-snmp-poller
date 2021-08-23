@@ -31,16 +31,13 @@ from pysnmp.hlapi import (
 from pysnmp.proto import rfc1902
 from pysnmp.smi import builder, compiler, view
 from pysnmp.smi.rfc1902 import ObjectIdentity, ObjectType
+
 from splunk_connect_for_snmp_poller.manager.const import (
     AuthProtocolMap,
     PrivProtocolMap,
 )
-from splunk_connect_for_snmp_poller.manager.hec_sender import (
-    post_data_to_splunk_hec,
-)
-from splunk_connect_for_snmp_poller.manager.mib_server_client import (
-    get_translation,
-)
+from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
+from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
     extract_network_interface_data_from_walk,
 )
@@ -188,11 +185,9 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
 
             else:
                 raise Exception(
-                    (
-                        f"Invalid mib string - {mib_string}."
-                        f"\nPlease provide a valid mib string in the correct format. "
-                        f"Learn more about the format at https://bit.ly/3qtqzQc"
-                    )
+                    f"Invalid mib string - {mib_string}."
+                    f"\nPlease provide a valid mib string in the correct format. "
+                    f"Learn more about the format at https://bit.ly/3qtqzQc"
                 )
         except Exception as e:
             logger.error(
@@ -278,7 +273,7 @@ def _any_failure_happened(
         result = f"error: {errorIndication}"
         logger.error(result)
     elif errorStatus:
-        result = "error: %s at %s" % (
+        result = "error: {} at {}".format(
             errorStatus.prettyPrint(),
             errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
         )
@@ -384,7 +379,7 @@ def walk_handler(
             )
             break
         elif errorStatus:
-            result = "error: %s at %s" % (
+            result = "error: {} at {}".format(
                 errorStatus.prettyPrint(),
                 errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
             )
@@ -458,7 +453,7 @@ def walk_handler_with_enricher(
             )
             break
         elif errorStatus:
-            result = "error: %s at %s" % (
+            result = "error: {} at {}".format(
                 errorStatus.prettyPrint(),
                 errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
             )
@@ -499,11 +494,9 @@ def walk_handler_with_enricher(
     _post_walk_data_to_splunk(
         merged_result_metric, True, *post_walk_data_to_splunk_arguments
     )
-    logger.info(f"***************** After metric *****************")
     _post_walk_data_to_splunk(
         merged_result_non_metric, False, *post_walk_data_to_splunk_arguments
     )
-    logger.info(f"***************** After metric *****************")
 
 
 def _sort_walk_data(

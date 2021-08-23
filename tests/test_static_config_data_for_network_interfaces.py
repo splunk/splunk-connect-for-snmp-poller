@@ -16,9 +16,7 @@
 import logging
 from unittest import TestCase
 
-from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import (
-    InterfaceMib,
-)
+from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
     extract_network_interface_data_from_config,
     extract_network_interface_data_from_walk,

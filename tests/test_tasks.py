@@ -20,9 +20,7 @@ from unittest.mock import Mock, patch
 from pysnmp.hlapi import ObjectIdentity, ObjectType
 
 sys.modules["splunk_connect_for_snmp_poller.manager.celery_client"] = Mock()
-from splunk_connect_for_snmp_poller.manager.task_utilities import (
-    VarbindCollection,
-)
+from splunk_connect_for_snmp_poller.manager.task_utilities import VarbindCollection
 from splunk_connect_for_snmp_poller.manager.tasks import sort_varbinds
 
 

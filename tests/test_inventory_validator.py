@@ -13,13 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import logging
 from unittest import TestCase
+
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
-    should_process_inventory_line,
     is_valid_inventory_line_from_dict,
+    should_process_inventory_line,
 )
 from tests.static_inventory_test_data import InventoryLineBuilder
-import logging
 
 logger = logging.getLogger(__name__)
 
