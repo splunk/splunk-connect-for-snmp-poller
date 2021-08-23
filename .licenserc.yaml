@@ -28,5 +28,6 @@ header:
     - "LICENSE"
     - "NOTICE"
     - "*.lock"
+    - "*.json"
 
   comment: on-failure
