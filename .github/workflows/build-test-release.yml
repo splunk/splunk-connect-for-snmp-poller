@@ -106,6 +106,8 @@ jobs:
           DEFAULT_BRANCH: main
           LINTER_RULES_PATH: /
           PYTHON_ISORT_CONFIG_FILE: pyproject.toml
+          PYTHON_MYPY_CONFIG_FILE: pyproject.toml
+          PYTHON_FLAKE8_CONFIG_FILE: .flake8
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   review_secrets:
     name: security-detect-secrets
@@ -158,7 +160,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: 3.9
       - name: Install Poetry
         run: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
       - name: Install Code

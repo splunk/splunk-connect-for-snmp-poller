@@ -24,7 +24,11 @@ def extract_current_index_from_metric(current_translated_oid):
     try:
         if current_translated_oid:
             return (
-                int(current_translated_oid[current_translated_oid.rindex("_") + 1 :])
+                int(
+                    current_translated_oid[
+                        current_translated_oid.rindex("_") + 1 :  # noqa: E203
+                    ]
+                )
                 - 1
             )
     except ValueError:

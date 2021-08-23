@@ -29,5 +29,6 @@ header:
     - "NOTICE"
     - "*.lock"
     - "tests/mib_walk_data/*.json"
+    - ".flake8"
 
   comment: on-failure

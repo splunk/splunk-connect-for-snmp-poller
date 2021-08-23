@@ -47,7 +47,7 @@ parsed_config_if_mib_with_error = {
     }
 }
 
-parsed_config_if_mib_without_elements = {"enricher": {"oidFamily": {"IF-MIB": []}}}
+parsed_config_if_mib_without_elements = {"enricher": {"oidFamily": {"IF-MIB": []}}}  # type: ignore
 
 parsed_config_correct = {
     "enricher": {

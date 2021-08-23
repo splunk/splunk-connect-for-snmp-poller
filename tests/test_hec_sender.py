@@ -21,7 +21,7 @@ from splunk_connect_for_snmp_poller.manager.hec_sender import (
 )
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
-MibEnricher = MibEnricher(
+_MibEnricher = MibEnricher(
     [{"interface_index": ["1", "2", "3"]}, {"interface_desc": ["lo", "eth0", "eth1"]}]
 )
 
@@ -36,7 +36,7 @@ class TestHecSender(TestCase):
             "metric_type": "Integer",
         }
         variables_binds_initial = variables_binds.copy()
-        _enrich_metric_data(MibEnricher, variables_binds, fields)
+        _enrich_metric_data(_MibEnricher, variables_binds, fields)
         self.assertEqual(variables_binds, variables_binds_initial)
         self.assertEqual(fields, fields_initial)
 
@@ -59,7 +59,7 @@ class TestHecSender(TestCase):
             "_value": "1",
             "metric_type": "Integer",
         }
-        _enrich_metric_data(MibEnricher, variables_binds_initial, fields_initial)
+        _enrich_metric_data(_MibEnricher, variables_binds_initial, fields_initial)
         self.assertEqual(variables_binds, variables_binds_initial)
         self.assertEqual(fields, fields_initial)
 
@@ -82,7 +82,7 @@ class TestHecSender(TestCase):
             "_value": "2",
             "metric_type": "Integer",
         }
-        _enrich_metric_data(MibEnricher, variables_binds_initial, fields_initial)
+        _enrich_metric_data(_MibEnricher, variables_binds_initial, fields_initial)
         self.assertEqual(variables_binds, variables_binds_initial)
         self.assertEqual(fields, fields_initial)
 
@@ -105,7 +105,7 @@ class TestHecSender(TestCase):
             "_value": "3",
             "metric_type": "Integer",
         }
-        _enrich_metric_data(MibEnricher, variables_binds_initial, fields_initial)
+        _enrich_metric_data(_MibEnricher, variables_binds_initial, fields_initial)
         self.assertEqual(variables_binds, variables_binds_initial)
         self.assertEqual(fields, fields_initial)
 
@@ -121,7 +121,7 @@ class TestHecSender(TestCase):
             'oid-type1="ObjectIdentity" value1-type="OctetString" 1.3.6.1.2.1.2.2.1.2.1="lo" '
             'value1="lo" IF-MIB::ifDescr.1="lo" interface_index="1" interface_desc="lo" '
         )
-        variables_binds_processed = _enrich_event_data(MibEnricher, variables_binds)
+        variables_binds_processed = _enrich_event_data(_MibEnricher, variables_binds)
         self.assertEqual(variables_binds_processed, variables_binds_result)
 
     def test__enrich_event_data_index_2(self):
@@ -136,7 +136,7 @@ class TestHecSender(TestCase):
             'oid-type1="ObjectIdentity" value1-type="OctetString" 1.3.6.1.2.1.2.2.1.2.1="lo" '
             'value1="eth0" IF-MIB::ifDescr.2="eth0" interface_index="2" interface_desc="eth0" '
         )
-        variables_binds_processed = _enrich_event_data(MibEnricher, variables_binds)
+        variables_binds_processed = _enrich_event_data(_MibEnricher, variables_binds)
         self.assertEqual(variables_binds_processed, variables_binds_result)
 
     def test__enrich_event_data_index_3(self):
@@ -151,5 +151,5 @@ class TestHecSender(TestCase):
             'oid-type1="ObjectIdentity" value1-type="OctetString" 1.3.6.1.2.1.2.2.1.2.1="lo" '
             'value1="eth1" IF-MIB::ifDescr.3="eth1" interface_index="3" interface_desc="eth1" '
         )
-        variables_binds_processed = _enrich_event_data(MibEnricher, variables_binds)
+        variables_binds_processed = _enrich_event_data(_MibEnricher, variables_binds)
         self.assertEqual(variables_binds_processed, variables_binds_result)
