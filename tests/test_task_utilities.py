@@ -92,7 +92,7 @@ class TestTaskUtilities(TestCase):
         self.assertEqual(merged_result_non_metric, [])
 
     def test__sort_walk_data_non_metric(self):
-        varbind = '{"metric":"{\\"metric_name\\": \\"sc4snmp.IF-MIB.ifDescr_1\\", \\"_value\\": \\"lo\\", \\"metric_type\\": \\"OctetString\\"}","metric_name":"sc4snmp.IF-MIB.ifDescr_1","non_metric":"oid-type1=\\"ObjectIdentity\\" value1-type=\\"OctetString\\" 1.3.6.1.2.1.2.2.1.2.1=\\"lo\\" value1=\\"lo\\" IF-MIB::ifDescr.1=\\"lo\\" "}'
+        varbind = '{"metric":"{\\"metric_name\\": \\"sc4snmp.IF-MIB.ifDescr_1\\", \\"_value\\": \\"lo\\", \\"metric_type\\": \\"OctetString\\"}","metric_name":"sc4snmp.IF-MIB.ifDescr_1","non_metric":"oid-type1=\\"ObjectIdentity\\" value1-type=\\"OctetString\\" 1.3.6.1.2.1.2.2.1.2.1=\\"lo\\" value1=\\"lo\\" IF-MIB::ifDescr.1=\\"lo\\" "}'  # noqa: E501
         varbind_metric_dict = {
             "metric_name": "sc4snmp.IF-MIB.ifDescr_1",
             "_value": "lo",
