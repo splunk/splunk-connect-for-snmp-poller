@@ -283,6 +283,51 @@ def _any_failure_happened(
     return True
 
 
+def _any_walk_failure_happened(
+    errorIndication,
+    errorStatus,
+    errorIndex,
+    host,
+    index,
+    otel_logs_url,
+    otel_metrics_url,
+    one_time_flag,
+    is_metric,
+    varBinds,
+):
+    if errorIndication:
+        result = f"error: {errorIndication}"
+        logger.info(result)
+        post_data_to_splunk_hec(
+            host,
+            otel_logs_url,
+            otel_metrics_url,
+            result,
+            is_metric,
+            index,
+            one_time_flag,
+        )
+        return True
+    elif errorStatus:
+        result = "error: {} at {}".format(
+            errorStatus.prettyPrint(),
+            errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
+        )
+        logger.info(result)
+        post_data_to_splunk_hec(
+            host,
+            otel_logs_url,
+            otel_metrics_url,
+            result,
+            is_metric,
+            index,
+            one_time_flag,
+        )
+        return True
+    else:
+        return False
+
+
 def snmp_bulk_handler(
     mongo_connection,
     enricher_presence,
@@ -365,34 +410,18 @@ def walk_handler(
         lexicographicMode=False,
     ):
         is_metric = False
-        if errorIndication:
-            result = f"error: {errorIndication}"
-            logger.info(result)
-            post_data_to_splunk_hec(
-                host,
-                otel_logs_url,
-                otel_metrics_url,
-                result,
-                is_metric,
-                index,
-                one_time_flag,
-            )
-            break
-        elif errorStatus:
-            result = "error: {} at {}".format(
-                errorStatus.prettyPrint(),
-                errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
-            )
-            logger.info(result)
-            post_data_to_splunk_hec(
-                host,
-                otel_logs_url,
-                otel_metrics_url,
-                result,
-                is_metric,
-                index,
-                one_time_flag,
-            )
+        if _any_walk_failure_happened(
+            errorIndication,
+            errorStatus,
+            errorIndex,
+            host,
+            index,
+            otel_logs_url,
+            otel_metrics_url,
+            one_time_flag,
+            is_metric,
+            varBinds,
+        ):
             break
         else:
             result, is_metric = get_translated_string(mib_server_url, varBinds)
@@ -439,34 +468,18 @@ def walk_handler_with_enricher(
         lexicographicMode=False,
     ):
         is_metric = False
-        if errorIndication:
-            result = f"error: {errorIndication}"
-            logger.info(result)
-            post_data_to_splunk_hec(
-                host,
-                otel_logs_url,
-                otel_metrics_url,
-                result,
-                is_metric,
-                index,
-                one_time_flag,
-            )
-            break
-        elif errorStatus:
-            result = "error: {} at {}".format(
-                errorStatus.prettyPrint(),
-                errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
-            )
-            logger.info(result)
-            post_data_to_splunk_hec(
-                host,
-                otel_logs_url,
-                otel_metrics_url,
-                result,
-                is_metric,
-                index,
-                one_time_flag,
-            )
+        if _any_walk_failure_happened(
+            errorIndication,
+            errorStatus,
+            errorIndex,
+            host,
+            index,
+            otel_logs_url,
+            otel_metrics_url,
+            one_time_flag,
+            is_metric,
+            varBinds,
+        ):
             break
         else:
             result, is_metric = get_translated_string(mib_server_url, varBinds, True)
