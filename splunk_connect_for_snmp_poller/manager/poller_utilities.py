@@ -24,6 +24,7 @@ from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidCons
 from splunk_connect_for_snmp_poller.manager.realtime.real_time_data import (
     should_redo_walk,
 )
+from splunk_connect_for_snmp_poller.manager.task_utilities import parse_port
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     is_valid_inventory_line_from_dict,
@@ -132,7 +133,10 @@ def _update_mongo(
     all_walked_hosts_collection, host, host_already_walked, current_sys_up_time
 ):
     if not host_already_walked:
-        all_walked_hosts_collection.add_host(host)
+        _host, _port = parse_port(host)
+        host_to_add = f"{_host}:{_port}"
+        logger.info(f"Adding host: {host_to_add} into Mongo database")
+        all_walked_hosts_collection.add_host(host_to_add)
     all_walked_hosts_collection.update_real_time_data_for(host, current_sys_up_time)
 
 

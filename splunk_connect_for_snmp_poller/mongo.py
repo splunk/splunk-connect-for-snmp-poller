@@ -30,12 +30,15 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import logging
 import os
 
 from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import ConnectionFailure
 
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
+
+logger = logging.getLogger(__name__)
 
 """
 In order to store some general data into Mongo we use the following structure.
@@ -117,6 +120,9 @@ class WalkedHostsRepository:
 
     def static_data_for(self, host):
         full_collection = self._walked_hosts.find_one({"_id": host})
+        if not full_collection:
+            logger.info(f"No id {host} in walked_host collection")
+            return None
         if WalkedHostsRepository.MIB_STATIC_DATA in full_collection:
             mib_static_data = full_collection[WalkedHostsRepository.MIB_STATIC_DATA]
             if InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER in mib_static_data:
@@ -147,6 +153,5 @@ class WalkedHostsRepository:
             self._walked_hosts.find_one_and_update(
                 {"_id": host},
                 {"$set": real_time_data_dictionary},
-                upsert=True,
                 return_document=ReturnDocument.AFTER,
             )
