@@ -153,5 +153,6 @@ class WalkedHostsRepository:
             self._walked_hosts.find_one_and_update(
                 {"_id": host},
                 {"$set": real_time_data_dictionary},
+                upsert=True,
                 return_document=ReturnDocument.AFTER,
             )
