@@ -133,10 +133,8 @@ def _update_mongo(
     all_walked_hosts_collection, host, host_already_walked, current_sys_up_time
 ):
     if not host_already_walked:
-        _host, _port = parse_port(host)
-        host_to_add = f"{_host}:{_port}"
-        logger.info(f"Adding host: {host_to_add} into Mongo database")
-        all_walked_hosts_collection.add_host(host_to_add)
+        logger.info(f"Adding host: {host} into Mongo database")
+        all_walked_hosts_collection.add_host(host)
     all_walked_hosts_collection.update_real_time_data_for(host, current_sys_up_time)
 
 
@@ -155,15 +153,17 @@ def automatic_realtime_task(
     local_snmp_engine,
 ):
     for inventory_record in parse_inventory_file(inventory_file_path):
+        _host, _port = parse_port(inventory_record.host)
+        host_id = f"{_host}:{_port}"
         sys_up_time = _extract_sys_uptime_instance(
             local_snmp_engine,
-            inventory_record.host,
+            host_id,
             inventory_record.version,
             inventory_record.community,
             server_config,
         )
         host_already_walked, should_do_walk = _walk_info(
-            all_walked_hosts_collection, inventory_record.host, sys_up_time
+            all_walked_hosts_collection, host_id, sys_up_time
         )
         if should_do_walk:
             schedule.every().second.do(
@@ -177,7 +177,7 @@ def automatic_realtime_task(
             )
         _update_mongo(
             all_walked_hosts_collection,
-            inventory_record.host,
+            host_id,
             host_already_walked,
             sys_up_time,
         )
