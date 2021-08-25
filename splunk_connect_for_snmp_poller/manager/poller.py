@@ -140,7 +140,7 @@ class Poller:
                     if entry_key not in inventory_hosts:
                         logger.debug(f"Removing job for {entry_key}")
                         schedule.cancel_job(self._jobs_map.get(entry_key))
-                        db_host_id = return_database_id(ir.host)
+                        db_host_id = return_database_id(entry_key)
                         logger.debug(f"Removing _id {db_host_id} from mongo database")
                         self._mongo_walked_hosts_coll.delete_host(db_host_id)
                         del self._jobs_map[entry_key]

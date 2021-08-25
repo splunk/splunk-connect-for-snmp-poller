@@ -106,7 +106,8 @@ class WalkedHostsRepository:
         self._walked_hosts.insert_one({"_id": host})
 
     def delete_host(self, host):
-        self._walked_hosts.delete_many({"_id": host})
+        logger.info(f"Delete host {host} from walked_host collection")
+        self._walked_hosts.delete_one({"_id": host})
 
     def clear(self):
         self._walked_hosts.remove()
