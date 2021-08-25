@@ -68,7 +68,7 @@ Each WalkedHostsRepository can contain the following fields:
   IF-MIB::ifAdminStatus.1 = INTEGER: up(1)
   IF-MIB::ifAdminStatus.2 = INTEGER: up(1)
 
-* MIB_STATIC_DATA: a dictionary that contains some MIB real-time data that needs to be collected constantly.
+* MIB_REAL_TIME_DATA: a dictionary that contains some MIB real-time data that needs to be collected constantly.
   At the moment, we only need to collect sysUpTimeInstance data in order to decide when we need to re-walk
   a given host.
 """
@@ -106,7 +106,8 @@ class WalkedHostsRepository:
         self._walked_hosts.insert_one({"_id": host})
 
     def delete_host(self, host):
-        self._walked_hosts.delete_many({"_id": host})
+        logger.info(f"Delete host {host} from walked_host collection")
+        self._walked_hosts.delete_one({"_id": host})
 
     def clear(self):
         self._walked_hosts.remove()
@@ -153,5 +154,6 @@ class WalkedHostsRepository:
             self._walked_hosts.find_one_and_update(
                 {"_id": host},
                 {"$set": real_time_data_dictionary},
+                upsert=True,
                 return_document=ReturnDocument.AFTER,
             )

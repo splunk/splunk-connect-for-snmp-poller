@@ -24,6 +24,7 @@ from splunk_connect_for_snmp_poller.manager.poller_utilities import (
     automatic_realtime_task,
     create_poller_scheduler_entry_key,
     parse_inventory_file,
+    return_database_id,
 )
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
@@ -139,6 +140,9 @@ class Poller:
                     if entry_key not in inventory_hosts:
                         logger.debug(f"Removing job for {entry_key}")
                         schedule.cancel_job(self._jobs_map.get(entry_key))
+                        db_host_id = return_database_id(entry_key)
+                        logger.debug(f"Removing _id {db_host_id} from mongo database")
+                        self._mongo_walked_hosts_coll.delete_host(db_host_id)
                         del self._jobs_map[entry_key]
 
     def __update_schedule(
