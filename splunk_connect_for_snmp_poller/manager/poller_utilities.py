@@ -190,4 +190,4 @@ def return_database_id(host):
     if "#" in host:
         host = host.split("#")[0]
     _host, _port = parse_port(host)
-    return f"{host}:{_port}"
+    return f"{_host}:{_port}"
