@@ -153,17 +153,16 @@ def automatic_realtime_task(
     local_snmp_engine,
 ):
     for inventory_record in parse_inventory_file(inventory_file_path):
-        _host, _port = parse_port(inventory_record.host)
-        host_id = f"{_host}:{_port}"
+        db_host_id = return_database_id(inventory_record.host)
         sys_up_time = _extract_sys_uptime_instance(
             local_snmp_engine,
-            host_id,
+            db_host_id,
             inventory_record.version,
             inventory_record.community,
             server_config,
         )
         host_already_walked, should_do_walk = _walk_info(
-            all_walked_hosts_collection, host_id, sys_up_time
+            all_walked_hosts_collection, db_host_id, sys_up_time
         )
         if should_do_walk:
             schedule.every().second.do(
@@ -177,7 +176,7 @@ def automatic_realtime_task(
             )
         _update_mongo(
             all_walked_hosts_collection,
-            host_id,
+            db_host_id,
             host_already_walked,
             sys_up_time,
         )
@@ -185,3 +184,8 @@ def automatic_realtime_task(
 
 def create_poller_scheduler_entry_key(host, profile):
     return host + "#" + profile
+
+
+def return_database_id(host):
+    _host, _port = parse_port(host)
+    return f"{host}:{_port}"

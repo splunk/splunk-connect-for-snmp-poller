@@ -68,7 +68,7 @@ Each WalkedHostsRepository can contain the following fields:
   IF-MIB::ifAdminStatus.1 = INTEGER: up(1)
   IF-MIB::ifAdminStatus.2 = INTEGER: up(1)
 
-* MIB_STATIC_DATA: a dictionary that contains some MIB real-time data that needs to be collected constantly.
+* MIB_REAL_TIME_DATA: a dictionary that contains some MIB real-time data that needs to be collected constantly.
   At the moment, we only need to collect sysUpTimeInstance data in order to decide when we need to re-walk
   a given host.
 """
