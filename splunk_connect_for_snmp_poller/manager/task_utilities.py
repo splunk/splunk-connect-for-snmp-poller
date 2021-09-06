@@ -789,4 +789,4 @@ def is_oid(profile: str) -> bool:
     @param profile: variable from inventory file, can be a name of profile or an OID
     @return: if the profile is of OID structure
     """
-    return bool(re.match(r"^(\d+\.?)*\*?$", profile))
+    return bool(re.match(r"^\d(\.\d*)*(\.\*)?$", profile))
