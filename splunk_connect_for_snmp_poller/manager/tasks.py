@@ -19,7 +19,7 @@ import threading
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
 
-from splunk_connect_for_snmp_poller.manager.celery_client import app  # noqa: E401
+from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     VarbindCollection,
     build_authData,
