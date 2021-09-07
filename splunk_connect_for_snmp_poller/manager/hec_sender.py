@@ -88,7 +88,9 @@ def post_event_data(
         logger.debug(f"Response code is {response.status_code}")
         logger.debug(f"Response is {response.text}")
     except requests.ConnectionError as e:
-        logger.error(f"Connection error when sending data to HEC index - {data['index']}: {e}")
+        logger.error(
+            f"Connection error when sending data to HEC index - {data['index']}: {e}"
+        )
 
 
 def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
