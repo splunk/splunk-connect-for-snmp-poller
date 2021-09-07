@@ -24,6 +24,7 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
     VarbindCollection,
     build_authData,
     build_contextData,
+    is_oid,
     mib_string_handler,
     parse_port,
     snmp_bulk_handler,
@@ -150,7 +151,7 @@ def snmp_polling(
 
     try:
         # Perform SNNP Polling for string profile in inventory.csv
-        if "." not in profile:
+        if not is_oid(profile):
             logger.info(
                 f"Executing SNMP Polling for Varbinds in config.yaml for {host} profile={profile}"
             )

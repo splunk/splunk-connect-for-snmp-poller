@@ -18,6 +18,7 @@ from unittest import TestCase
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     _sort_walk_data,
     is_metric_data,
+    is_oid,
     parse_port,
 )
 
@@ -110,3 +111,23 @@ class TestTaskUtilities(TestCase):
         self.assertEqual(merged_result_metric, [])
         self.assertEqual(merged_result, [varbind_metric_dict])
         self.assertEqual(merged_result_non_metric, [varbind])
+
+    def test_is_oid_asterisk(self):
+        oid = "1.3.6.1.2.1.2.2.1.1.*"
+        self.assertTrue(is_oid(oid))
+
+    def test_is_oid(self):
+        oid = "1.3.6.1.2.1"
+        self.assertTrue(is_oid(oid))
+
+    def test_is_oid_multinumber(self):
+        oid = "1.3.6.1.2.195.218.254.105.56134.205.188.8.43.5190"
+        self.assertTrue(is_oid(oid))
+
+    def test_is_oid_profile(self):
+        oid = "router"
+        self.assertFalse(is_oid(oid))
+
+    def test_is_oid_profile_with_dot(self):
+        oid = "router.12"
+        self.assertFalse(is_oid(oid))

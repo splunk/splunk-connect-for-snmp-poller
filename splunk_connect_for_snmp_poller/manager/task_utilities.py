@@ -15,6 +15,7 @@
 #
 import json
 import os
+import re
 from collections import namedtuple
 
 from celery.utils.log import get_task_logger
@@ -778,3 +779,14 @@ def build_contextData(version, community, server_config):
         return ContextData(contextEngineId, contextName)
     except Exception as e:
         logger.error(f"Error happend while building ContextData: {e}")
+
+
+def is_oid(profile: str) -> bool:
+    """
+    This function checks if profile is an OID. OID is defined as a string of format:
+        - ex. 1.3.6.1.2.1.2
+        - ex. 1.3.6.2.1.*
+    @param profile: variable from inventory file, can be a name of profile or an OID
+    @return: if the profile is of OID structure
+    """
+    return bool(re.match(r"^\d(\.\d*)*(\.\*)?$", profile))
