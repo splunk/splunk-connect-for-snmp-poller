@@ -47,7 +47,7 @@ def post_data_to_splunk_hec(
             logs_endpoint,
             host,
             variables_binds,
-            index["event_index"],
+            index,
             one_time_flag,
             mib_enricher,
         )
@@ -55,7 +55,7 @@ def post_data_to_splunk_hec(
 
 # TODO Discuss the format of event data payload
 def post_event_data(
-    endpoint, host, variables_binds, index, one_time_flag=False, mib_enricher=None
+    endpoint, host, variables_binds, indexes, one_time_flag=False, mib_enricher=None
 ):
     if "NoSuchInstance" in str(variables_binds):
         variables_binds = "error: " + str(variables_binds)
@@ -69,7 +69,7 @@ def post_event_data(
         "time": time.time(),
         "sourcetype": "sc4snmp:meta",
         "host": host,
-        "index": index,
+        "index": indexes["meta_index"],
         "event": str(variables_binds),
     }
 
@@ -77,6 +77,7 @@ def post_event_data(
         data["sourcetype"] = "sc4snmp:walk"
 
     if "error" in str(variables_binds):
+        data["index"] = indexes["event_index"]
         data["sourcetype"] = "sc4snmp:error"
 
     logger.debug(f"+++++++++data+++++++++\n{data}")
