@@ -169,13 +169,12 @@ class Poller:
         self._jobs_per_host.get(agent.host).next_run = (old_next_run if new_next_run > old_next_run else new_next_run)
 
     def one_time_walk(self, agent, profile, server_config, splunk_indexes):
-        logger.debug("[-]walked flag: %s", self._mongo_walked_hosts_coll.contains_host(agent.host))
-        if self._mongo_walked_hosts_coll.contains_host(agent.host) == 0:
+        walked_flag = self._mongo_walked_hosts_coll.contains_host(agent.host)
+        logger.debug("[-]walked flag: %s", walked_flag)
+        if walked_flag == 0:
             schedule.every().second.do(
                 onetime_task,
-                agent.host,
-                agent.version,
-                agent.community,
+                agent,
                 profile,
                 server_config,
                 splunk_indexes,

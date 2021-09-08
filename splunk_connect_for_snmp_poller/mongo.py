@@ -58,13 +58,13 @@ class WalkedHostsRepository:
         except ConnectionFailure:
             return False
 
-    def contains_host(self, host):
+    def contains_host(self, host: str):
         return self._walked_hosts.find({"_id": host}).count()
 
-    def add_host(self, host):
+    def add_host(self, host: str):
         self._walked_hosts.insert_one({"_id": host})
 
-    def delete_host(self, host):
+    def delete_host(self, host: str):
         self._walked_hosts.delete_many({"_id": host})
 
     def clear(self):
