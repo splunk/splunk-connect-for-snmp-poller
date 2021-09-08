@@ -1,7 +1,7 @@
 
 # Development Instructions for Poller
 
-> This file is used as a reference steps while working on development aspects of SNMP Poller component of Splunk Connect for SNMP!
+> This file is being used as a reference steps while working on development aspects of SNMP Poller component of Splunk Connect for SNMP!
 
 
 ### To add new python module (example)
@@ -70,11 +70,11 @@ snmpsimd.py --data-dir=data --agent-udpv4-endpoint=0.0.0.0:1161
 ```docker run -d -p 27017:27017 -v ./data:/data/db mongo```
 
 
-## Steps to run each components including poller scheduler and worker.
+## Steps to run each component including poller scheduler and worker.
 
 Note: 
-- Ensure you follow the order of iniatialization to avoid connectivity issues!
-- This assumes MongoDB and RabbitMQ are configred in config.yaml of respective component.
+- Ensure you follow the order of initialization to avoid connectivity issues!
+- This assumes MongoDB and RabbitMQ are configured in config.yaml of respective component.
 
 #### Run MIB / Translation Server
 
@@ -108,7 +108,7 @@ host,version,community,profile,freqinseconds
 
 #### Inventory Fields
 
-- **host**: is IP adress or FQDN of the SNMP Server
+- **host**: is IP address or FQDN of the SNMP Server
 
 - **version**: SNMP server version (i.e. 1, 2c, 3)
 

@@ -33,6 +33,8 @@
 
 import logging
 
+from splunk_connect_for_snmp_poller.manager.data.Inventory import Inventory
+
 logger = logging.getLogger(__name__)
 
 SNMP_VERSION_1 = "1"
@@ -115,21 +117,19 @@ def is_valid_profile(profile):
     return True if profile.strip() else False
 
 
-def is_valid_inventory_line_from_dict(host, version, community, profile, seconds):
-    logger.info(
-        f"Validating host = [{host}], version = [{version}], community = [{community}], profile = [{profile}], seconds = [{seconds}]"
-    )
+def is_valid_inventory_line_from_dict(agent: Inventory):
+    logger.info("Validating agent - %s", agent.__repr__())
 
-    if None in [host, version, community, profile, seconds]:
+    if None in [agent.host, agent.version, agent.community, agent.profile, agent.freqinseconds]:
         return False
 
     valid_inventory_line = (
-        is_valid_host(host.strip())
-        and is_valid_version(version.strip())
-        and is_valid_community(community.strip())
-        and is_valid_profile(profile.strip())
-        and is_valid_second_quantity(seconds.strip())
+            is_valid_host(agent.host.strip())
+            and is_valid_version(agent.version.strip())
+            and is_valid_community(agent.community.strip())
+            and is_valid_profile(agent.profile.strip())
+            and is_valid_second_quantity(agent.freqinseconds.strip())
     )
     if not valid_inventory_line:
-        logger.error(f"Invalid inventory line")
+        logger.error("Invalid inventory line")
     return valid_inventory_line

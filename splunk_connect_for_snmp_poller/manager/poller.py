@@ -19,6 +19,8 @@ import logging.config
 import time
 
 import schedule
+
+from splunk_connect_for_snmp_poller.manager.data.Inventory import Inventory
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     is_valid_inventory_line_from_dict,
@@ -31,6 +33,14 @@ from splunk_connect_for_snmp_poller.utilities import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def parse_inventory(agent):
+    return Inventory(agent["host"], agent["version"], agent["community"], agent["profile"], agent["freqinseconds"])
+
+
+def should_process_current_line(agent: Inventory):
+    return should_process_inventory_line(agent.host) and is_valid_inventory_line_from_dict(agent)
 
 
 class Poller:
@@ -65,13 +75,6 @@ class Poller:
             time.sleep(1)
             counter -= 1
 
-    def should_process_current_line(self, host, version, community, profile, frequency):
-        return should_process_inventory_line(
-            host
-        ) and is_valid_inventory_line_from_dict(
-            host, version, community, profile, frequency
-        )
-
     def check_inventory(self):
         splunk_indexes = self.get_splunk_indexes()
 
@@ -95,74 +98,43 @@ class Poller:
                 inventory_hosts = set()
 
                 for agent in inventory:
-                    host = agent["host"]
-                    version = agent["version"]
-                    community = agent["community"]
-                    profile = agent["profile"]
-                    frequency_str = agent["freqinseconds"]
-                    if self.should_process_current_line(
-                        host, version, community, profile, frequency_str
-                    ):
-                        frequency = int(agent["freqinseconds"])
+                    agent = parse_inventory(agent)
+                    if should_process_current_line(agent):
+                        frequency = int(agent.freqinseconds)
 
-                        if host in inventory_hosts:
-                            logger.error(
-                                (
-                                    f"{host},{version},{community},{profile},{frequency_str} has duplicated hostame "
-                                    f"{host} in the inventory, please use profile for multiple OIDs per host"
-                                )
-                            )
+                        if agent.host in inventory_hosts:
+                            logger.error(f"{agent.__repr__()} has duplicated hostname "
+                                         f"{agent.host} in the inventory, please use profile for multiple OIDs per host")
                             continue
 
-                        inventory_hosts.add(host)
+                        inventory_hosts.add(agent.host)
 
-                        logger.info(
-                            f"[-] server_config['profiles']: {self._server_config['profiles']}"
-                        )
+                        logger.info("[-] server_config['profiles']: %s", self._server_config['profiles'])
                         # perform one-time walk for the entire tree for each un-walked host
                         self.one_time_walk(
-                            host,
-                            version,
-                            community,
+                            agent,
                             Poller.universal_base_oid,
                             self._server_config,
                             splunk_indexes,
                         )
 
-                        if host not in self._jobs_per_host:
-                            logger.debug(f"Adding configuration for host {host}")
+                        if agent.host not in self._jobs_per_host:
+                            logger.debug("Adding configuration for host %s", agent.host)
                             job_reference = schedule.every(int(frequency)).seconds.do(
                                 scheduled_task,
-                                host,
-                                version,
-                                community,
-                                profile,
+                                agent,
                                 self._server_config,
                                 splunk_indexes,
+                                frequency
                             )
-                            self._jobs_per_host[host] = job_reference
+                            self._jobs_per_host[agent.host] = job_reference
                         else:
-                            old_conf = self._jobs_per_host.get(host).job_func.args
-                            if (
-                                old_conf
-                                != (
-                                    host,
-                                    version,
-                                    community,
-                                    profile,
-                                    self._server_config,
-                                    splunk_indexes,
-                                )
-                                or frequency != self._jobs_per_host.get(host).interval
-                            ):
+                            old_conf = self._jobs_per_host.get(agent.host).job_func.args
+                            if self.is_job_configuration_changed(agent, old_conf, splunk_indexes):
                                 self.update_schedule(
-                                    community,
-                                    frequency,
-                                    host,
-                                    profile,
-                                    version,
+                                    agent,
                                     self._server_config,
-                                    splunk_indexes,
+                                    splunk_indexes
                                 )
                 for host in list(self._jobs_per_host):
                     if host not in inventory_hosts:
@@ -170,79 +142,56 @@ class Poller:
                         schedule.cancel_job(self._jobs_per_host.get(host))
                         del self._jobs_per_host[host]
 
-    def update_schedule(
-        self,
-        community,
-        frequency,
-        host,
-        profile,
-        version,
-        server_config,
-        splunk_indexes,
-    ):
-        logger.debug(f"Updating configuration for host {host}")
+    def is_job_configuration_changed(self, agent, old_conf, splunk_indexes):
+        return old_conf != (
+            agent.host, agent.version, agent.community, agent.profile, self._server_config, splunk_indexes) or int(
+            agent.freqinseconds) != self._jobs_per_host.get(agent.host).interval
+
+    def update_schedule(self, agent, server_config, splunk_indexes):
+        logger.debug("Updating configuration for host %s", agent.host)
         new_job_func = functools.partial(
             scheduled_task,
-            host,
-            version,
-            community,
-            profile,
+            agent.host,
+            agent.version,
+            agent.community,
+            agent.profile,
             server_config,
             splunk_indexes,
         )
         functools.update_wrapper(new_job_func, scheduled_task)
 
-        self._jobs_per_host.get(host).job_func = new_job_func
-        self._jobs_per_host.get(host).interval = frequency
-        old_next_run = self._jobs_per_host.get(host).next_run
-        self._jobs_per_host.get(host)._schedule_next_run()
-        new_next_run = self._jobs_per_host.get(host).next_run
+        self._jobs_per_host.get(agent.host).job_func = new_job_func
+        self._jobs_per_host.get(agent.host).interval = int(agent.freqinseconds)
+        old_next_run = self._jobs_per_host.get(agent.host).next_run
+        self._jobs_per_host.get(agent.host)._schedule_next_run()
+        new_next_run = self._jobs_per_host.get(agent.host).next_run
 
-        self._jobs_per_host.get(host).next_run = (
-            old_next_run if new_next_run > old_next_run else new_next_run
-        )
+        self._jobs_per_host.get(agent.host).next_run = (old_next_run if new_next_run > old_next_run else new_next_run)
 
-    def one_time_walk(
-        self, host, version, community, profile, server_config, splunk_indexes
-    ):
-        logger.debug(
-            f"[-]walked flag: {self._mongo_walked_hosts_coll.contains_host(host)}"
-        )
-        if self._mongo_walked_hosts_coll.contains_host(host) == 0:
+    def one_time_walk(self, agent, profile, server_config, splunk_indexes):
+        logger.debug("[-]walked flag: %s", self._mongo_walked_hosts_coll.contains_host(agent.host))
+        if self._mongo_walked_hosts_coll.contains_host(agent.host) == 0:
             schedule.every().second.do(
                 onetime_task,
-                host,
-                version,
-                community,
+                agent.host,
+                agent.version,
+                agent.community,
                 profile,
                 server_config,
                 splunk_indexes,
             )
-            self._mongo_walked_hosts_coll.add_host(host)
+            self._mongo_walked_hosts_coll.add_host(agent.host)
         else:
-            logger.debug(f"[-] One time walk executed for {host}!")
+            logger.debug("[-] One time walk executed for %s!", agent.host)
 
 
-def scheduled_task(host, version, community, profile, server_config, splunk_indexes):
-    logger.debug(
-        f"Executing scheduled_task for {host} version={version} community={community} profile={profile}"
-    )
-
-    snmp_polling.delay(host, version, community, profile, server_config, splunk_indexes)
+def scheduled_task(agent, server_config, splunk_indexes):
+    logger.debug("Executing scheduled_task for %s", agent.__repr__())
+    snmp_polling.delay(agent, server_config, splunk_indexes)
 
 
-def onetime_task(host, version, community, profile, server_config, splunk_indexes):
-    logger.debug(
-        f"Executing onetime_task for {host} version={version} community={community} profile={profile}"
-    )
+def onetime_task(agent, profile, server_config, splunk_indexes):
+    logger.debug(f"Executing onetime_task for agent -{agent.__repr__} profile={profile}")
 
-    snmp_polling.delay(
-        host,
-        version,
-        community,
-        profile,
-        server_config,
-        splunk_indexes,
-        one_time_flag=True,
-    )
+    snmp_polling.delay(agent, profile, server_config, splunk_indexes, one_time_flag=True)
     return schedule.CancelJob

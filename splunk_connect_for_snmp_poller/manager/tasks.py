@@ -44,23 +44,23 @@ def get_shared_snmp_engine():
 # TODO remove the debugging statement later
 @app.task
 def snmp_polling(
-    host, version, community, profile, server_config, index, one_time_flag=False
+    agent, profile, server_config, index, one_time_flag=False
 ):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
     otel_metrics_url = os.environ["OTEL_SERVER_METRICS_URL"]
-    host, port = parse_port(host)
+    host, port = parse_port(agent.host)
     logger.info(f"Using the following MIBS server URL: {mib_server_url}")
 
     # create one SnmpEngie for get_handler, walk_handler, mib_string_handler
     snmp_engine = get_shared_snmp_engine()
 
     # create auth_data depending on SNMP's version
-    auth_data = build_authData(version, community, server_config)
+    auth_data = build_authData(agent.version, agent.community, server_config)
     logger.debug(f"==========auth_data=========\n{auth_data}")
 
     # create context_data for SNMP v3
-    context_data = build_contextData(version, community, server_config)
+    context_data = build_contextData(agent.version, agent.community, server_config)
     logger.debug(f"==========context_data=========\n{context_data}")
 
     try:
@@ -71,9 +71,9 @@ def snmp_polling(
             )
             mib_profile = server_config["profiles"].get(profile, None)
             if mib_profile:
-                varBinds = mib_profile.get("varBinds", None)
-                if varBinds:
-                    for varbind in varBinds:
+                var_binds = mib_profile.get("varBinds", None)
+                if var_binds:
+                    for varbind in var_binds:
                         # check if the varbind is mib string or oid
                         if isinstance(varbind, list):
                             # Perform SNMP polling for mib string
@@ -93,7 +93,7 @@ def snmp_polling(
                                 )
                             except Exception as e:
                                 logger.error(
-                                    f"Error happend while calling mib_string_handler(): {e}"
+                                    f"Error occurred while calling mib_string_handler(): {e}"
                                 )
                         else:
                             # Perform SNMP polling for oid
@@ -165,8 +165,8 @@ def snmp_polling(
                     one_time_flag,
                 )
 
-        return f"Executing SNMP Polling for {host} version={version} profile={profile}"
+        return f"Executing SNMP Polling for {host} version={agent.version} profile={profile}"
     except Exception as e:
         logger.error(
-            f"Error happend while executing SNMP polling for {host}, version={version}, profile={profile}: {e}"
+            f"Error happend while executing SNMP polling for {host}, version={agent.version}, profile={profile}: {e}"
         )
