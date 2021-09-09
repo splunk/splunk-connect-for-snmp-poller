@@ -24,7 +24,7 @@ from splunk_connect_for_snmp_poller.manager.poller_utilities import (
     automatic_realtime_task,
     create_poller_scheduler_entry_key,
     parse_inventory_file,
-    return_database_id,
+    return_database_id, InventoryRecord,
 )
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
@@ -46,9 +46,7 @@ class Poller:
         self._inventory_mod_time = 0
         self._config_mod_time = 0
         self._jobs_map = {}
-        self._mongo_walked_hosts_coll = WalkedHostsRepository(
-            self._server_config["mongo"]
-        )
+        self._mongo_walked_hosts_coll = WalkedHostsRepository(self._server_config["mongo"])
         self._local_snmp_engine = SnmpEngine()
 
     def __get_splunk_indexes(self):
@@ -88,89 +86,66 @@ class Poller:
             inventory_hosts = set()
             for ir in parse_inventory_file(self._args.inventory):
                 entry_key = create_poller_scheduler_entry_key(ir.host, ir.profile)
-                frequency = int(ir.frequency_str)
                 if entry_key in inventory_hosts:
                     logger.error(
-                        f"{ir.host},{ir.version},{ir.community},{ir.profile},{ir.frequency_str} has duplicated "
-                        f"hostname {ir.host} and {ir.profile} in the inventory,"
-                        f" cannot use the same profile twice for the same device"
-                    )
+                        "%s has duplicated hostname %s and %s in the inventory, cannot use the same profile twice for "
+                        "the same device", ir.__repr__(), ir.host, ir.profile)
                     continue
 
                 inventory_hosts.add(entry_key)
-                logger.info(
-                    f"[-] server_config['profiles']: {self._server_config['profiles']}"
-                )
+                logger.info("[-] server_config['profiles']: %s", self._server_config['profiles'])
                 if entry_key not in self._jobs_map:
-                    logger.debug(f"Adding configuration for job {entry_key}")
-                    job_reference = schedule.every(frequency).seconds.do(
-                        scheduled_task,
-                        ir.host,
-                        ir.version,
-                        ir.community,
-                        ir.profile,
-                        self._server_config,
-                        self.__get_splunk_indexes(),
-                    )
-                    self._jobs_map[entry_key] = job_reference
+                    self.process_new_job(entry_key, ir)
                 else:
-                    old_conf = self._jobs_map.get(entry_key).job_func.args
-                    if (
-                        old_conf
-                        != (
-                            ir.host,
-                            ir.version,
-                            ir.community,
-                            ir.profile,
-                            self._server_config,
-                            self.__get_splunk_indexes(),
-                        )
-                        or frequency != self._jobs_map.get(entry_key).interval
-                    ):
-                        self.__update_schedule(
-                            ir.community,
-                            ir.frequency,
-                            ir.host,
-                            ir.profile,
-                            ir.version,
-                            self._server_config,
-                            self.__get_splunk_indexes(),
-                        )
-                for entry_key in list(self._jobs_map):
-                    if entry_key not in inventory_hosts:
-                        logger.debug(f"Removing job for {entry_key}")
-                        schedule.cancel_job(self._jobs_map.get(entry_key))
-                        db_host_id = return_database_id(entry_key)
-                        logger.debug(f"Removing _id {db_host_id} from mongo database")
-                        self._mongo_walked_hosts_coll.delete_host(db_host_id)
-                        del self._jobs_map[entry_key]
+                    self.update_schedule_for_changed_conf(entry_key, ir)
+                self.clean_job_inventory(inventory_hosts)
 
-    def __update_schedule(
-        self,
-        community,
-        frequency,
-        host,
-        profile,
-        version,
-        server_config,
-        splunk_indexes,
-    ):
-        entry_key = host + "#" + profile
+    def clean_job_inventory(self, inventory_hosts):
+        for entry_key in list(self._jobs_map):
+            if entry_key not in inventory_hosts:
+                logger.debug("Removing job for %s", entry_key)
+                schedule.cancel_job(self._jobs_map.get(entry_key))
+                db_host_id = return_database_id(entry_key)
+                logger.debug("Removing _id %s from mongo database", db_host_id)
+                self._mongo_walked_hosts_coll.delete_host(db_host_id)
+                del self._jobs_map[entry_key]
 
-        logger.debug(f"Updating configuration for job {entry_key}")
+    def update_schedule_for_changed_conf(self, entry_key, ir):
+        old_conf = self._jobs_map.get(entry_key).job_func.args
+        if self.is_conf_changed(entry_key, ir, old_conf):
+            self.__update_schedule(ir, self._server_config, self.__get_splunk_indexes())
+
+    def is_conf_changed(self, entry_key, ir, old_conf):
+        interval = self._jobs_map.get(entry_key).interval
+        config = self._server_config
+        indexes = self.__get_splunk_indexes()
+        frequency = int(ir.frequency_str)
+        return old_conf != (ir.host, ir.version, ir.community, ir.profile, config, indexes) or frequency != interval
+
+    def process_new_job(self, entry_key, ir):
+        logger.debug("Adding configuration for job %s", entry_key)
+        job_reference = schedule.every(int(ir.frequency_str)).seconds.do(
+            scheduled_task,
+            ir,
+            self._server_config,
+            self.__get_splunk_indexes(),
+        )
+        self._jobs_map[entry_key] = job_reference
+
+    def __update_schedule(self, ir, server_config, splunk_indexes):
+        entry_key = ir.host + "#" + ir.profile
+
+        logger.debug("Updating configuration for job %s", entry_key)
         new_job_func = functools.partial(
             scheduled_task,
-            host,
-            version,
-            community,
-            profile,
+            ir,
             server_config,
             splunk_indexes,
         )
         functools.update_wrapper(new_job_func, scheduled_task)
 
         self._jobs_map.get(entry_key).job_func = new_job_func
-        self._jobs_map.get(entry_key).interval = frequency
+        self._jobs_map.get(entry_key).interval = int(ir.frequency_str)
         old_next_run = self._jobs_map.get(entry_key).next_run
         self._jobs_map.get(entry_key)._schedule_next_run()
         new_next_run = self._jobs_map.get(entry_key).next_run
@@ -192,9 +167,7 @@ class Poller:
         )
 
 
-def scheduled_task(host, version, community, profile, server_config, splunk_indexes):
-    logger.debug(
-        f"Executing scheduled_task for {host} version={version} community={community} profile={profile}"
-    )
+def scheduled_task(ir: InventoryRecord, server_config, splunk_indexes):
+    logger.debug(f"Executing scheduled_task for %s", ir.__repr__())
 
-    snmp_polling.delay(host, version, community, profile, server_config, splunk_indexes)
+    snmp_polling.delay(ir, server_config, splunk_indexes)

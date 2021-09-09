@@ -32,6 +32,7 @@ celery = "^5.1.2"
 pymongo = "^3.11.3"
 coverage = "^5.5"
 jsoncomment = "^0.4.2"
+pylint = "^2.10.2"
 
 [tool.poetry.dev-dependencies]
 #pytest-splunk-addon = "^1.4.0"

@@ -20,6 +20,7 @@ from celery.utils.log import get_task_logger
 from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
 
 from splunk_connect_for_snmp_poller.manager.celery_client import app
+from splunk_connect_for_snmp_poller.manager.data.InventoryRecord import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     VarbindCollection,
     build_authData,
@@ -47,22 +48,22 @@ def get_shared_snmp_engine():
 
 
 def get_snmp_data(
-    varBinds,
-    handler,
-    mongo_connection,
-    enricher_presence,
-    snmp_engine,
-    auth_data,
-    context_data,
-    host,
-    port,
-    mib_server_url,
-    index,
-    otel_logs_url,
-    otel_metrics_url,
-    one_time_flag,
+        var_binds,
+        handler,
+        mongo_connection,
+        enricher_presence,
+        snmp_engine,
+        auth_data,
+        context_data,
+        host,
+        port,
+        mib_server_url,
+        index,
+        otel_logs_url,
+        otel_metrics_url,
+        one_time_flag,
 ):
-    if varBinds:
+    if var_binds:
         try:
             handler(
                 mongo_connection,
@@ -77,10 +78,10 @@ def get_snmp_data(
                 otel_logs_url,
                 otel_metrics_url,
                 one_time_flag,
-                varBinds,
+                var_binds,
             )
         except Exception as e:
-            logger.error(f"Error happend while calling {handler.__name__}(): {e}")
+            logger.error(f"Error occurred while calling {handler.__name__}(): {e}")
 
 
 def sort_varbinds(varbind_list: list) -> VarbindCollection:
@@ -114,27 +115,27 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 # TODO remove the debugging statement later
 @app.task
 def snmp_polling(
-    host, version, community, profile, server_config, index, one_time_flag=False
+        ir: InventoryRecord, server_config, index, one_time_flag=False
 ):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
     otel_metrics_url = os.environ["OTEL_SERVER_METRICS_URL"]
-    host, port = parse_port(host)
-    logger.info(f"Using the following MIBS server URL: {mib_server_url}")
+    host, port = parse_port(ir.host)
+    logger.info("Using the following MIBS server URL: %s", mib_server_url)
 
     # create one SnmpEngie for snmp_get_handler, walk_handler, mib_string_handler
     snmp_engine = get_shared_snmp_engine()
 
     # create auth_data depending on SNMP's version
-    auth_data = build_authData(version, community, server_config)
-    logger.debug(f"==========auth_data=========\n{auth_data}")
+    auth_data = build_authData(ir.version, ir.community, server_config)
+    logger.debug("==========auth_data=========\n%s", auth_data)
 
     # create context_data for SNMP v3
-    context_data = build_contextData(version, community, server_config)
-    logger.debug(f"==========context_data=========\n{context_data}")
+    context_data = build_contextData(ir.version, ir.community, server_config)
+    logger.debug("==========context_data=========\n%s", context_data)
 
     mongo_connection = WalkedHostsRepository(server_config["mongo"])
-    enricher_presence = True if "enricher" in server_config else False
+    enricher_presence = "enricher" in server_config
     static_parameters = [
         snmp_engine,
         auth_data,
@@ -151,15 +152,14 @@ def snmp_polling(
 
     try:
         # Perform SNNP Polling for string profile in inventory.csv
-        if not is_oid(profile):
-            logger.info(
-                f"Executing SNMP Polling for Varbinds in config.yaml for {host} profile={profile}"
-            )
-            mib_profile = server_config["profiles"].get(profile, None)
+        if not is_oid(ir.profile):
+            logger.info("Executing SNMP Polling for Varbinds in config.yaml for %s profile=%s", host, ir.profile
+                        )
+            mib_profile = server_config["profiles"].get(ir.profile, None)
             if mib_profile:
-                varBinds = mib_profile.get("varBinds", None)
+                var_binds = mib_profile.get("varBinds", None)
                 # Divide varBinds for WALK/BULK actions
-                varbind_collection = sort_varbinds(varBinds)
+                varbind_collection = sort_varbinds(var_binds)
                 logger.info(f"Varbind collection: {varbind_collection}")
                 # Perform SNMP BULK
                 get_snmp_data(
@@ -178,24 +178,24 @@ def snmp_polling(
         # Perform SNNP Polling for oid profile in inventory.csv
         else:
             # Perform SNNP WALK for oid end with *
-            if profile[-1] == "*":
-                logger.info(f"Executing SNMP WALK for {host} profile={profile}")
+            if ir.profile[-1] == "*":
+                logger.info("Executing SNMP WALK for %s profile=%s", host, ir.profile)
                 if enricher_presence:
                     walk_handler_with_enricher(
-                        profile, server_config, mongo_connection, *static_parameters
+                        ir.profile, server_config, mongo_connection, *static_parameters
                     )
                 else:
-                    walk_handler(profile, *static_parameters)
+                    walk_handler(ir.profile, *static_parameters)
             # Perform SNNP GET for an oid
             else:
-                logger.info(f"Executing SNMP GET for {host} profile={profile}")
-                prepared_profile = [ObjectType(ObjectIdentity(profile))]
+                logger.info("Executing SNMP GET for %s profile=%s", host, ir.profile)
+                prepared_profile = [ObjectType(ObjectIdentity(ir.profile))]
                 snmp_get_handler(
                     *get_bulk_specific_parameters, *static_parameters, prepared_profile
                 )
 
-        return f"Executing SNMP Polling for {host} version={version} profile={profile}"
+        return f"Executing SNMP Polling for {host} version={ir.version} profile={ir.profile}"
     except Exception as e:
         logger.error(
-            f"Error happend while executing SNMP polling for {host}, version={version}, profile={profile}: {e}"
+            f"Error occurred while executing SNMP polling for {host}, version={ir.version}, profile={ir.profile}: {e}"
         )
