@@ -19,6 +19,10 @@ import time
 import requests
 from celery.utils.log import get_logger
 
+from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
+    return_event_index_number,
+    return_metrics_index_number,
+)
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
 logger = get_logger(__name__)
@@ -64,6 +68,10 @@ def post_event_data(
         variables_binds = _enrich_event_data(mib_enricher, json.loads(variables_binds))
     elif "non_metric" in variables_binds:
         variables_binds = json.loads(variables_binds)["non_metric"]
+
+    if "IF-MIB" in variables_binds:
+        index_num = return_event_index_number(variables_binds)
+        variables_binds += f"index_num={index_num} "
 
     data = {
         "time": time.time(),
@@ -127,6 +135,10 @@ def post_metric_data(endpoint, host, variables_binds, index, mib_enricher=None):
     fields = {"metric_name:" + metric_name: metric_value}
     if mib_enricher:
         _enrich_metric_data(mib_enricher, json_val, fields)
+
+    if "IF-MIB" in variables_binds:
+        metric_index = return_metrics_index_number(json_val)
+        fields["num_index"] = metric_index
 
     data = {
         "time": time.time(),

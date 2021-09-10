@@ -197,4 +197,4 @@ def scheduled_task(host, version, community, profile, server_config, splunk_inde
         f"Executing scheduled_task for {host} version={version} community={community} profile={profile}"
     )
 
-    snmp_polling.delay(host, version, community, profile, server_config, splunk_indexes)
+    snmp_polling(host, version, community, profile, server_config, splunk_indexes)

@@ -14,11 +14,15 @@
 # limitations under the License.
 #
 import logging
+import re
 
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
 logger = logging.getLogger(__name__)
+
+
+INTERFACE_PATTERN = re.compile(r"IF-MIB::.*\.(\d*)=")
 
 
 def __network_interface_enricher_attributes(config_as_dict):
@@ -59,3 +63,17 @@ def extract_network_interface_data_from_walk(config_as_dict, if_mib_metric_walk_
                 result.append({f"{splunk_dimension}": current_result})
 
     return result
+
+
+def return_event_index_number(oid):
+    try:
+        matches = INTERFACE_PATTERN.search(oid)
+        return matches.group(1)
+    except Exception as e:
+        logger.debug(e)
+
+
+def return_metrics_index_number(oid: dict):
+    metric_name = oid["metric_name"]
+    metric_id = re.split(r"_|\.", metric_name)[-1]
+    return metric_id
