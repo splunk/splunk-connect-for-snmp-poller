@@ -117,7 +117,7 @@ async def get_translated_string(mib_server_url, varBinds, return_multimetric=Fal
         logger.debug(
             f"==========result before translated -- is_metric={is_metric}============\n{result}"
         )
-        result = get_translation(varBinds, mib_server_url, data_format)
+        result = await get_translation(varBinds, mib_server_url, data_format)
         if data_format == "MULTIMETRIC":
             result = json.loads(result)["metric"]
             logger.info(f"=========result=======\n{result}")
@@ -130,7 +130,7 @@ async def get_translated_string(mib_server_url, varBinds, return_multimetric=Fal
             if not is_metric_data(_value):
                 is_metric = False
                 data_format = _get_data_format(is_metric, return_multimetric)
-                result = get_translation(varBinds, mib_server_url, data_format)
+                result = await get_translation(varBinds, mib_server_url, data_format)
     except Exception as e:
         logger.info(f"Could not perform translation. Exception: {e}")
     logger.info(
