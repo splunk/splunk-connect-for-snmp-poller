@@ -18,6 +18,7 @@ import threading
 
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
+from asgiref.sync import async_to_sync
 
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
@@ -46,7 +47,7 @@ def get_shared_snmp_engine():
     return thread_local.local_snmp_engine
 
 
-def get_snmp_data(
+async def get_snmp_data(
     varBinds,
     handler,
     mongo_connection,
@@ -64,7 +65,7 @@ def get_snmp_data(
 ):
     if varBinds:
         try:
-            handler(
+            await handler(
                 mongo_connection,
                 enricher_presence,
                 snmp_engine,
@@ -116,6 +117,12 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 def snmp_polling(
     host, version, community, profile, server_config, index, one_time_flag=False
 ):
+    async_to_sync(snmp_polling_async)(host, version, community, profile, server_config, index, one_time_flag)
+
+
+def snmp_polling_async(
+        host, version, community, profile, server_config, index, one_time_flag=False
+):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
     otel_metrics_url = os.environ["OTEL_SERVER_METRICS_URL"]
@@ -162,14 +169,14 @@ def snmp_polling(
                 varbind_collection = sort_varbinds(varBinds)
                 logger.info(f"Varbind collection: {varbind_collection}")
                 # Perform SNMP BULK
-                get_snmp_data(
+                await get_snmp_data(
                     varbind_collection.bulk,
                     snmp_bulk_handler,
                     *get_bulk_specific_parameters,
                     *static_parameters,
                 )
                 # Perform SNMP WALK
-                get_snmp_data(
+                await get_snmp_data(
                     varbind_collection.get,
                     snmp_get_handler,
                     *get_bulk_specific_parameters,
@@ -181,7 +188,7 @@ def snmp_polling(
             if profile[-1] == "*":
                 logger.info(f"Executing SNMP WALK for {host} profile={profile}")
                 if enricher_presence:
-                    walk_handler_with_enricher(
+                    await walk_handler_with_enricher(
                         profile, server_config, mongo_connection, *static_parameters
                     )
                 else:
@@ -190,7 +197,7 @@ def snmp_polling(
             else:
                 logger.info(f"Executing SNMP GET for {host} profile={profile}")
                 prepared_profile = [ObjectType(ObjectIdentity(profile))]
-                snmp_get_handler(
+                await snmp_get_handler(
                     *get_bulk_specific_parameters, *static_parameters, prepared_profile
                 )
 

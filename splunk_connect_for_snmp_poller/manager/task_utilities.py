@@ -32,7 +32,6 @@ from pysnmp.hlapi import (
 from pysnmp.proto import rfc1902
 from pysnmp.smi import builder, compiler, view
 from pysnmp.smi.rfc1902 import ObjectIdentity, ObjectType
-from asgiref.sync import async_to_sync
 
 from splunk_connect_for_snmp_poller.manager.const import (
     AuthProtocolMap,
@@ -75,7 +74,7 @@ def is_metric_data(value):
         return False
 
 
-def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
+async def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
     """
     Get the translated/formatted var_binds string depending on whether the varBinds is an event or metric
     Note: if it failed to get translation, return the the original varBinds
@@ -118,7 +117,7 @@ def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
         logger.debug(
             f"==========result before translated -- is_metric={is_metric}============\n{result}"
         )
-        result = async_to_sync(get_translation(varBinds, mib_server_url, data_format))
+        result = get_translation(varBinds, mib_server_url, data_format)
         if data_format == "MULTIMETRIC":
             result = json.loads(result)["metric"]
             logger.info(f"=========result=======\n{result}")
@@ -131,7 +130,7 @@ def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
             if not is_metric_data(_value):
                 is_metric = False
                 data_format = _get_data_format(is_metric, return_multimetric)
-                result = async_to_sync(get_translation(varBinds, mib_server_url, data_format))
+                result = get_translation(varBinds, mib_server_url, data_format)
     except Exception as e:
         logger.info(f"Could not perform translation. Exception: {e}")
     logger.info(
@@ -198,7 +197,7 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
     return VarbindCollection(get=get_list, bulk=bulk_list)
 
 
-def snmp_get_handler(
+async def snmp_get_handler(
     mongo_connection,
     enricher_presence,
     snmp_engine,
@@ -232,7 +231,7 @@ def snmp_get_handler(
             mongo_connection, enricher_presence, f"{host}:{port}"
         )
         for varbind in varBinds:
-            result, is_metric = get_translated_string(
+            result, is_metric = await get_translated_string(
                 mib_server_url, [varbind], return_multimetric
             )
             post_data_to_splunk_hec(
@@ -330,7 +329,7 @@ def _any_walk_failure_happened(
         return False
 
 
-def snmp_bulk_handler(
+async def snmp_bulk_handler(
     mongo_connection,
     enricher_presence,
     snmp_engine,
@@ -368,7 +367,7 @@ def snmp_bulk_handler(
                     mongo_connection, enricher_presence, f"{host}:{port}"
                 )
                 logger.debug(f"Bulk returned this varbind: {varbind}")
-                result, is_metric = get_translated_string(
+                result, is_metric = await get_translated_string(
                     mib_server_url, [varbind], return_multimetric
                 )
                 logger.info(result)
@@ -384,7 +383,7 @@ def snmp_bulk_handler(
                 )
 
 
-def walk_handler(
+async def walk_handler(
     profile,
     snmp_engine,
     auth_data,
@@ -426,7 +425,7 @@ def walk_handler(
         ):
             break
         else:
-            result, is_metric = get_translated_string(mib_server_url, varBinds)
+            result, is_metric = await get_translated_string(mib_server_url, varBinds)
             post_data_to_splunk_hec(
                 host,
                 otel_logs_url,
@@ -438,7 +437,7 @@ def walk_handler(
             )
 
 
-def walk_handler_with_enricher(
+async def walk_handler_with_enricher(
     profile,
     enricher,
     mongo_connection,
@@ -484,7 +483,7 @@ def walk_handler_with_enricher(
         ):
             break
         else:
-            result, is_metric = get_translated_string(mib_server_url, varBinds, True)
+            result, is_metric = await get_translated_string(mib_server_url, varBinds, True)
             _sort_walk_data(
                 is_metric,
                 merged_result_metric,
