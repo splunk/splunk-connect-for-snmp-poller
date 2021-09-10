@@ -17,9 +17,7 @@ import json
 import logging
 import os
 
-import requests
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from aiohttp import ClientSession
 
 from splunk_connect_for_snmp_poller.utilities import format_value_for_mib_server
 
@@ -33,7 +31,7 @@ class SharedException(Exception):
         super().__init__(msg, *args)
 
 
-def get_translation(var_binds, mib_server_url, data_format):
+async def get_translation(var_binds, mib_server_url, data_format):
     """
     @param var_binds: var_binds object getting from SNMP agents
     @param mib_server_url: URL of SNMP MIB server
@@ -58,27 +56,13 @@ def get_translation(var_binds, mib_server_url, data_format):
     # Send the POST request to mib server
     headers = {"Content-type": "application/json"}
     endpoint = "translation"
-    TRANSLATION_URL = os.path.join(mib_server_url.strip("/"), endpoint)
-    logger.debug(f"[-] TRANSLATION_URL: {TRANSLATION_URL}")
-
-    # Set up the request params
-    params = {"data_format": data_format}
+    translation_url = os.path.join(mib_server_url.strip("/"), endpoint)
+    logger.debug(f"[-] TRANSLATION_URL: {translation_url}")
 
     try:
         # use Session with Retry
-        retry_strategy = Retry(
-            total=3,
-            backoff_factor=1,
-            status_forcelist=[429, 500, 502, 503, 504],
-            method_whitelist=["GET", "POST"],
-        )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        session = requests.Session()
-        session.mount("https://", adapter)
-        session.mount("http://", adapter)
-        resp = session.post(
-            TRANSLATION_URL, headers=headers, data=payload, params=params, timeout=60
-        )
+        session = ClientSession()
+        resp = await session.post(translation_url, headers=headers, data=payload, params={"data_format": data_format})
 
     except Exception as e:
         logger.error(
@@ -86,9 +70,9 @@ def get_translation(var_binds, mib_server_url, data_format):
         )
         raise SharedException("MIB server is unreachable!")
 
-    if resp.status_code != 200:
-        logger.error(f"[-] MIB Server API Error with code: {resp.status_code}")
-        raise SharedException(f"MIB Server API Error with code: {resp.status_code}")
+    if resp.status != 200:
+        logger.error(f"[-] MIB Server API Error with code: {resp.status}")
+        raise SharedException(f"MIB Server API Error with code: {resp.status}")
 
     # *TODO*: For future release could retain failed translations in some place to re-translate.
 
