@@ -36,7 +36,6 @@ jsoncomment = "^0.4.2"
 [tool.poetry.dev-dependencies]
 #pytest-splunk-addon = "^1.4.0"
 pytest = "*"
-black = "21.6b0"
 pytest-cov = "^2.12.1"
 jsoncomment = "^0.4.2"
 pre-commit = "^2.14.0"
