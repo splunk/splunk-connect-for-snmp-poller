@@ -118,7 +118,7 @@ def snmp_polling(
     host, version, community, profile, server_config, index, one_time_flag=False
 ):
     logger.info("Before async")
-    async_to_sync(snmp_polling_async(host, version, community, profile, server_config, index, one_time_flag))()
+    async_to_sync(snmp_polling_async)(host, version, community, profile, server_config, index, one_time_flag)
     logger.info("After async")
 
 
