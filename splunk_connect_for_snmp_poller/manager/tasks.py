@@ -117,10 +117,10 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 def snmp_polling(
     host, version, community, profile, server_config, index, one_time_flag=False
 ):
-    async_to_sync(snmp_polling_async)(host, version, community, profile, server_config, index, one_time_flag)
+    async_to_sync(snmp_polling_async(host, version, community, profile, server_config, index, one_time_flag))
 
 
-def snmp_polling_async(
+async def snmp_polling_async(
         host, version, community, profile, server_config, index, one_time_flag=False
 ):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
