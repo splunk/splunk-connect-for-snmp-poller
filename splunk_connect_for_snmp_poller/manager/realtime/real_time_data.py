@@ -71,5 +71,4 @@ def _device_restarted(realtime_collection, input_data_collection):
 def should_redo_walk(realtime_collection, input_data):
     if realtime_collection and input_data:
         return _device_restarted(realtime_collection, input_data)
-    else:
-        return False
+    return False

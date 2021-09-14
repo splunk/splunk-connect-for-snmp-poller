@@ -15,11 +15,11 @@
 #
 import csv
 import logging.config
-from dataclasses import dataclass
 
 import schedule
 from pysnmp.hlapi import ObjectIdentity, ObjectType, UdpTransportTarget, getCmd
 
+from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.realtime.real_time_data import (
     should_redo_walk,
@@ -34,15 +34,6 @@ from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class InventoryRecord:
-    host: str
-    version: str
-    community: str
-    profile: str
-    frequency_str: str
-
-
 def _should_process_current_line(inventory_record):
     return should_process_inventory_line(
         inventory_record.host
@@ -55,16 +46,11 @@ def _should_process_current_line(inventory_record):
     )
 
 
-def onetime_task(host, version, community, profile, server_config, splunk_indexes):
-    logger.debug(
-        f"Executing onetime_task for {host} version={version} community={community} profile={profile}"
-    )
+def onetime_task(inventory_record: InventoryRecord, server_config, splunk_indexes):
+    logger.debug("Executing onetime_task for %s", inventory_record.__repr__())
 
     snmp_polling.delay(
-        host,
-        version,
-        community,
-        profile,
+        inventory_record,
         server_config,
         splunk_indexes,
         one_time_flag=True,
@@ -89,7 +75,6 @@ def parse_inventory_file(inventory_file_path):
 def _extract_sys_uptime_instance(
     local_snmp_engine, host, version, community, server_config
 ):
-    from splunk_connect_for_snmp_poller.manager.task_utilities import parse_port
     from splunk_connect_for_snmp_poller.manager.tasks import (
         build_authData,
         build_contextData,
@@ -133,13 +118,13 @@ def _update_mongo(
     all_walked_hosts_collection, host, host_already_walked, current_sys_up_time
 ):
     if not host_already_walked:
-        logger.info(f"Adding host: {host} into Mongo database")
+        logger.info("Adding host: %s into Mongo database", host)
         all_walked_hosts_collection.add_host(host)
     all_walked_hosts_collection.update_real_time_data_for(host, current_sys_up_time)
 
 
 """
-This is he realtime task responsible for executing an SNMPWALK when
+This is the realtime task responsible for executing an SNMPWALK when
 * we discover an host for the first time, or
 * upSysTimeInstance has changed.
 """
@@ -167,10 +152,7 @@ def automatic_realtime_task(
         if should_do_walk:
             schedule.every().second.do(
                 onetime_task,
-                inventory_record.host,
-                inventory_record.version,
-                inventory_record.community,
-                inventory_record.profile,
+                inventory_record,
                 server_config,
                 splunk_indexes,
             )
