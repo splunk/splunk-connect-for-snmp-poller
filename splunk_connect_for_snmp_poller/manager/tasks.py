@@ -27,6 +27,7 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
     is_oid,
     mib_string_handler,
     parse_port,
+    return_enricher,
     snmp_bulk_handler,
     snmp_get_handler,
     walk_handler,
@@ -50,7 +51,6 @@ def get_snmp_data(
     varBinds,
     handler,
     mongo_connection,
-    enricher_presence,
     snmp_engine,
     auth_data,
     context_data,
@@ -58,6 +58,7 @@ def get_snmp_data(
     port,
     mib_server_url,
     index,
+    enricher,
     otel_logs_url,
     otel_metrics_url,
     one_time_flag,
@@ -66,7 +67,6 @@ def get_snmp_data(
         try:
             handler(
                 mongo_connection,
-                enricher_presence,
                 snmp_engine,
                 auth_data,
                 context_data,
@@ -74,6 +74,7 @@ def get_snmp_data(
                 port,
                 mib_server_url,
                 index,
+                enricher,
                 otel_logs_url,
                 otel_metrics_url,
                 one_time_flag,
@@ -134,7 +135,7 @@ def snmp_polling(
     logger.debug(f"==========context_data=========\n{context_data}")
 
     mongo_connection = WalkedHostsRepository(server_config["mongo"])
-    enricher_presence = True if "enricher" in server_config else False
+    enricher = return_enricher(server_config)
     static_parameters = [
         snmp_engine,
         auth_data,
@@ -143,11 +144,12 @@ def snmp_polling(
         port,
         mib_server_url,
         index,
+        enricher,
         otel_logs_url,
         otel_metrics_url,
         one_time_flag,
     ]
-    get_bulk_specific_parameters = [mongo_connection, enricher_presence]
+    get_bulk_specific_parameters = [mongo_connection]
 
     try:
         # Perform SNNP Polling for string profile in inventory.csv
@@ -180,9 +182,9 @@ def snmp_polling(
             # Perform SNNP WALK for oid end with *
             if profile[-1] == "*":
                 logger.info(f"Executing SNMP WALK for {host} profile={profile}")
-                if enricher_presence:
+                if "ifIndex" in enricher and "ifDescr" in enricher:
                     walk_handler_with_enricher(
-                        profile, server_config, mongo_connection, *static_parameters
+                        profile, mongo_connection, *static_parameters
                     )
                 else:
                     walk_handler(profile, *static_parameters)

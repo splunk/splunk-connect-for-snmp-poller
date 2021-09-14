@@ -51,6 +51,19 @@ def extract_network_interface_data_from_config(config_as_dict):
     return result
 
 
+def append_index_num(varbind, enricher, is_metric):
+    if "indexNum" in enricher:
+        index_num_field = enricher["indexNum"]
+        if is_metric:
+            index_num = return_metrics_index_number(varbind)
+            varbind[index_num_field] = index_num
+        else:
+            index_num = return_event_index_number(varbind)
+            varbind += f"{index_num_field}={index_num} "
+        return varbind
+    return varbind
+
+
 def extract_network_interface_data_from_walk(config_as_dict, if_mib_metric_walk_data):
     result = []
     network_data = InterfaceMib(if_mib_metric_walk_data)

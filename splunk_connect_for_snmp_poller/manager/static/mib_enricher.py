@@ -54,6 +54,7 @@ def extract_dimension_name_and_value(dimension, index):
 class MibEnricher:
     def __init__(self, mib_static_data_collection):
         self._mib_static_data_collection = mib_static_data_collection
+        self._index_number_name = ""
         self.dimensions_fields = self.__collect_if_mib_fields(
             mib_static_data_collection
         )
@@ -63,7 +64,10 @@ class MibEnricher:
         if not mib_static_data_collection:
             return []
         for el in mib_static_data_collection:
-            fields += list(el.keys())
+            if "indexNum" in el:
+                self._index_number_name = el["indexNum"]
+            else:
+                fields += list(el.keys())
         logger.info(f"_mib_static_data_collection: {mib_static_data_collection}")
         logger.info(f"__collect_if_mib_fields: {fields}")
         return fields
