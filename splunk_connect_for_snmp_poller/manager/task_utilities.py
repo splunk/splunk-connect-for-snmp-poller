@@ -231,6 +231,7 @@ def snmp_get_handler(
         mib_enricher, return_multimetric = _enrich_response(
             mongo_connection, enricher_presence, f"{host}:{port}"
         )
+        logger.info(f"Get mib_enricher: {mib_enricher}")
         for varbind in varBinds:
             result, is_metric = get_translated_string(
                 mib_server_url, [varbind], return_multimetric
