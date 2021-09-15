@@ -228,6 +228,7 @@ def snmp_get_handler(
         )
     )
     if not _any_failure_happened(errorIndication, errorStatus, errorIndex, varBinds):
+        logger.info(f"Enricher presence: {enricher_presence}")
         mib_enricher, return_multimetric = _enrich_response(
             mongo_connection, enricher_presence, f"{host}:{port}"
         )

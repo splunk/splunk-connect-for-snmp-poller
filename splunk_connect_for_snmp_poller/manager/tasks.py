@@ -135,6 +135,7 @@ def snmp_polling(
 
     mongo_connection = WalkedHostsRepository(server_config["mongo"])
     enricher_presence = "enricher" in server_config
+    logger.info(server_config)
     static_parameters = [
         snmp_engine,
         auth_data,
