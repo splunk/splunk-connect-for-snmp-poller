@@ -40,8 +40,8 @@ from splunk_connect_for_snmp_poller.manager.const import (
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
-    append_index_num,
     extract_network_interface_data_from_walk,
+    get_additional_varbinds,
 )
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
@@ -235,7 +235,6 @@ def snmp_get_handler(
             result, is_metric = get_translated_string(
                 mib_server_url, [varbind], return_multimetric
             )
-            result = append_index_num(result, enricher, is_metric)
             post_data_to_splunk_hec(
                 host,
                 otel_logs_url,
@@ -386,6 +385,7 @@ def snmp_bulk_handler(
 
 def walk_handler(
     profile,
+    mongo_connection,
     snmp_engine,
     auth_data,
     context_data,
@@ -427,8 +427,12 @@ def walk_handler(
         ):
             break
         else:
-            result, is_metric = get_translated_string(mib_server_url, varBinds)
-            result = append_index_num(result, enricher, is_metric)
+            mib_enricher, return_multimetric = _enrich_response(
+                mongo_connection, enricher, f"{host}:{port}"
+            )
+            result, is_metric = get_translated_string(
+                mib_server_url, varBinds, return_multimetric
+            )
             post_data_to_splunk_hec(
                 host,
                 otel_logs_url,
@@ -437,6 +441,7 @@ def walk_handler(
                 is_metric,
                 index,
                 one_time_flag,
+                mib_enricher,
             )
 
 
@@ -496,9 +501,12 @@ def walk_handler_with_enricher(
             )
 
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
-    mongo_connection.update_mib_static_data_for(f"{host}:{port}", processed_result)
+    additional_enricher_varbinds = get_additional_varbinds(enricher)
     mib_enricher = _return_mib_enricher_for_walk(
-        mongo_connection, processed_result, f"{host}:{port}"
+        mongo_connection,
+        f"{host}:{port}",
+        processed_result,
+        additional_enricher_varbinds,
     )
     post_walk_data_to_splunk_arguments = [
         host,
@@ -546,9 +554,14 @@ def _sort_walk_data(
         merged_result.append(eval(result["metric"]))
 
 
-def _return_mib_enricher_for_walk(mongo_connection, processed_result, hostname):
-    if processed_result:
-        mongo_connection.update_mib_static_data_for(hostname, processed_result)
+def _return_mib_enricher_for_walk(
+    mongo_connection, hostname, existing_data=[], additional_data={}
+):
+    if existing_data or additional_data:
+        # existing_data, additional_data = __return_existing_and_additional_varbinds(processed_result)
+        processed_result = mongo_connection.update_mib_static_data_for(
+            hostname, existing_data, additional_data
+        )
         return MibEnricher(processed_result)
     else:
         processed_data = mongo_connection.static_data_for(hostname)
@@ -784,6 +797,12 @@ def build_contextData(version, community, server_config):
         logger.error(f"Error happend while building ContextData: {e}")
 
 
+def __return_existing_and_additional_varbinds(processed_result):
+    existing_data = processed_result.get("existingVarBinds", [])
+    additional_data = processed_result.get("additionalVarBinds", {})
+    return existing_data, additional_data
+
+
 def is_oid(profile: str) -> bool:
     """
     This function checks if profile is an OID. OID is defined as a string of format:
@@ -796,9 +815,17 @@ def is_oid(profile: str) -> bool:
 
 
 def return_enricher(server_config):
-    if "enricher" not in server_config:
-        return {}
-    return server_config["enricher"]
+    try:
+        return (
+            server_config["enricher"]["oidFamily"]["IF-MIB"]["existingVarBinds"],
+            True,
+        )
+    except Exception as e:
+        logger.debug(e)
+        if "enricher" in server_config:
+            return server_config["enricher"], False
+        else:
+            return [], False
 
 
 def enrich_interface(enricher):

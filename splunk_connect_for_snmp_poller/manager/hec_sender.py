@@ -19,10 +19,6 @@ import time
 import requests
 from celery.utils.log import get_logger
 
-from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
-    return_event_index_number,
-    return_metrics_index_number,
-)
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
 logger = get_logger(__name__)
@@ -69,9 +65,9 @@ def post_event_data(
     elif "non_metric" in variables_binds:
         variables_binds = json.loads(variables_binds)["non_metric"]
 
-    if "IF-MIB" in variables_binds:
-        index_num = return_event_index_number(variables_binds)
-        variables_binds += f"index_num={index_num} "
+    # if "IF-MIB" in variables_binds:
+    #     index_num = return_event_index_number(variables_binds)
+    #     variables_binds += f"index_num={index_num} "
 
     data = {
         "time": time.time(),
@@ -121,8 +117,8 @@ def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
     """
     metric_result = json.loads(variables_binds["metric"])
     non_metric_result = variables_binds["non_metric"]
-    mib_enricher.append_additional_dimensions(metric_result)
-    for field_name in mib_enricher.dimensions_fields:
+    additional_dimensions = mib_enricher.append_additional_dimensions(metric_result)
+    for field_name in additional_dimensions:
         if field_name in metric_result:
             non_metric_result += f'{field_name}="{metric_result[field_name]}" '
     return non_metric_result
@@ -136,9 +132,9 @@ def post_metric_data(endpoint, host, variables_binds, index, mib_enricher=None):
     if mib_enricher:
         _enrich_metric_data(mib_enricher, json_val, fields)
 
-    if "IF-MIB" in variables_binds:
-        metric_index = return_metrics_index_number(json_val)
-        fields["num_index"] = metric_index
+    # if "IF-MIB" in variables_binds:
+    #     metric_index = return_metrics_index_number(json_val)
+    #     fields["num_index"] = metric_index
 
     data = {
         "time": time.time(),
@@ -162,7 +158,9 @@ def post_metric_data(endpoint, host, variables_binds, index, mib_enricher=None):
 def _enrich_metric_data(
     mib_enricher: MibEnricher, variables_binds: dict, fields: dict
 ) -> None:
-    mib_enricher.append_additional_dimensions(variables_binds)
-    for field_name in mib_enricher.dimensions_fields:
+    additional_if_mib_dimensions = mib_enricher.append_additional_dimensions(
+        variables_binds
+    )
+    for field_name in additional_if_mib_dimensions:
         if field_name in variables_binds:
             fields[field_name] = variables_binds[field_name]

@@ -32,6 +32,7 @@
 # under the License.
 import logging
 import os
+from collections import defaultdict
 
 from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import ConnectionFailure
@@ -126,9 +127,7 @@ class WalkedHostsRepository:
             return None
         if WalkedHostsRepository.MIB_STATIC_DATA in full_collection:
             mib_static_data = full_collection[WalkedHostsRepository.MIB_STATIC_DATA]
-            if InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER in mib_static_data:
-                return mib_static_data[InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER]
-            return None
+            return mib_static_data
         else:
             return None
 
@@ -144,16 +143,21 @@ class WalkedHostsRepository:
             )
 
     # Input is what extract_network_interface_data_from_walk() returns
-    def update_mib_static_data_for(self, host, if_mib_data):
-        if if_mib_data:
-            real_time_data_dictionary = {
-                WalkedHostsRepository.MIB_STATIC_DATA: {
-                    InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER: if_mib_data
-                }
-            }
-            self._walked_hosts.find_one_and_update(
-                {"_id": host},
-                {"$set": real_time_data_dictionary},
-                upsert=True,
-                return_document=ReturnDocument.AFTER,
-            )
+    def update_mib_static_data_for(self, host, existing_data, additional_data):
+        if not existing_data and not additional_data:
+            return
+        static_data_dictionary = {"MIB-STATIC-DATA": defaultdict(dict)}
+        static_data_dictionary_mib = static_data_dictionary["MIB-STATIC-DATA"]
+        if existing_data:
+            static_data_dictionary_mib[InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER][
+                "existingVarBinds"
+            ] = existing_data
+        for el in additional_data.keys():
+            static_data_dictionary_mib[el]["additionalVarBinds"] = additional_data[el]
+        self._walked_hosts.find_one_and_update(
+            {"_id": host},
+            {"$set": static_data_dictionary},
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
+        return static_data_dictionary_mib

@@ -135,7 +135,7 @@ def snmp_polling(
     logger.debug(f"==========context_data=========\n{context_data}")
 
     mongo_connection = WalkedHostsRepository(server_config["mongo"])
-    enricher = return_enricher(server_config)
+    enricher, enrich_walk = return_enricher(server_config)
     static_parameters = [
         snmp_engine,
         auth_data,
@@ -182,12 +182,12 @@ def snmp_polling(
             # Perform SNNP WALK for oid end with *
             if profile[-1] == "*":
                 logger.info(f"Executing SNMP WALK for {host} profile={profile}")
-                if "ifIndex" in enricher and "ifDescr" in enricher:
+                if enricher:
                     walk_handler_with_enricher(
                         profile, mongo_connection, *static_parameters
                     )
                 else:
-                    walk_handler(profile, *static_parameters)
+                    walk_handler(profile, mongo_connection, *static_parameters)
             # Perform SNNP GET for an oid
             else:
                 logger.info(f"Executing SNMP GET for {host} profile={profile}")

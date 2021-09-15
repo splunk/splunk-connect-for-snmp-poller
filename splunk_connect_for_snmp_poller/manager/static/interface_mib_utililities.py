@@ -25,17 +25,31 @@ logger = logging.getLogger(__name__)
 INTERFACE_PATTERN = re.compile(r"IF-MIB::.*\.(\d*)=")
 
 
-def __network_interface_enricher_attributes(config_as_dict):
+def __network_interface_enricher_attributes(config_as_dict, varbinds_type):
     # TODO: we just assume here the whole structre of the poller's configuration
     # main file. If such section does not exist we simply do not anything.
     return "IF-MIB", multi_key_lookup(
-        config_as_dict, ("enricher", "oidFamily", "IF-MIB")
+        config_as_dict, ("oidFamily", "IF-MIB", varbinds_type)
     )
+
+
+def get_additional_varbinds(config_as_dict):
+    result = {}
+    oid_families = config_as_dict["oidFamily"]
+    for oid_family in oid_families.keys():
+        additional_list = multi_key_lookup(
+            config_as_dict, ("oidFamily", oid_family, "additionalVarBinds")
+        )
+        result[oid_family] = {}
+        for el in additional_list:
+            for key, values in el.items():
+                result[oid_family][key] = values
+    return result
 
 
 def extract_network_interface_data_from_config(config_as_dict):
     parent_oid, splunk_dimensions = __network_interface_enricher_attributes(
-        config_as_dict
+        config_as_dict, "existingVarBinds"
     )
     result = []
     if splunk_dimensions:
@@ -51,19 +65,6 @@ def extract_network_interface_data_from_config(config_as_dict):
     return result
 
 
-def append_index_num(varbind, enricher, is_metric):
-    if "indexNum" in enricher:
-        index_num_field = enricher["indexNum"]
-        if is_metric:
-            index_num = return_metrics_index_number(varbind)
-            varbind[index_num_field] = index_num
-        else:
-            index_num = return_event_index_number(varbind)
-            varbind += f"{index_num_field}={index_num} "
-        return varbind
-    return varbind
-
-
 def extract_network_interface_data_from_walk(config_as_dict, if_mib_metric_walk_data):
     result = []
     network_data = InterfaceMib(if_mib_metric_walk_data)
@@ -76,17 +77,3 @@ def extract_network_interface_data_from_walk(config_as_dict, if_mib_metric_walk_
                 result.append({f"{splunk_dimension}": current_result})
 
     return result
-
-
-def return_event_index_number(oid):
-    try:
-        matches = INTERFACE_PATTERN.search(oid)
-        return matches.group(1)
-    except Exception as e:
-        logger.debug(e)
-
-
-def return_metrics_index_number(oid: dict):
-    metric_name = oid["metric_name"]
-    metric_id = re.split(r"_|\.", metric_name)[-1]
-    return metric_id
