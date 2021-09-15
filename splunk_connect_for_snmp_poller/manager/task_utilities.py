@@ -364,11 +364,11 @@ def snmp_bulk_handler(
         if not _any_failure_happened(
             errorIndication, errorStatus, errorIndex, varBinds
         ):
+            mib_enricher, return_multimetric = _enrich_response(
+                mongo_connection, enricher_presence, f"{host}:{port}"
+            )
             # Bulk operation returns array of varbinds
             for varbind in varBinds:
-                mib_enricher, return_multimetric = _enrich_response(
-                    mongo_connection, enricher_presence, f"{host}:{port}"
-                )
                 logger.debug(f"Bulk returned this varbind: {varbind}")
                 result, is_metric = get_translated_string(
                     mib_server_url, [varbind], return_multimetric

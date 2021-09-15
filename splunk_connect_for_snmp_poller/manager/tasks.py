@@ -50,6 +50,7 @@ def get_snmp_data(
     varBinds,
     handler,
     mongo_connection,
+    enricher,
     snmp_engine,
     auth_data,
     context_data,
@@ -57,7 +58,6 @@ def get_snmp_data(
     port,
     mib_server_url,
     index,
-    enricher,
     otel_logs_url,
     otel_metrics_url,
     one_time_flag,
@@ -66,6 +66,7 @@ def get_snmp_data(
         try:
             handler(
                 mongo_connection,
+                enricher,
                 snmp_engine,
                 auth_data,
                 context_data,
@@ -73,7 +74,6 @@ def get_snmp_data(
                 port,
                 mib_server_url,
                 index,
-                enricher,
                 otel_logs_url,
                 otel_metrics_url,
                 one_time_flag,
