@@ -115,7 +115,6 @@ class MibEnricher:
     def append_additional_dimensions(self, translated_var_bind):
         if translated_var_bind:
             metric_name = translated_var_bind[InterfaceMib.METRIC_NAME_KEY]
-            logger.info(f"metric_name: {metric_name}")
             additional_if_mib_dimensions = []
             fields_list = []
             if self._mib_static_data_collection:
@@ -125,7 +124,6 @@ class MibEnricher:
                 additional_if_mib_dimensions += self.__enrich_if_mib_additional(
                     metric_name
                 )
-            logger.info(f"ADDITIONAL_IF_DIMENSIONS: {additional_if_mib_dimensions}")
             for more_data in additional_if_mib_dimensions:
                 translated_var_bind.update(more_data)
                 fields_list += list(more_data.keys())

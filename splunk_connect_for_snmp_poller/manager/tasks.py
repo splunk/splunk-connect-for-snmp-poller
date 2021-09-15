@@ -27,7 +27,6 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
     is_oid,
     mib_string_handler,
     parse_port,
-    return_enricher,
     snmp_bulk_handler,
     snmp_get_handler,
     walk_handler,
@@ -135,7 +134,7 @@ def snmp_polling(
     logger.debug(f"==========context_data=========\n{context_data}")
 
     mongo_connection = WalkedHostsRepository(server_config["mongo"])
-    enricher, enrich_walk = return_enricher(server_config)
+    enricher_presence = "enricher" in server_config
     static_parameters = [
         snmp_engine,
         auth_data,
@@ -144,12 +143,11 @@ def snmp_polling(
         port,
         mib_server_url,
         index,
-        enricher,
         otel_logs_url,
         otel_metrics_url,
         one_time_flag,
     ]
-    get_bulk_specific_parameters = [mongo_connection]
+    get_bulk_specific_parameters = [mongo_connection, enricher_presence]
 
     try:
         # Perform SNNP Polling for string profile in inventory.csv
@@ -182,12 +180,12 @@ def snmp_polling(
             # Perform SNNP WALK for oid end with *
             if profile[-1] == "*":
                 logger.info(f"Executing SNMP WALK for {host} profile={profile}")
-                if enricher:
+                if enricher_presence:
                     walk_handler_with_enricher(
-                        profile, mongo_connection, *static_parameters
+                        profile, server_config, mongo_connection, *static_parameters
                     )
                 else:
-                    walk_handler(profile, mongo_connection, *static_parameters)
+                    walk_handler(profile, *static_parameters)
             # Perform SNNP GET for an oid
             else:
                 logger.info(f"Executing SNMP GET for {host} profile={profile}")
