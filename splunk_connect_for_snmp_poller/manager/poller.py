@@ -55,6 +55,7 @@ class Poller:
         return {
             "event_index": self._args.event_index,
             "metric_index": self._args.metric_index,
+            "meta_index": self._args.meta_index,
         }
 
     def __get_realtime_task_frequency(self):
