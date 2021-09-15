@@ -13,12 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import asyncio
 import os
 import threading
+import traceback
 
+from asgiref.sync import async_to_sync
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
-from asgiref.sync import async_to_sync
 
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
@@ -82,6 +84,7 @@ async def get_snmp_data(
             )
         except Exception as e:
             logger.error(f"Error happend while calling {handler.__name__}(): {e}")
+            traceback.print_exc()
 
 
 def sort_varbinds(varbind_list: list) -> VarbindCollection:
@@ -117,9 +120,9 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 def snmp_polling(
     host, version, community, profile, server_config, index, one_time_flag=False
 ):
-    logger.info("Before async")
     async_to_sync(snmp_polling_async)(host, version, community, profile, server_config, index, one_time_flag)
-    logger.info("After async")
+
+    return f"Executing SNMP Polling for {host} version={version} profile={profile}"
 
 
 async def snmp_polling_async(
@@ -203,7 +206,6 @@ async def snmp_polling_async(
                     *get_bulk_specific_parameters, *static_parameters, prepared_profile
                 )
 
-        return f"Executing SNMP Polling for {host} version={version} profile={profile}"
     except Exception as e:
         logger.error(
             f"Error happend while executing SNMP polling for {host}, version={version}, profile={profile}: {e}"

@@ -61,9 +61,9 @@ async def get_translation(var_binds, mib_server_url, data_format):
 
     try:
         # use Session with Retry
-        session = ClientSession()
-        resp = await session.post(translation_url, headers=headers, data=payload, params={"data_format": data_format})
-
+        async with ClientSession() as session:
+            resp = await session.post(translation_url, headers=headers,
+                                      data=payload, params={"data_format": data_format}, timeout=1)
     except Exception as e:
         logger.error(
             f"MIB server unreachable! Error happened while communicating to MIB server to perform the Translation: {e}"
@@ -76,4 +76,4 @@ async def get_translation(var_binds, mib_server_url, data_format):
 
     # *TODO*: For future release could retain failed translations in some place to re-translate.
 
-    return resp.text
+    return await resp.text()
