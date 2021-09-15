@@ -110,6 +110,7 @@ class MibEnricher:
                     oid_family, "additionalVarBinds"
                 )["indexNum"]
                 return [{index_field: index}]
+        return []
 
     def append_additional_dimensions(self, translated_var_bind):
         if translated_var_bind:
@@ -125,10 +126,9 @@ class MibEnricher:
                     metric_name
                 )
             logger.info(f"ADDITIONAL_IF_DIMENSIONS: {additional_if_mib_dimensions}")
-            if additional_if_mib_dimensions:
-                for more_data in additional_if_mib_dimensions:
-                    translated_var_bind.update(more_data)
-                    fields_list += list(more_data.keys())
-                return fields_list
+            for more_data in additional_if_mib_dimensions:
+                translated_var_bind.update(more_data)
+                fields_list += list(more_data.keys())
+            return fields_list
         else:
             logger.warning("None translated var binds, enrichment process will be skip")
