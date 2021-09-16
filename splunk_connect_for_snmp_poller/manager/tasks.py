@@ -119,16 +119,17 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 # TODO remove the debugging statement later
 @app.task
 def snmp_polling(ir_json: str, server_config, index, one_time_flag=False):
+    ir_dict = json.loads(ir_json)
+    ir = InventoryRecord(**ir_dict)
+
     async_to_sync(snmp_polling_async)(ir_json, server_config, index, one_time_flag)
 
-    return f"Executing SNMP Polling for {host} version={version} profile={profile}"
+    return f"Executing SNMP Polling for {ir.host} version={ir.version} profile={ir.profile}"
 
 
 async def snmp_polling_async(
-        ir_json: str, server_config, index, one_time_flag=False
+        ir: InventoryRecord, server_config, index, one_time_flag=False
 ):
-    ir_dict = json.loads(ir_json)
-    ir = InventoryRecord(**ir_dict)
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
     otel_metrics_url = os.environ["OTEL_SERVER_METRICS_URL"]
@@ -209,7 +210,6 @@ async def snmp_polling_async(
                     *get_bulk_specific_parameters, *static_parameters, prepared_profile  # type: ignore
                 )
 
-        return f"Executing SNMP Polling for {host} version={ir.version} profile={ir.profile}"
     except Exception as e:
         logger.error(
             f"Error occurred while executing SNMP polling for {host}, version={ir.version}, profile={ir.profile}: {e}"
