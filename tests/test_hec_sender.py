@@ -22,7 +22,14 @@ from splunk_connect_for_snmp_poller.manager.hec_sender import (
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
 _MibEnricher = MibEnricher(
-    [{"interface_index": ["1", "2", "3"]}, {"interface_desc": ["lo", "eth0", "eth1"]}]
+    {
+        "IF-MIB": {
+            "existingVarBinds": [
+                {"interface_index": ["1", "2", "3"]},
+                {"interface_desc": ["lo", "eth0", "eth1"]},
+            ]
+        }
+    }
 )
 
 

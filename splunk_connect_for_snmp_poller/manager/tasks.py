@@ -50,7 +50,7 @@ def get_snmp_data(
     varBinds,
     handler,
     mongo_connection,
-    enricher_presence,
+    enricher,
     snmp_engine,
     auth_data,
     context_data,
@@ -66,7 +66,7 @@ def get_snmp_data(
         try:
             handler(
                 mongo_connection,
-                enricher_presence,
+                enricher,
                 snmp_engine,
                 auth_data,
                 context_data,
@@ -134,7 +134,8 @@ def snmp_polling(
     logger.debug(f"==========context_data=========\n{context_data}")
 
     mongo_connection = WalkedHostsRepository(server_config["mongo"])
-    enricher_presence = True if "enricher" in server_config else False
+    enricher_presence = "enricher" in server_config
+    logger.info(server_config)
     static_parameters = [
         snmp_engine,
         auth_data,
