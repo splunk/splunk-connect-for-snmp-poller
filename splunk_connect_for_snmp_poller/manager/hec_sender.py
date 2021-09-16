@@ -65,10 +65,6 @@ def post_event_data(
     elif "non_metric" in variables_binds:
         variables_binds = json.loads(variables_binds)["non_metric"]
 
-    # if "IF-MIB" in variables_binds:
-    #     index_num = return_event_index_number(variables_binds)
-    #     variables_binds += f"index_num={index_num} "
-
     data = {
         "time": time.time(),
         "sourcetype": "sc4snmp:meta",

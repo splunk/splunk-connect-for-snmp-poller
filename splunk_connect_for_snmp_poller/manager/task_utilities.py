@@ -228,11 +228,9 @@ def snmp_get_handler(
         )
     )
     if not _any_failure_happened(errorIndication, errorStatus, errorIndex, varBinds):
-        logger.info(f"Enricher presence: {enricher_presence}")
         mib_enricher, return_multimetric = _enrich_response(
             mongo_connection, enricher_presence, f"{host}:{port}"
         )
-        logger.info(f"Get mib_enricher: {mib_enricher}")
         for varbind in varBinds:
             result, is_metric = get_translated_string(
                 mib_server_url, [varbind], return_multimetric
@@ -317,7 +315,6 @@ def _any_walk_failure_happened(
             errorStatus.prettyPrint(),
             errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
         )
-        logger.info(result)
         post_data_to_splunk_hec(
             host,
             otel_logs_url,
@@ -552,7 +549,6 @@ def _return_mib_enricher_for_walk(
     mongo_connection, hostname, existing_data=[], additional_data={}
 ):
     if existing_data or additional_data:
-        # existing_data, additional_data = __return_existing_and_additional_varbinds(processed_result)
         processed_result = mongo_connection.update_mib_static_data_for(
             hostname, existing_data, additional_data
         )
