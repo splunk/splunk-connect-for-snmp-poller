@@ -43,7 +43,7 @@ snmp_allowed_versions = {SNMP_VERSION_1, SNMP_VERSION_2C, SNMP_VERSION_3}
 
 def should_process_inventory_line(host_from_inventory):
     stripped = host_from_inventory.lstrip()
-    return True if stripped and stripped[:1] != "#" else False
+    return stripped and stripped[:1] != "#"
 
 
 def is_valid_number(port, validation):
@@ -80,7 +80,7 @@ def resolve_host(hostname):
 
     try:
         socket.gethostbyname(hostname)
-        return True if hostname else False
+        return bool(hostname)
     except OSError:
         logger.error(f"Cannot resolve {hostname}")
         return False
@@ -93,8 +93,7 @@ def is_valid_host(host):
         return resolve_host(host_port[0])
     elif length == 2:
         return resolve_host(host_port[0]) and is_valid_port(host_port[1])
-    else:
-        return False
+    return False
 
 
 def is_valid_version(version):
