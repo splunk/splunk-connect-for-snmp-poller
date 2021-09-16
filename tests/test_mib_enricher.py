@@ -17,10 +17,16 @@ from unittest import TestCase
 
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
-mib_static_data_coll = [
-    {"interface_index": ["1", "2"]},
-    {"interface_desc": ["lo", "eth0"]},
-]
+mib_static_data_coll = {
+    "IF-MIB": {
+        "existingVarBinds": [
+            {"interface_index": ["1", "2"]},
+            {"interface_desc": ["lo", "eth0"]},
+        ],
+        "additionalVarBinds": {},
+    },
+    "SNMPv2-MIB": {"additionalVarBinds": {"indexNum": "index_num"}},
+}
 
 
 class TestMibEnricher(TestCase):
@@ -67,6 +73,17 @@ class TestMibEnricher(TestCase):
         )
 
     def test_process_one_valid_if_mib_entry(self):
+        translated_metric = {
+            "metric_name": "sc4snmp.IF-MIB.ifIndex_2",
+            "_value": "2",
+            "metric_type": "Integer",
+        }
+        enricher = MibEnricher(mib_static_data_coll)
+        enricher.append_additional_dimensions(translated_metric)
+        self.assertTrue("interface_index" in translated_metric)
+        self.assertTrue("interface_desc" in translated_metric)
+
+    def test_additional_variable(self):
         translated_metric = {
             "metric_name": "sc4snmp.IF-MIB.ifIndex_2",
             "_value": "2",

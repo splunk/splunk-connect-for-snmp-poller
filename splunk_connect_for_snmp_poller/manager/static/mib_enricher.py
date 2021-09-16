@@ -54,10 +54,6 @@ def extract_dimension_name_and_value(dimension, index):
 class MibEnricher:
     def __init__(self, mib_static_data_collection):
         self._mib_static_data_collection = mib_static_data_collection
-        # self._index_number_name = mib_static_data_collection_additional
-        # self.dimensions_fields = self.__collect_if_mib_fields(
-        #     mib_static_data_collection_exisiting, mib_static_data_collection_additional
-        # )
 
     def get_by_oid(self, oid_family):
         if oid_family not in self._mib_static_data_collection:
@@ -69,21 +65,6 @@ class MibEnricher:
         if not oid_record:
             oid_record = self.get_by_oid(oid_family.split(".")[1])
         return oid_record.get(type, {})
-
-    #
-    # def __collect_if_mib_fields(self, mib_static_data_collection, mib_static_data_collection_additional):
-    #     fields = []
-    #     if not mib_static_data_collection:
-    #         return []
-    #     for el in mib_static_data_collection:
-    #         fields += list(el.keys())
-    #     if mib_static_data_collection_additional:
-    #         fields += list(mib_static_data_collection_additional.values())
-    #         # for oidFamily in mib_static_data_collection_additional:
-    #         #     fields += list(mib_static_data_collection_additional[oidFamily].values())
-    #     logger.info(f"_mib_static_data_collection: {mib_static_data_collection}")
-    #     logger.info(f"__collect_if_mib_fields: {fields}")
-    #     return fields
 
     def __enrich_if_mib_existing(self, metric_name):
         result = []
@@ -105,11 +86,16 @@ class MibEnricher:
     def __enrich_if_mib_additional(self, metric_name):
         for oid_family in self._mib_static_data_collection.keys():
             if oid_family in metric_name:
-                index = extract_current_index_from_metric(metric_name) + 1
-                index_field = self.get_by_oid_and_type(
-                    oid_family, "additionalVarBinds"
-                )["indexNum"]
-                return [{index_field: index}]
+                try:
+                    index = extract_current_index_from_metric(metric_name) + 1
+                    index_field = self.get_by_oid_and_type(
+                        oid_family, "additionalVarBinds"
+                    )["indexNum"]
+                    return [{index_field: index}]
+                except KeyError:
+                    logger.error("Enricher additionalVarBinds badly formatted")
+                except TypeError:
+                    logger.debug(f"Can't get the index from metric name: {metric_name}")
         return []
 
     def append_additional_dimensions(self, translated_var_bind):

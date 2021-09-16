@@ -136,10 +136,6 @@ def post_metric_data(endpoint, host, variables_binds, index, mib_enricher=None):
     if mib_enricher:
         _enrich_metric_data(mib_enricher, json_val, fields)
 
-    # if "IF-MIB" in variables_binds:
-    #     metric_index = return_metrics_index_number(json_val)
-    #     fields["num_index"] = metric_index
-
     data = {
         "time": time.time(),
         "host": host,
