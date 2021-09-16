@@ -806,23 +806,3 @@ def is_oid(profile: str) -> bool:
     @return: if the profile is of OID structure
     """
     return bool(re.match(r"^\d(\.\d*)*(\.\*)?$", profile))
-
-
-def return_enricher(server_config):
-    try:
-        return (
-            server_config["enricher"]["oidFamily"]["IF-MIB"]["existingVarBinds"],
-            True,
-        )
-    except Exception as e:
-        logger.debug(e)
-        if "enricher" in server_config:
-            return server_config["enricher"], False
-        else:
-            return [], False
-
-
-def enrich_interface(enricher):
-    if not enricher:
-        return False
-    return bool("ifIndex" in enricher and "ifDescr" in enricher)

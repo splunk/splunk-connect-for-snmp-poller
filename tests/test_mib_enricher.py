@@ -27,6 +27,16 @@ mib_static_data_coll = {
     },
     "SNMPv2-MIB": {"additionalVarBinds": {"indexNum": "index_num"}},
 }
+mib_static_data_coll_additional = {
+    "IF-MIB": {
+        "existingVarBinds": [
+            {"interface_index": ["1", "2"]},
+            {"interface_desc": ["lo", "eth0"]},
+        ],
+        "additionalVarBinds": {"indexNum": "index_num"},
+    },
+    "SNMPv2-MIB": {"additionalVarBinds": {"indexNum": "index_num"}},
+}
 
 
 class TestMibEnricher(TestCase):
@@ -82,6 +92,19 @@ class TestMibEnricher(TestCase):
         enricher.append_additional_dimensions(translated_metric)
         self.assertTrue("interface_index" in translated_metric)
         self.assertTrue("interface_desc" in translated_metric)
+        self.assertFalse("index_num" in translated_metric)
+
+    def test_process_one_valid_snmpv2_mib_entry(self):
+        translated_metric = {
+            "_value": "2",
+            "metric_name": "sc4snmp.SNMPv2-MIB.sysORUpTime_2",
+            "metric_type": "TimeStamp",
+        }
+        enricher = MibEnricher(mib_static_data_coll)
+        enricher.append_additional_dimensions(translated_metric)
+        self.assertFalse("interface_index" in translated_metric)
+        self.assertFalse("interface_desc" in translated_metric)
+        self.assertTrue("index_num" in translated_metric)
 
     def test_additional_variable(self):
         translated_metric = {
@@ -89,7 +112,8 @@ class TestMibEnricher(TestCase):
             "_value": "2",
             "metric_type": "Integer",
         }
-        enricher = MibEnricher(mib_static_data_coll)
+        enricher = MibEnricher(mib_static_data_coll_additional)
         enricher.append_additional_dimensions(translated_metric)
         self.assertTrue("interface_index" in translated_metric)
         self.assertTrue("interface_desc" in translated_metric)
+        self.assertTrue("index_num" in translated_metric)

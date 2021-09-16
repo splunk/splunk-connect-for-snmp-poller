@@ -27,9 +27,7 @@ def __network_interface_enricher_attributes(config_as_dict, oid_family, varbinds
     result = multi_key_lookup(
         config_as_dict, ("enricher", "oidFamily", oid_family, varbinds_type)
     )
-    if not result:
-        return []
-    return result
+    return result or []
 
 
 def get_additional_varbinds(config_as_dict):
