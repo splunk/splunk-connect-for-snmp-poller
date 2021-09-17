@@ -70,7 +70,8 @@ async def get_translation(var_binds, mib_server_url, data_format):
             )
         except Exception as e:
             logger.error(
-                f"MIB server unreachable! Error happened while communicating to MIB server to perform the Translation: {e}"
+                f"MIB server unreachable! Error happened while communicating to"
+                f" MIB server to perform the Translation: {e}"
             )
             raise SharedException("MIB server is unreachable!")
 
