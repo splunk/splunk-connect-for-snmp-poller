@@ -142,10 +142,23 @@ class WalkedHostsRepository:
                 return_document=ReturnDocument.AFTER,
             )
 
-    # Input is what extract_network_interface_data_from_walk() returns
-    def update_mib_static_data_for(self, host, existing_data, additional_data):
-        if not existing_data and not additional_data:
-            return
+    def create_mib_static_data_mongo_structure(self, existing_data, additional_data):
+        """
+        This function creates database mib static data structure out of existing_data and additional_data provided
+        from config.yaml and the data derived from SNMP Walk, for ex.:
+        existing_data = [{'interface_index': ['1', '2']}, {'interface_desc': ['lo', 'eth0']}]
+        additional_data = {'IF-MIB': {'indexNum': 'index_num'}, 'SNMPv2-MIB': {'indexNum': 'index_num'}}
+
+        Returned structure should look like this:
+        { "MIB-STATIC-DATA": {
+            {'IF-MIB':
+                        {'existingVarBinds': [{'interface_index': ['1', '2']}, {'interface_desc': ['lo', 'eth0']}],
+                        'additionalVarBinds': {'indexNum': 'index_num'}},
+            'SNMPv2-MIB':
+                        {'additionalVarBinds': {'indexNum': 'index_num'}}
+            }
+        }
+        """
         static_data_dictionary = {"MIB-STATIC-DATA": defaultdict(dict)}
         static_data_dictionary_mib = static_data_dictionary["MIB-STATIC-DATA"]
         if existing_data:
@@ -154,10 +167,19 @@ class WalkedHostsRepository:
             ] = existing_data
         for el in additional_data.keys():
             static_data_dictionary_mib[el]["additionalVarBinds"] = additional_data[el]
+        return static_data_dictionary
+
+    # Input is what extract_network_interface_data_from_walk() returns
+    def update_mib_static_data_for(self, host, existing_data, additional_data):
+        if not existing_data and not additional_data:
+            return
+        static_data_dictionary = self.create_mib_static_data_mongo_structure(
+            existing_data, additional_data
+        )
         self._walked_hosts.find_one_and_update(
             {"_id": host},
             {"$set": static_data_dictionary},
             upsert=True,
             return_document=ReturnDocument.AFTER,
         )
-        return static_data_dictionary_mib
+        return static_data_dictionary["MIB-STATIC-DATA"]
