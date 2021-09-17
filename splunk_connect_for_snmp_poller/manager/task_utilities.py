@@ -40,8 +40,8 @@ from splunk_connect_for_snmp_poller.manager.const import (
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
+    extract_network_interface_data_from_additional_config,
     extract_network_interface_data_from_walk,
-    get_additional_varbinds,
 )
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
@@ -494,7 +494,9 @@ def walk_handler_with_enricher(
             )
 
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
-    additional_enricher_varbinds = get_additional_varbinds(enricher)
+    additional_enricher_varbinds = (
+        extract_network_interface_data_from_additional_config(enricher)
+    )
     mib_enricher = _return_mib_enricher_for_walk(
         mongo_connection,
         f"{host}:{port}",
@@ -548,8 +550,13 @@ def _sort_walk_data(
 
 
 def _return_mib_enricher_for_walk(
-    mongo_connection, hostname, existing_data=[], additional_data={}
+    mongo_connection, hostname, existing_data, additional_data
 ):
+    """
+    This function works only when an enricher is specified in the config and walk is being ran.
+    If any data was derived from walk result, then the function updates MongoDB with the result.
+    If no data was derived from the walk, then it's being retrieved from the MongoDB.
+    """
     if existing_data or additional_data:
         processed_result = mongo_connection.update_mib_static_data_for(
             hostname, existing_data, additional_data

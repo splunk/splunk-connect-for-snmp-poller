@@ -30,7 +30,7 @@ def __network_interface_enricher_attributes(config_as_dict, oid_family, varbinds
     return result or []
 
 
-def get_additional_varbinds(config_as_dict):
+def extract_network_interface_data_from_additional_config(config_as_dict):
     result = {}
     oid_families = config_as_dict["enricher"]["oidFamily"]
     for oid_family in oid_families.keys():
@@ -44,7 +44,7 @@ def get_additional_varbinds(config_as_dict):
     return result
 
 
-def extract_network_interface_data_from_config(config_as_dict):
+def extract_network_interface_data_from_existing_config(config_as_dict):
     splunk_dimensions = __network_interface_enricher_attributes(
         config_as_dict, "IF-MIB", "existingVarBinds"
     )
@@ -66,7 +66,9 @@ def extract_network_interface_data_from_walk(config_as_dict, if_mib_metric_walk_
     result = []
     network_data = InterfaceMib(if_mib_metric_walk_data)
     if network_data.has_consistent_data():
-        enricher_fields = extract_network_interface_data_from_config(config_as_dict)
+        enricher_fields = extract_network_interface_data_from_existing_config(
+            config_as_dict
+        )
         for data in enricher_fields:
             splunk_dimension = data["splunk_dimension_name"]
             current_result = network_data.extract_custom_field(data["oid_name"])

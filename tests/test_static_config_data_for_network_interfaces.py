@@ -18,9 +18,9 @@ from unittest import TestCase
 
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
-    extract_network_interface_data_from_config,
+    extract_network_interface_data_from_additional_config,
+    extract_network_interface_data_from_existing_config,
     extract_network_interface_data_from_walk,
-    get_additional_varbinds,
 )
 from tests.test_config_input_data import (
     parsed_config_correct,
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 class ExtractEnricherDataFromConfigTest(TestCase):
     def test_config_does_not_exist(self):
-        result = extract_network_interface_data_from_config(None)
+        result = extract_network_interface_data_from_existing_config(None)
         self.assertIsNotNone(result)
         self.assertTrue(len(result) == 0)
 
@@ -52,11 +52,13 @@ class ExtractEnricherDataFromConfigTest(TestCase):
             parsed_config_if_mib_with_error,
             parsed_config_if_mib_without_elements,
         ):
-            result = extract_network_interface_data_from_config(test_config)
+            result = extract_network_interface_data_from_existing_config(test_config)
             self.assertTrue(len(result) == 0)
 
     def test_correct_config(self):
-        result = extract_network_interface_data_from_config(parsed_config_correct)
+        result = extract_network_interface_data_from_existing_config(
+            parsed_config_correct
+        )
         self.assertTrue(len(result) == 2)
         expected_result = [
             {
@@ -71,7 +73,7 @@ class ExtractEnricherDataFromConfigTest(TestCase):
         self.assertEqual(result, expected_result)
 
     def test_duplicate_keys(self):
-        result = extract_network_interface_data_from_config(
+        result = extract_network_interface_data_from_existing_config(
             parsed_config_duplicate_keys
         )
         self.assertTrue(len(result) == 3)
@@ -130,7 +132,9 @@ class ExtractAdditionalVarbinds(TestCase):
         file_path = file_data_path("if_mib_walk.json")
         if_mibs = load_test_data(file_path)
         self.assertIsNotNone(if_mibs)
-        result = get_additional_varbinds(parsed_config_with_additional_varbinds_ifmib)
+        result = extract_network_interface_data_from_additional_config(
+            parsed_config_with_additional_varbinds_ifmib
+        )
         self.assertTrue(len(result) == 1)
         expected_result = {"IF-MIB": {"indexNum": "index_num"}}
 
@@ -140,7 +144,7 @@ class ExtractAdditionalVarbinds(TestCase):
         file_path = file_data_path("if_mib_walk.json")
         if_mibs = load_test_data(file_path)
         self.assertIsNotNone(if_mibs)
-        result = get_additional_varbinds(
+        result = extract_network_interface_data_from_additional_config(
             parsed_config_with_additional_varbinds_snmp_mib
         )
         self.assertTrue(len(result) == 1)
@@ -155,7 +159,9 @@ class ExtractAdditionalVarbinds(TestCase):
         file_path = file_data_path("if_mib_walk.json")
         if_mibs = load_test_data(file_path)
         self.assertIsNotNone(if_mibs)
-        result = get_additional_varbinds(parsed_config_correct)
+        result = extract_network_interface_data_from_additional_config(
+            parsed_config_correct
+        )
         self.assertTrue(len(result) == 1)
         expected_result = {"IF-MIB": {}}
 
