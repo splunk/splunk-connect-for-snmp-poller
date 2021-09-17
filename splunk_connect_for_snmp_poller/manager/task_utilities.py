@@ -485,7 +485,9 @@ async def walk_handler_with_enricher(
         ):
             break
         else:
-            result, is_metric = await get_translated_string(mib_server_url, varBinds, True)
+            result, is_metric = await get_translated_string(
+                mib_server_url, varBinds, True
+            )
             _sort_walk_data(
                 is_metric,
                 merged_result_metric,

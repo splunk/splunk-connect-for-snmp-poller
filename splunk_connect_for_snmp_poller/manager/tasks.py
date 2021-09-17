@@ -128,7 +128,7 @@ def snmp_polling(ir_json: str, server_config, index, one_time_flag=False):
 
 
 async def snmp_polling_async(
-        ir: InventoryRecord, server_config, index, one_time_flag=False
+    ir: InventoryRecord, server_config, index, one_time_flag=False
 ):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
