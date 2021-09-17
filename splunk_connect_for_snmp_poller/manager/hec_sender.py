@@ -19,6 +19,11 @@ import time
 import requests
 from celery.utils.log import get_logger
 
+from splunk_connect_for_snmp_poller.manager.data.event_builder import (
+    EventBuilder,
+    EventField,
+    EventType,
+)
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
 logger = get_logger(__name__)
@@ -57,40 +62,46 @@ def post_data_to_splunk_hec(
 def post_event_data(
     endpoint, host, variables_binds, indexes, one_time_flag=False, mib_enricher=None
 ):
-    if "NoSuchInstance" in str(variables_binds):
-        variables_binds = "error: " + str(variables_binds)
+    variables_binds = prepare_variable_binds(mib_enricher, variables_binds)
 
-    elif mib_enricher:
-        variables_binds = _enrich_event_data(mib_enricher, json.loads(variables_binds))
-    elif "non_metric" in variables_binds:
-        variables_binds = json.loads(variables_binds)["non_metric"]
-
-    data = {
-        "time": time.time(),
-        "sourcetype": "sc4snmp:meta",
-        "host": host,
-        "index": indexes["meta_index"],
-        "event": str(variables_binds),
-    }
-
-    if one_time_flag:
-        data["sourcetype"] = "sc4snmp:walk"
+    builder = init_builder_with_common_data(time.time(), host, indexes["meta_index"])
+    builder.add(EventField.SOURCETYPE, EventType.EVENT.value)
+    builder.add(EventField.EVENT, str(variables_binds))
+    builder.is_one_time_walk(one_time_flag)
 
     if "error" in str(variables_binds):
-        data["index"] = indexes["event_index"]
-        data["sourcetype"] = "sc4snmp:error"
+        builder.add(EventField.INDEX, indexes["event_index"])
+        builder.add(EventField.SOURCETYPE, EventType.ERROR.value)
 
-    logger.debug(f"+++++++++data+++++++++\n{data}")
+    data = builder.build()
 
     try:
-        logger.debug(f"+++++++++endpoint+++++++++\n{endpoint}")
+        logger.debug("+++++++++endpoint+++++++++\n%s", endpoint)
         response = requests.post(url=endpoint, json=data, timeout=60)
-        logger.debug(f"Response code is {response.status_code}")
-        logger.debug(f"Response is {response.text}")
+        logger.debug("Response code is %s", response.status_code)
+        logger.debug("Response is %s", response.text)
     except requests.ConnectionError as e:
         logger.error(
             f"Connection error when sending data to HEC index - {data['index']}: {e}"
         )
+
+
+def init_builder_with_common_data(time, host, index) -> EventBuilder:
+    builder = EventBuilder()
+    builder.add(EventField.TIME, time)
+    builder.add(EventField.HOST, host)
+    builder.add(EventField.INDEX, index)
+    return builder
+
+
+def prepare_variable_binds(mib_enricher, variables_binds):
+    if "NoSuchInstance" in str(variables_binds):
+        variables_binds = "error: " + str(variables_binds)
+    elif mib_enricher:
+        variables_binds = _enrich_event_data(mib_enricher, json.loads(variables_binds))
+    elif "non_metric" in variables_binds:
+        variables_binds = json.loads(variables_binds)["non_metric"]
+    return variables_binds
 
 
 def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
@@ -132,21 +143,17 @@ def post_metric_data(endpoint, host, variables_binds, index, mib_enricher=None):
     if mib_enricher:
         _enrich_metric_data(mib_enricher, json_val, fields)
 
-    data = {
-        "time": time.time(),
-        "host": host,
-        "index": index,
-        "event": "metric",
-        "fields": fields,
-    }
+    builder = init_builder_with_common_data(time.time(), host, index)
+    builder.add(EventField.EVENT, EventType.METRIC.value)
+    builder.add(EventField.FIELDS, fields)
 
-    logger.debug(f"--------data------\n{data}")
+    data = builder.build()
 
     try:
-        logger.debug(f"-----endpoint------\n{endpoint}")
+        logger.debug("-----endpoint------\n%s", endpoint)
         response = requests.post(url=endpoint, json=data, timeout=60)
-        logger.debug(f"Response code is {response.status_code}")
-        logger.debug(f"Response is {response.text}")
+        logger.debug("Response code is %s", response.status_code)
+        logger.debug("Response is %s", response.text)
     except requests.ConnectionError as e:
         logger.error(f"Connection error when sending data to HEC index - {index}: {e}")
 

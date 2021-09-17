@@ -107,6 +107,7 @@ def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
                 result = '{oid}="{value}"'.format(
                     oid=name.prettyPrint(), value=val.prettyPrint()
                 )
+                logger.info("Our result is - %s", result)
     except Exception as e:
         logger.info(
             f"Exception occurred while logging varBinds name & value. Exception: {e}"
@@ -116,7 +117,8 @@ def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
     try:
         data_format = _get_data_format(is_metric, return_multimetric)
         logger.debug(
-            f"==========result before translated -- is_metric={is_metric}============\n{result}"
+            "==========result before translated -- is_metric={is_metric}============\n%s",
+            result,
         )
         result = get_translation(varBinds, mib_server_url, data_format)
         if data_format == "MULTIMETRIC":
