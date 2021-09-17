@@ -13,11 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import asyncio
 import json
 import os
 import threading
-import traceback
 
 from asgiref.sync import async_to_sync
 from celery.utils.log import get_task_logger
