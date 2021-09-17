@@ -59,9 +59,8 @@ async def get_translation(var_binds, mib_server_url, data_format):
     translation_url = os.path.join(mib_server_url.strip("/"), endpoint)
     logger.debug(f"[-] TRANSLATION_URL: {translation_url}")
 
-    try:
-        # use Session with Retry
-        async with ClientSession() as session:
+    async with ClientSession() as session:
+        try:
             resp = await session.post(
                 translation_url,
                 headers=headers,
@@ -69,16 +68,16 @@ async def get_translation(var_binds, mib_server_url, data_format):
                 params={"data_format": data_format},
                 timeout=1,
             )
-    except Exception as e:
-        logger.error(
-            f"MIB server unreachable! Error happened while communicating to MIB server to perform the Translation: {e}"
-        )
-        raise SharedException("MIB server is unreachable!")
+        except Exception as e:
+            logger.error(
+                f"MIB server unreachable! Error happened while communicating to MIB server to perform the Translation: {e}"
+            )
+            raise SharedException("MIB server is unreachable!")
 
-    if resp.status != 200:
-        logger.error(f"[-] MIB Server API Error with code: {resp.status}")
-        raise SharedException(f"MIB Server API Error with code: {resp.status}")
+        if resp.status != 200:
+            logger.error(f"[-] MIB Server API Error with code: {resp.status}")
+            raise SharedException(f"MIB Server API Error with code: {resp.status}")
 
-    # *TODO*: For future release could retain failed translations in some place to re-translate.
+        # *TODO*: For future release could retain failed translations in some place to re-translate.
 
-    return await resp.text()
+        return await resp.text()

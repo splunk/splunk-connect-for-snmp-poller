@@ -120,7 +120,7 @@ def snmp_polling(ir_json: str, server_config, index, one_time_flag=False):
     ir_dict = json.loads(ir_json)
     ir = InventoryRecord(**ir_dict)
 
-    async_to_sync(snmp_polling_async)(ir_json, server_config, index, one_time_flag)
+    async_to_sync(snmp_polling_async)(ir, server_config, index, one_time_flag)
 
     return f"Executing SNMP Polling for {ir.host} version={ir.version} profile={ir.profile}"
 
