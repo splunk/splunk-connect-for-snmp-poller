@@ -109,3 +109,37 @@ parsed_config_duplicate_keys = {
         }
     }
 }
+
+parsed_config_with_additional_varbinds_ifmib = {
+    "enricher": {
+        "oidFamily": {
+            "IF-MIB": {
+                "existingVarBinds": [
+                    {"ifIndex": "interface_index"},
+                    {"ifDescr": "interface_desc"},
+                    {"ifInUcastPkts": "total_in_packets"},
+                ],
+                "additionalVarBinds": [
+                    {"indexNum": "index_num"},
+                ],
+            }
+        }
+    }
+}
+
+parsed_config_with_additional_varbinds_snmp_mib = {
+    "enricher": {
+        "oidFamily": {
+            "IF-MIB": {
+                "additionalVarBinds": [
+                    {"indexNum": "index_num"},
+                ],
+            },
+            "SNMPv2-MIB": {
+                "additionalVarBinds": [
+                    {"indexNum": "index_number"},
+                ],
+            },
+        }
+    }
+}
