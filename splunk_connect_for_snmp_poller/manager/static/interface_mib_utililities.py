@@ -18,6 +18,8 @@ import logging
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
+from ..variables import enricher_additional_varbinds, enricher_existing_varbinds
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +37,7 @@ def extract_network_interface_data_from_additional_config(config_as_dict):
     oid_families = config_as_dict["enricher"]["oidFamily"]
     for oid_family in oid_families.keys():
         additional_list = __network_interface_enricher_attributes(
-            config_as_dict, oid_family, "additionalVarBinds"
+            config_as_dict, oid_family, enricher_additional_varbinds
         )
         result[oid_family] = {}
         for el in additional_list:
@@ -46,7 +48,7 @@ def extract_network_interface_data_from_additional_config(config_as_dict):
 
 def extract_network_interface_data_from_existing_config(config_as_dict):
     splunk_dimensions = __network_interface_enricher_attributes(
-        config_as_dict, "IF-MIB", "existingVarBinds"
+        config_as_dict, "IF-MIB", enricher_existing_varbinds
     )
     result = []
     if splunk_dimensions:

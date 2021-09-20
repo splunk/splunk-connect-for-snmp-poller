@@ -796,12 +796,6 @@ def build_contextData(version, community, server_config):
         logger.error(f"Error happend while building ContextData: {e}")
 
 
-def __return_existing_and_additional_varbinds(processed_result):
-    existing_data = processed_result.get("existingVarBinds", [])
-    additional_data = processed_result.get("additionalVarBinds", {})
-    return existing_data, additional_data
-
-
 def is_oid(profile: str) -> bool:
     """
     This function checks if profile is an OID. OID is defined as a string of format:

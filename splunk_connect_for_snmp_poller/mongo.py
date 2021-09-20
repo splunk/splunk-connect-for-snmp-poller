@@ -39,6 +39,8 @@ from pymongo.errors import ConnectionFailure
 
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
 
+from .manager.variables import enricher_additional_varbinds, enricher_existing_varbinds
+
 logger = logging.getLogger(__name__)
 
 """
@@ -163,10 +165,12 @@ class WalkedHostsRepository:
         static_data_dictionary_mib = static_data_dictionary["MIB-STATIC-DATA"]
         if existing_data:
             static_data_dictionary_mib[InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER][
-                "existingVarBinds"
+                enricher_existing_varbinds
             ] = existing_data
         for el in additional_data.keys():
-            static_data_dictionary_mib[el]["additionalVarBinds"] = additional_data[el]
+            static_data_dictionary_mib[el][
+                enricher_additional_varbinds
+            ] = additional_data[el]
         return static_data_dictionary
 
     # Input is what extract_network_interface_data_from_walk() returns

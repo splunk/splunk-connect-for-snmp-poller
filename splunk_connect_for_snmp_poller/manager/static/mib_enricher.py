@@ -17,6 +17,8 @@ import logging
 
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
 
+from ..variables import enricher_additional_varbinds, enricher_existing_varbinds
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,7 +73,7 @@ class MibEnricher:
         if metric_name and metric_name.startswith(InterfaceMib.IF_MIB_METRIC_PREFIX):
             if self._mib_static_data_collection:
                 if_mib_record = self.get_by_oid_and_type(
-                    InterfaceMib.IF_MIB_METRIC_PREFIX, "existingVarBinds"
+                    InterfaceMib.IF_MIB_METRIC_PREFIX, enricher_existing_varbinds
                 )
                 for dimension in if_mib_record:
                     index = extract_current_index_from_metric(metric_name)
@@ -89,7 +91,7 @@ class MibEnricher:
                 try:
                     index = extract_current_index_from_metric(metric_name) + 1
                     index_field = self.get_by_oid_and_type(
-                        oid_family, "additionalVarBinds"
+                        oid_family, enricher_additional_varbinds
                     )["indexNum"]
                     return [{index_field: index}]
                 except KeyError:

@@ -147,7 +147,7 @@ class ExtractAdditionalVarbinds(TestCase):
         result = extract_network_interface_data_from_additional_config(
             parsed_config_with_additional_varbinds_snmp_mib
         )
-        self.assertTrue(len(result) == 1)
+        self.assertTrue(len(result) == 2)
         expected_result = {
             "IF-MIB": {"indexNum": "index_num"},
             "SNMPv2-MIB": {"indexNum": "index_number"},
