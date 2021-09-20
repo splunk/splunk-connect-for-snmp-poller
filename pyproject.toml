@@ -34,6 +34,7 @@ coverage = "^5.5"
 jsoncomment = "^0.4.2"
 aiohttp = "^3.7.4"
 asgiref = "^3.4.1"
+backoff = "^1.11.1"
 
 [tool.poetry.dev-dependencies]
 #pytest-splunk-addon = "^1.4.0"
