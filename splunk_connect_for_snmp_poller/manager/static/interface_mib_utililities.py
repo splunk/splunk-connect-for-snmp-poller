@@ -18,7 +18,12 @@ import logging
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
-from ..variables import enricher_additional_varbinds, enricher_existing_varbinds
+from ..variables import (
+    enricher_additional_varbinds,
+    enricher_existing_varbinds,
+    enricher_name,
+    enricher_oid_family,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +32,14 @@ def __network_interface_enricher_attributes(config_as_dict, oid_family, varbinds
     # TODO: we just assume here the whole structre of the poller's configuration
     # main file. If such section does not exist we simply do not anything.
     result = multi_key_lookup(
-        config_as_dict, ("enricher", "oidFamily", oid_family, varbinds_type)
+        config_as_dict, (enricher_name, enricher_oid_family, oid_family, varbinds_type)
     )
     return result or []
 
 
 def extract_network_interface_data_from_additional_config(config_as_dict):
     result = {}
-    oid_families = config_as_dict["enricher"]["oidFamily"]
+    oid_families = config_as_dict[enricher_name][enricher_oid_family]
     for oid_family in oid_families.keys():
         additional_list = __network_interface_enricher_attributes(
             config_as_dict, oid_family, enricher_additional_varbinds
