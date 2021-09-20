@@ -17,6 +17,8 @@ import json
 import logging
 import os
 
+import aiohttp
+import backoff as backoff
 from aiohttp import ClientSession
 
 from splunk_connect_for_snmp_poller.utilities import format_value_for_mib_server
@@ -57,28 +59,23 @@ async def get_translation(var_binds, mib_server_url, data_format):
     headers = {"Content-type": "application/json"}
     endpoint = "translation"
     translation_url = os.path.join(mib_server_url.strip("/"), endpoint)
-    logger.debug(f"[-] TRANSLATION_URL: {translation_url}")
+    logger.debug(f"[-] translation_url: {translation_url}")
 
-    async with ClientSession() as session:
-        try:
-            resp = await session.post(
-                translation_url,
-                headers=headers,
-                data=payload,
-                params={"data_format": data_format},
-                timeout=1,
-            )
-        except Exception as e:
-            logger.error(
-                f"MIB server unreachable! Error happened while communicating to"
-                f" MIB server to perform the Translation: {e}"
-            )
-            raise SharedException("MIB server is unreachable!")
+    try:
+        return await get_url(translation_url, headers, payload, data_format)
+    except Exception as e:
+        logger.error(f"Error getting translation from MIB Server: {e}")
+        raise SharedException(f"Error getting translation from MIB Server: {e}")
 
-        if resp.status != 200:
-            logger.error(f"[-] MIB Server API Error with code: {resp.status}")
-            raise SharedException(f"MIB Server API Error with code: {resp.status}")
 
-        # *TODO*: For future release could retain failed translations in some place to re-translate.
-
+@backoff.on_exception(backoff.expo, aiohttp.ClientError, max_tries=3)
+async def get_url(url, headers, payload, data_format):
+    async with ClientSession(raise_for_status=True) as session:
+        resp = await session.post(
+            url,
+            headers=headers,
+            data=payload,
+            params={"data_format": data_format},
+            timeout=1,
+        )
         return await resp.text()
