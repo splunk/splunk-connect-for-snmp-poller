@@ -108,7 +108,7 @@ class Poller:
                     self.process_new_job(entry_key, ir)
                 else:
                     self.update_schedule_for_changed_conf(entry_key, ir)
-                self.clean_job_inventory(inventory_hosts)
+            self.clean_job_inventory(inventory_hosts)
 
     def clean_job_inventory(self, inventory_hosts):
         for entry_key in list(self._jobs_map):
