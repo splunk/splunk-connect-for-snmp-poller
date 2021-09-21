@@ -53,7 +53,7 @@ async def get_snmp_data(
     var_binds,
     handler,
     mongo_connection,
-    enricher_presence,
+    enricher,
     snmp_engine,
     auth_data,
     context_data,
@@ -69,7 +69,7 @@ async def get_snmp_data(
         try:
             await handler(
                 mongo_connection,
-                enricher_presence,
+                enricher,
                 snmp_engine,
                 auth_data,
                 context_data,

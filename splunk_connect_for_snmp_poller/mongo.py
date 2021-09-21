@@ -32,11 +32,14 @@
 # under the License.
 import logging
 import os
+from collections import defaultdict
 
 from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import ConnectionFailure
 
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
+
+from .manager.variables import enricher_additional_varbinds, enricher_existing_varbinds
 
 logger = logging.getLogger(__name__)
 
@@ -126,9 +129,7 @@ class WalkedHostsRepository:
             return None
         if WalkedHostsRepository.MIB_STATIC_DATA in full_collection:
             mib_static_data = full_collection[WalkedHostsRepository.MIB_STATIC_DATA]
-            if InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER in mib_static_data:
-                return mib_static_data[InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER]
-            return None
+            return mib_static_data
         else:
             return None
 
@@ -143,17 +144,46 @@ class WalkedHostsRepository:
                 return_document=ReturnDocument.AFTER,
             )
 
-    # Input is what extract_network_interface_data_from_walk() returns
-    def update_mib_static_data_for(self, host, if_mib_data):
-        if if_mib_data:
-            real_time_data_dictionary = {
-                WalkedHostsRepository.MIB_STATIC_DATA: {
-                    InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER: if_mib_data
-                }
+    def create_mib_static_data_mongo_structure(self, existing_data, additional_data):
+        """
+        This function creates database mib static data structure out of existing_data and additional_data provided
+        from config.yaml and the data derived from SNMP Walk, for ex.:
+        existing_data = [{'interface_index': ['1', '2']}, {'interface_desc': ['lo', 'eth0']}]
+        additional_data = {'IF-MIB': {'indexNum': 'index_num'}, 'SNMPv2-MIB': {'indexNum': 'index_num'}}
+
+        Returned structure should look like this:
+        { "MIB-STATIC-DATA": {
+            {'IF-MIB':
+                        {'existingVarBinds': [{'interface_index': ['1', '2']}, {'interface_desc': ['lo', 'eth0']}],
+                        'additionalVarBinds': {'indexNum': 'index_num'}},
+            'SNMPv2-MIB':
+                        {'additionalVarBinds': {'indexNum': 'index_num'}}
             }
-            self._walked_hosts.find_one_and_update(
-                {"_id": host},
-                {"$set": real_time_data_dictionary},
-                upsert=True,
-                return_document=ReturnDocument.AFTER,
-            )
+        }
+        """
+        static_data_dictionary = {"MIB-STATIC-DATA": defaultdict(dict)}
+        static_data_dictionary_mib = static_data_dictionary["MIB-STATIC-DATA"]
+        if existing_data:
+            static_data_dictionary_mib[InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER][
+                enricher_existing_varbinds
+            ] = existing_data
+        for el in additional_data.keys():
+            static_data_dictionary_mib[el][
+                enricher_additional_varbinds
+            ] = additional_data[el]
+        return static_data_dictionary
+
+    # Input is what extract_network_interface_data_from_walk() returns
+    def update_mib_static_data_for(self, host, existing_data, additional_data):
+        if not existing_data and not additional_data:
+            return
+        static_data_dictionary = self.create_mib_static_data_mongo_structure(
+            existing_data, additional_data
+        )
+        self._walked_hosts.find_one_and_update(
+            {"_id": host},
+            {"$set": static_data_dictionary},
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
+        return static_data_dictionary["MIB-STATIC-DATA"]

@@ -40,6 +40,7 @@ from splunk_connect_for_snmp_poller.manager.const import (
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
+    extract_network_interface_data_from_additional_config,
     extract_network_interface_data_from_walk,
 )
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
@@ -316,7 +317,6 @@ def _any_walk_failure_happened(
             errorStatus.prettyPrint(),
             errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
         )
-        logger.info(result)
         post_data_to_splunk_hec(
             host,
             otel_logs_url,
@@ -363,16 +363,15 @@ async def snmp_bulk_handler(
         if not _any_failure_happened(
             errorIndication, errorStatus, errorIndex, varBinds
         ):
+            mib_enricher, return_multimetric = _enrich_response(
+                mongo_connection, enricher_presence, f"{host}:{port}"
+            )
             # Bulk operation returns array of varbinds
             for varbind in varBinds:
-                mib_enricher, return_multimetric = _enrich_response(
-                    mongo_connection, enricher_presence, f"{host}:{port}"
-                )
                 logger.debug(f"Bulk returned this varbind: {varbind}")
                 result, is_metric = await get_translated_string(
                     mib_server_url, [varbind], return_multimetric
                 )
-                logger.info(result)
                 post_data_to_splunk_hec(
                     host,
                     otel_logs_url,
@@ -497,9 +496,14 @@ async def walk_handler_with_enricher(
             )
 
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
-    mongo_connection.update_mib_static_data_for(f"{host}:{port}", processed_result)
+    additional_enricher_varbinds = (
+        extract_network_interface_data_from_additional_config(enricher)
+    )
     mib_enricher = _return_mib_enricher_for_walk(
-        mongo_connection, processed_result, f"{host}:{port}"
+        mongo_connection,
+        f"{host}:{port}",
+        processed_result,
+        additional_enricher_varbinds,
     )
     post_walk_data_to_splunk_arguments = [
         host,
@@ -547,9 +551,18 @@ def _sort_walk_data(
         merged_result.append(eval(result["metric"]))
 
 
-def _return_mib_enricher_for_walk(mongo_connection, processed_result, hostname):
-    if processed_result:
-        mongo_connection.update_mib_static_data_for(hostname, processed_result)
+def _return_mib_enricher_for_walk(
+    mongo_connection, hostname, existing_data, additional_data
+):
+    """
+    This function works only when an enricher is specified in the config and walk is being ran.
+    If any data was derived from walk result, then the function updates MongoDB with the result.
+    If no data was derived from the walk, then it's being retrieved from the MongoDB.
+    """
+    if existing_data or additional_data:
+        processed_result = mongo_connection.update_mib_static_data_for(
+            hostname, existing_data, additional_data
+        )
         return MibEnricher(processed_result)
     else:
         processed_data = mongo_connection.static_data_for(hostname)

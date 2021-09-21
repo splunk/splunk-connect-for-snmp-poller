@@ -17,10 +17,12 @@
 parsed_config_root_with_error = {
     "enricher_with_error": {
         "oidFamily": {
-            "IF-MIB": [
-                {"ifIndex": "interface_index"},
-                {"ifDescr": "interface_desc"},
-            ]
+            "IF-MIB": {
+                "existingVarBinds": [
+                    {"ifIndex": "interface_index"},
+                    {"ifDescr": "interface_desc"},
+                ]
+            }
         }
     }
 }
@@ -28,10 +30,12 @@ parsed_config_root_with_error = {
 parsed_config_family_with_error = {
     "enricher": {
         "oidFamily_with_error": {
-            "IF-MIB": [
-                {"ifIndex": "interface_index"},
-                {"ifDescr": "interface_desc"},
-            ]
+            "IF-MIB": {
+                "existingVarBinds": [
+                    {"ifIndex": "interface_index"},
+                    {"ifDescr": "interface_desc"},
+                ]
+            }
         }
     }
 }
@@ -39,23 +43,27 @@ parsed_config_family_with_error = {
 parsed_config_if_mib_with_error = {
     "enricher": {
         "oidFamily": {
-            "IF-MIB_with_error": [
-                {"ifIndex": "interface_index"},
-                {"ifDescr": "interface_desc"},
-            ]
+            "IF-MIB_with_error": {
+                "existingVarBinds": [
+                    {"ifIndex": "interface_index"},
+                    {"ifDescr": "interface_desc"},
+                ]
+            }
         }
     }
 }
 
-parsed_config_if_mib_without_elements = {"enricher": {"oidFamily": {"IF-MIB": []}}}  # type: ignore
+parsed_config_if_mib_without_elements = {"enricher": {"oidFamily": {"IF-MIB": {"existingVarBinds": []}}}}  # type: ignore # noqa: E501
 
 parsed_config_correct = {
     "enricher": {
         "oidFamily": {
-            "IF-MIB": [
-                {"ifIndex": "interface_index"},
-                {"ifDescr": "interface_desc"},
-            ]
+            "IF-MIB": {
+                "existingVarBinds": [
+                    {"ifIndex": "interface_index"},
+                    {"ifDescr": "interface_desc"},
+                ]
+            }
         }
     }
 }
@@ -63,11 +71,13 @@ parsed_config_correct = {
 parsed_config_correct_three_fields = {
     "enricher": {
         "oidFamily": {
-            "IF-MIB": [
-                {"ifIndex": "interface_index"},
-                {"ifDescr": "interface_desc"},
-                {"ifInUcastPkts": "total_in_packets"},
-            ]
+            "IF-MIB": {
+                "existingVarBinds": [
+                    {"ifIndex": "interface_index"},
+                    {"ifDescr": "interface_desc"},
+                    {"ifInUcastPkts": "total_in_packets"},
+                ]
+            }
         }
     }
 }
@@ -75,11 +85,13 @@ parsed_config_correct_three_fields = {
 parsed_config_correct_one_non_existing_field = {
     "enricher": {
         "oidFamily": {
-            "IF-MIB": [
-                {"ifIndex": "interface_index"},
-                {"ifDescr": "interface_desc"},
-                {"ifUknownField": "unknown_field"},
-            ]
+            "IF-MIB": {
+                "existingVarBinds": [
+                    {"ifIndex": "interface_index"},
+                    {"ifDescr": "interface_desc"},
+                    {"ifUknownField": "unknown_field"},
+                ]
+            }
         }
     }
 }
@@ -87,11 +99,47 @@ parsed_config_correct_one_non_existing_field = {
 parsed_config_duplicate_keys = {
     "enricher": {
         "oidFamily": {
-            "IF-MIB": [
-                {"ifIndex": "interface_index"},
-                {"ifIndex": "interface_index"},
-                {"ifIndex": "interface_index_2"},
-            ]
+            "IF-MIB": {
+                "existingVarBinds": [
+                    {"ifIndex": "interface_index"},
+                    {"ifIndex": "interface_index"},
+                    {"ifIndex": "interface_index_2"},
+                ]
+            }
+        }
+    }
+}
+
+parsed_config_with_additional_varbinds_ifmib = {
+    "enricher": {
+        "oidFamily": {
+            "IF-MIB": {
+                "existingVarBinds": [
+                    {"ifIndex": "interface_index"},
+                    {"ifDescr": "interface_desc"},
+                    {"ifInUcastPkts": "total_in_packets"},
+                ],
+                "additionalVarBinds": [
+                    {"indexNum": "index_num"},
+                ],
+            }
+        }
+    }
+}
+
+parsed_config_with_additional_varbinds_snmp_mib = {
+    "enricher": {
+        "oidFamily": {
+            "IF-MIB": {
+                "additionalVarBinds": [
+                    {"indexNum": "index_num"},
+                ],
+            },
+            "SNMPv2-MIB": {
+                "additionalVarBinds": [
+                    {"indexNum": "index_number"},
+                ],
+            },
         }
     }
 }

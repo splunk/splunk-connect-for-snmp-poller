@@ -18,20 +18,42 @@ import logging
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
+from ..variables import (
+    enricher_additional_varbinds,
+    enricher_existing_varbinds,
+    enricher_name,
+    enricher_oid_family,
+)
+
 logger = logging.getLogger(__name__)
 
 
-def __network_interface_enricher_attributes(config_as_dict):
+def __network_interface_enricher_attributes(config_as_dict, oid_family, varbinds_type):
     # TODO: we just assume here the whole structre of the poller's configuration
     # main file. If such section does not exist we simply do not anything.
-    return "IF-MIB", multi_key_lookup(
-        config_as_dict, ("enricher", "oidFamily", "IF-MIB")
+    result = multi_key_lookup(
+        config_as_dict, (enricher_name, enricher_oid_family, oid_family, varbinds_type)
     )
+    return result or []
 
 
-def extract_network_interface_data_from_config(config_as_dict):
-    parent_oid, splunk_dimensions = __network_interface_enricher_attributes(
-        config_as_dict
+def extract_network_interface_data_from_additional_config(config_as_dict):
+    result = {}
+    oid_families = config_as_dict[enricher_name][enricher_oid_family]
+    for oid_family in oid_families.keys():
+        additional_list = __network_interface_enricher_attributes(
+            config_as_dict, oid_family, enricher_additional_varbinds
+        )
+        result[oid_family] = {}
+        for el in additional_list:
+            for key, values in el.items():
+                result[oid_family][key] = values
+    return result
+
+
+def extract_network_interface_data_from_existing_config(config_as_dict):
+    splunk_dimensions = __network_interface_enricher_attributes(
+        config_as_dict, "IF-MIB", enricher_existing_varbinds
     )
     result = []
     if splunk_dimensions:
@@ -51,7 +73,9 @@ def extract_network_interface_data_from_walk(config_as_dict, if_mib_metric_walk_
     result = []
     network_data = InterfaceMib(if_mib_metric_walk_data)
     if network_data.has_consistent_data():
-        enricher_fields = extract_network_interface_data_from_config(config_as_dict)
+        enricher_fields = extract_network_interface_data_from_existing_config(
+            config_as_dict
+        )
         for data in enricher_fields:
             splunk_dimension = data["splunk_dimension_name"]
             current_result = network_data.extract_custom_field(data["oid_name"])
