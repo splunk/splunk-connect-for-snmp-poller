@@ -17,6 +17,7 @@ import json
 import os
 import threading
 
+from asgiref.sync import async_to_sync
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
 
@@ -48,7 +49,7 @@ def get_shared_snmp_engine():
     return thread_local.local_snmp_engine
 
 
-def get_snmp_data(
+async def get_snmp_data(
     var_binds,
     handler,
     mongo_connection,
@@ -66,7 +67,7 @@ def get_snmp_data(
 ):
     if var_binds:
         try:
-            handler(
+            await handler(
                 mongo_connection,
                 enricher_presence,
                 snmp_engine,
@@ -118,6 +119,15 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 def snmp_polling(ir_json: str, server_config, index, one_time_flag=False):
     ir_dict = json.loads(ir_json)
     ir = InventoryRecord(**ir_dict)
+
+    async_to_sync(snmp_polling_async)(ir, server_config, index, one_time_flag)
+
+    return f"Executing SNMP Polling for {ir.host} version={ir.version} profile={ir.profile}"
+
+
+async def snmp_polling_async(
+    ir: InventoryRecord, server_config, index, one_time_flag=False
+):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
     otel_metrics_url = os.environ["OTEL_SERVER_METRICS_URL"]
@@ -166,14 +176,14 @@ def snmp_polling(ir_json: str, server_config, index, one_time_flag=False):
                 varbind_collection = sort_varbinds(var_binds)
                 logger.info(f"Varbind collection: {varbind_collection}")
                 # Perform SNMP BULK
-                get_snmp_data(
+                await get_snmp_data(
                     varbind_collection.bulk,
                     snmp_bulk_handler,
                     *get_bulk_specific_parameters,
                     *static_parameters,
                 )
                 # Perform SNMP WALK
-                get_snmp_data(
+                await get_snmp_data(
                     varbind_collection.get,
                     snmp_get_handler,
                     *get_bulk_specific_parameters,
@@ -185,20 +195,19 @@ def snmp_polling(ir_json: str, server_config, index, one_time_flag=False):
             if ir.profile[-1] == "*":
                 logger.info("Executing SNMP WALK for %s profile=%s", host, ir.profile)
                 if enricher_presence:
-                    walk_handler_with_enricher(
+                    await walk_handler_with_enricher(
                         ir.profile, server_config, mongo_connection, *static_parameters
                     )
                 else:
-                    walk_handler(ir.profile, *static_parameters)
+                    await walk_handler(ir.profile, *static_parameters)
             # Perform SNNP GET for an oid
             else:
                 logger.info("Executing SNMP GET for %s profile=%s", host, ir.profile)
                 prepared_profile = [ObjectType(ObjectIdentity(ir.profile))]
-                snmp_get_handler(
+                await snmp_get_handler(
                     *get_bulk_specific_parameters, *static_parameters, prepared_profile  # type: ignore
                 )
 
-        return f"Executing SNMP Polling for {host} version={ir.version} profile={ir.profile}"
     except Exception as e:
         logger.error(
             f"Error occurred while executing SNMP polling for {host}, version={ir.version}, profile={ir.profile}: {e}"
