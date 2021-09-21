@@ -50,7 +50,7 @@ def onetime_task(inventory_record: InventoryRecord, server_config, splunk_indexe
     logger.debug("Executing onetime_task for %s", inventory_record.__repr__())
 
     snmp_polling.delay(
-        inventory_record,
+        inventory_record.toJson(),
         server_config,
         splunk_indexes,
         one_time_flag=True,
