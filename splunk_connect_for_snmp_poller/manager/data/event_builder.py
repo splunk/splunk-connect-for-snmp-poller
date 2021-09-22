@@ -19,6 +19,11 @@ from celery.utils.log import get_logger
 
 logger = get_logger(__name__)
 
+"""
+You can check how the events for HEC should be formatted here
+https://docs.splunk.com/Documentation/Splunk/8.2.2/Data/FormateventsforHTTPEventCollector
+"""
+
 
 class EventBuilder:
     def __init__(self) -> None:
@@ -26,6 +31,9 @@ class EventBuilder:
 
     def add(self, field, part: Any) -> None:
         self.data[field.value] = part
+
+    def add_fields(self, part: Dict) -> None:
+        self.data[EventField.FIELDS.value] = part
 
     def is_one_time_walk(self, one_time_flag: bool) -> None:
         if one_time_flag:
@@ -42,7 +50,7 @@ class EventField(Enum):
     HOST = "host"
     INDEX = "index"
     EVENT = "event"
-    FREQUENCY = "frequency"
+    FREQUENCY = "freqinseconds"
     PROFILE = "profile"
     FIELDS = "fields"
 

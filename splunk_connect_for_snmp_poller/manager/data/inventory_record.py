@@ -15,6 +15,8 @@
 import json
 from dataclasses import dataclass
 
+from splunk_connect_for_snmp_poller.manager.data.event_builder import EventField
+
 
 @dataclass
 class InventoryRecord:
@@ -24,5 +26,21 @@ class InventoryRecord:
     profile: str
     frequency_str: str
 
-    def toJson(self):
+    def to_json(self) -> str:
         return json.dumps(self, default=lambda o: o.__dict__)
+
+    def extend_dict_with_provided_data(
+        self, fields: dict, additional_metric_fields: list
+    ) -> dict:
+        if (
+            additional_metric_fields
+            and EventField.PROFILE.value in additional_metric_fields
+        ):
+            fields[EventField.PROFILE.value] = self.profile
+
+        return fields
+
+    @staticmethod
+    def from_json(ir_json: str):
+        ir_dict = json.loads(ir_json)
+        return InventoryRecord(**ir_dict)

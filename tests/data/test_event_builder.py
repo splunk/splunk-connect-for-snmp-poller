@@ -72,3 +72,28 @@ class TestEventBuilder(TestCase):
         builder.is_one_time_walk(True)
 
         self.assertDictEqual(expected, builder.build())
+
+    def test_event_build_with_added_fields(self):
+        """
+        Test that checks if EventBuilder correctly builds dict with fields
+        """
+        timer = time.time()
+        some_field_ = {"some": "field"}
+        expected = {
+            "time": timer,
+            "sourcetype": "sc4snmp:meta",
+            "host": "ourhost",
+            "index": "meta_index",
+            "event": "binds",
+            "fields": some_field_,
+        }
+
+        builder = EventBuilder()
+        builder.add(EventField.TIME, timer)
+        builder.add(EventField.HOST, "ourhost")
+        builder.add(EventField.INDEX, "meta_index")
+        builder.add(EventField.SOURCETYPE, "sc4snmp:meta")
+        builder.add(EventField.EVENT, "binds")
+        builder.add_fields(some_field_)
+
+        self.assertDictEqual(expected, builder.build())

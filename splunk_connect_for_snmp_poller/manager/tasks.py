@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import json
 import os
 import threading
 
@@ -64,6 +63,8 @@ async def get_snmp_data(
     otel_logs_url,
     otel_metrics_url,
     one_time_flag,
+    ir,
+    additional_metric_fields,
 ):
     if var_binds:
         try:
@@ -80,6 +81,8 @@ async def get_snmp_data(
                 otel_logs_url,
                 otel_metrics_url,
                 one_time_flag,
+                ir,
+                additional_metric_fields,
                 var_binds,
             )
         except Exception as e:
@@ -117,8 +120,7 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 # TODO remove the debugging statement later
 @app.task
 def snmp_polling(ir_json: str, server_config, index, one_time_flag=False):
-    ir_dict = json.loads(ir_json)
-    ir = InventoryRecord(**ir_dict)
+    ir = InventoryRecord.from_json(ir_json)
 
     async_to_sync(snmp_polling_async)(ir, server_config, index, one_time_flag)
 
@@ -146,6 +148,7 @@ async def snmp_polling_async(
     logger.debug("==========context_data=========\n%s", context_data)
 
     mongo_connection = WalkedHostsRepository(server_config["mongo"])
+    additional_metric_fields = server_config.get("additionalMetricField")
     enricher_presence = "enricher" in server_config
     static_parameters = [
         snmp_engine,
@@ -158,6 +161,8 @@ async def snmp_polling_async(
         otel_logs_url,
         otel_metrics_url,
         one_time_flag,
+        ir,
+        additional_metric_fields,
     ]
     get_bulk_specific_parameters = [mongo_connection, enricher_presence]
 

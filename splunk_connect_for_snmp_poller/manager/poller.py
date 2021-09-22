@@ -182,4 +182,4 @@ class Poller:
 
 def scheduled_task(ir: InventoryRecord, server_config, splunk_indexes):
     logger.debug("Executing scheduled_task for %s", ir.__repr__())
-    snmp_polling.delay(ir.toJson(), server_config, splunk_indexes)
+    snmp_polling.delay(ir.to_json(), server_config, splunk_indexes)
