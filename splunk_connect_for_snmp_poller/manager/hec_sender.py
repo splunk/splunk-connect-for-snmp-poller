@@ -24,6 +24,7 @@ from splunk_connect_for_snmp_poller.manager.data.event_builder import (
     EventField,
     EventType,
 )
+from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
 logger = get_logger(__name__)
@@ -36,6 +37,8 @@ def post_data_to_splunk_hec(
     variables_binds,
     is_metric,
     index,
+    ir,
+    additional_metric_fields,
     one_time_flag=False,
     mib_enricher=None,
 ):
@@ -44,7 +47,13 @@ def post_data_to_splunk_hec(
     if is_metric:
         logger.debug(f"+++++++++metric index: {index['metric_index']} +++++++++")
         post_metric_data(
-            metrics_endpoint, host, variables_binds, index["metric_index"], mib_enricher
+            metrics_endpoint,
+            host,
+            variables_binds,
+            index["metric_index"],
+            ir,
+            additional_metric_fields,
+            mib_enricher,
         )
     else:
         logger.debug(f"*********event index: {index['event_index']} ********")
@@ -86,9 +95,9 @@ def post_event_data(
         )
 
 
-def init_builder_with_common_data(time, host, index) -> EventBuilder:
+def init_builder_with_common_data(current_time, host, index) -> EventBuilder:
     builder = EventBuilder()
-    builder.add(EventField.TIME, time)
+    builder.add(EventField.TIME, current_time)
     builder.add(EventField.HOST, host)
     builder.add(EventField.INDEX, index)
     return builder
@@ -135,17 +144,31 @@ def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
     return non_metric_result
 
 
-def post_metric_data(endpoint, host, variables_binds, index, mib_enricher=None):
+def post_metric_data(
+    endpoint,
+    host,
+    variables_binds,
+    index,
+    ir: InventoryRecord,
+    additional_metric_fields,
+    mib_enricher=None,
+):
     json_val = json.loads(variables_binds)
     metric_name = json_val["metric_name"]
     metric_value = json_val["_value"]
-    fields = {"metric_name:" + metric_name: metric_value}
+    fields = {
+        "metric_name:" + metric_name: metric_value,
+        EventField.FREQUENCY.value: ir.frequency_str,
+    }
     if mib_enricher:
         _enrich_metric_data(mib_enricher, json_val, fields)
 
+    if additional_metric_fields:
+        fields = ir.extend_dict_with_provided_data(fields, additional_metric_fields)
+
     builder = init_builder_with_common_data(time.time(), host, index)
     builder.add(EventField.EVENT, EventType.METRIC.value)
-    builder.add(EventField.FIELDS, fields)
+    builder.add_fields(fields)
 
     data = builder.build()
 

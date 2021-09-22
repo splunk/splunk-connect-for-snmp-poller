@@ -213,6 +213,8 @@ async def snmp_get_handler(
     otel_logs_url,
     otel_metrics_url,
     one_time_flag,
+    ir,
+    additional_metric_fields,
     var_binds,
 ):
     """
@@ -244,6 +246,8 @@ async def snmp_get_handler(
                 result,
                 is_metric,
                 index,
+                ir,
+                additional_metric_fields,
                 one_time_flag,
                 mib_enricher,
             )
@@ -297,6 +301,8 @@ def _any_walk_failure_happened(
     otel_metrics_url,
     one_time_flag,
     is_metric,
+    ir,
+    additional_metric_fields,
     varBinds,
 ):
     if errorIndication:
@@ -309,6 +315,8 @@ def _any_walk_failure_happened(
             result,
             is_metric,
             index,
+            ir,
+            additional_metric_fields,
             one_time_flag,
         )
         return True
@@ -324,6 +332,8 @@ def _any_walk_failure_happened(
             result,
             is_metric,
             index,
+            ir,
+            additional_metric_fields,
             one_time_flag,
         )
         return True
@@ -344,6 +354,8 @@ async def snmp_bulk_handler(
     otel_logs_url,
     otel_metrics_url,
     one_time_flag,
+    ir,
+    additional_metric_fields,
     var_binds,
 ):
     """
@@ -379,6 +391,8 @@ async def snmp_bulk_handler(
                     result,
                     is_metric,
                     index,
+                    ir,
+                    additional_metric_fields,
                     one_time_flag,
                     mib_enricher,
                 )
@@ -396,6 +410,8 @@ async def walk_handler(
     otel_logs_url,
     otel_metrics_url,
     one_time_flag,
+    ir,
+    additional_metric_fields,
 ):
     """
     Perform the SNMP Walk for oid end with *,
@@ -422,6 +438,8 @@ async def walk_handler(
             otel_metrics_url,
             one_time_flag,
             is_metric,
+            ir,
+            additional_metric_fields,
             varBinds,
         ):
             break
@@ -434,6 +452,8 @@ async def walk_handler(
                 result,
                 is_metric,
                 index,
+                ir,
+                additional_metric_fields,
                 one_time_flag,
             )
 
@@ -452,6 +472,8 @@ async def walk_handler_with_enricher(
     otel_logs_url,
     otel_metrics_url,
     one_time_flag,
+    ir,
+    additional_metric_fields,
 ):
     """
     Perform the SNMP Walk for oid end with *,
@@ -478,6 +500,8 @@ async def walk_handler_with_enricher(
             index,
             otel_logs_url,
             otel_metrics_url,
+            ir,
+            additional_metric_fields,
             one_time_flag,
             is_metric,
             varBinds,
@@ -511,6 +535,8 @@ async def walk_handler_with_enricher(
         otel_metrics_url,
         index,
         one_time_flag,
+        ir,
+        additional_metric_fields,
         mib_enricher,
     ]
     _post_walk_data_to_splunk(
@@ -579,6 +605,8 @@ def _post_walk_data_to_splunk(
     otel_metrics_url,
     index,
     one_time_flag,
+    ir,
+    additional_metric_fields,
     mib_enricher,
 ):
     for result in result_list:
@@ -589,6 +617,8 @@ def _post_walk_data_to_splunk(
             result,
             is_metric,
             index,
+            ir,
+            additional_metric_fields,
             one_time_flag,
             mib_enricher,
         )
