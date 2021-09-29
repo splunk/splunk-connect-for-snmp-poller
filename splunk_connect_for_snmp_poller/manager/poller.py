@@ -15,6 +15,7 @@
 #
 import functools
 import logging.config
+import threading
 import time
 
 import schedule
@@ -27,6 +28,9 @@ from splunk_connect_for_snmp_poller.manager.poller_utilities import (
     parse_inventory_file,
     return_database_id,
 )
+from splunk_connect_for_snmp_poller.manager.profile_matching import get_profiles, \
+    assign_profiles_to_device
+from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 from splunk_connect_for_snmp_poller.utilities import (
@@ -51,6 +55,8 @@ class Poller:
             self._server_config["mongo"]
         )
         self._local_snmp_engine = SnmpEngine()
+        self._unmatched_devices = []
+        self._lock = threading.Lock()
 
     def __get_splunk_indexes(self):
         return {
@@ -58,9 +64,6 @@ class Poller:
             "metric_index": self._args.metric_index,
             "meta_index": self._args.meta_index,
         }
-
-    def __get_realtime_task_frequency(self):
-        return self._args.realtime_task_frequency
 
     def run(self):
         self.__start_realtime_scheduler_task()
@@ -99,19 +102,23 @@ class Poller:
                         ir.profile,
                     )
                     continue
-
                 inventory_hosts.add(entry_key)
-                logger.info(
-                    "[-] server_config['profiles']: %s", self._server_config["profiles"]
-                )
-                if entry_key not in self._jobs_map:
-                    self.process_new_job(entry_key, ir)
+                if ir.profile == '*':
+                    self.add_device_for_profile_matching(ir)
                 else:
-                    self.update_schedule_for_changed_conf(entry_key, ir)
+                    logger.info(
+                        "[-] server_config['profiles']: %s", self._server_config["profiles"]
+                    )
+                    if entry_key not in self._jobs_map:
+                        self.process_new_job(entry_key, ir)
+                    else:
+                        self.update_schedule_for_changed_conf(entry_key, ir)
+
             self.clean_job_inventory(inventory_hosts)
 
     def clean_job_inventory(self, inventory_hosts):
         for entry_key in list(self._jobs_map):
+            # TODO handle removal of * profile
             if entry_key not in inventory_hosts:
                 logger.debug("Removing job for %s", entry_key)
                 schedule.cancel_job(self._jobs_map.get(entry_key))
@@ -178,6 +185,43 @@ class Poller:
             self._server_config,
             self._local_snmp_engine,
         )
+
+        schedule.every(self._args.matching_task_frequency).seconds.do(
+            self.process_unmatched_devices,
+            self._server_config,
+        )
+
+        automatic_realtime_task(self._mongo_walked_hosts_coll, self._args.inventory, self.__get_splunk_indexes(),
+                                self._server_config, self._local_snmp_engine)
+
+    def add_device_for_profile_matching(self, device: InventoryRecord):
+        self._lock.acquire()
+        self._unmatched_devices.append(device)
+        self._lock.release()
+
+    def process_unmatched_devices(self, server_config):
+        if self._unmatched_devices:
+            profiles = get_profiles(server_config)
+            self._lock.acquire()
+            processed_devices = set()
+            for device in self._unmatched_devices:
+                realtime_collection = self._mongo_walked_hosts_coll.real_time_data_for(device.host)
+                if realtime_collection:
+                    sys_descr = realtime_collection[OidConstant.SYS_DESCR]
+                    sys_object_id = realtime_collection[OidConstant.SYS_OBJECT_ID]
+                    descr = sys_object_id if sys_object_id is not None else sys_descr
+
+                    if descr:
+                        assigned_profiles = assign_profiles_to_device(profiles, descr)
+                        processed_devices.add(device.host)
+
+                        for profile in assigned_profiles:
+                            entry_key = create_poller_scheduler_entry_key(device.host, profile)
+                            new_record = InventoryRecord(device.host, device.version, device.community, profile)
+                            self.process_new_job(entry_key, new_record)
+
+            self._unmatched_devices = [i for i in self._unmatched_devices if i.host not in processed_devices]
+            self._lock.release()
 
 
 def scheduled_task(ir: InventoryRecord, server_config, splunk_indexes):

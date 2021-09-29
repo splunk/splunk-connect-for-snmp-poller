@@ -16,6 +16,7 @@
 import json
 import logging
 import os
+import requests
 
 import aiohttp
 import backoff as backoff
@@ -37,6 +38,7 @@ async def get_translation(var_binds, mib_server_url, data_format):
     """
     @param var_binds: var_binds object getting from SNMP agents
     @param mib_server_url: URL of SNMP MIB server
+    @param data_format: format of data
     @return: translated string
     """
     # Construct the payload
@@ -79,3 +81,11 @@ async def get_url(url, headers, payload, data_format):
             timeout=1,
         )
         return await resp.text()
+
+
+def get_mib_profiles():
+    mib_server_url = os.environ["MIBS_SERVER_URL"]
+    endpoint = "profiles"
+    profiles_url = os.path.join(mib_server_url.strip("/"), endpoint)
+
+    return requests.get(profiles_url).text

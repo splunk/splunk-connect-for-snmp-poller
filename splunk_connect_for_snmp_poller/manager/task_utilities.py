@@ -519,6 +519,8 @@ async def walk_handler_with_enricher(
                 result,
             )
 
+    logger.info(merged_result)
+
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
     additional_enricher_varbinds = (
         extract_network_interface_data_from_additional_config(enricher)

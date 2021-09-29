@@ -187,7 +187,7 @@ async def snmp_polling_async(
                     *get_bulk_specific_parameters,
                     *static_parameters,
                 )
-                # Perform SNMP WALK
+                # Perform SNMP GET
                 await get_snmp_data(
                     varbind_collection.get,
                     snmp_get_handler,

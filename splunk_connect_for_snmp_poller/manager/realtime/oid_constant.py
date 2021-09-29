@@ -15,3 +15,5 @@
 #
 class OidConstant:
     SYS_UP_TIME_INSTANCE = "1.3.6.1.2.1.1.3.0"
+    SYS_DESCR = "1.3.6.1.2.1.1.1"
+    SYS_OBJECT_ID = "1.3.6.1.2.1.1.2"
