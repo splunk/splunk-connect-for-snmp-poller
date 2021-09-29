@@ -137,7 +137,7 @@ def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
     metric_result = json.loads(variables_binds["metric"])
     non_metric_result = variables_binds["non_metric"]
     additional_dimensions = mib_enricher.append_additional_dimensions(metric_result)
-    logger.info(additional_dimensions)
+    logger.debug(additional_dimensions)
     for field_name in additional_dimensions:
         if field_name in metric_result:
             non_metric_result += f'{field_name}="{metric_result[field_name]}" '
