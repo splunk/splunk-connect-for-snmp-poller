@@ -82,7 +82,7 @@ async def get_translated_string(mib_server_url, varBinds, return_multimetric=Fal
     @return result: formated string ready to be sent to Splunk HEC
     @return is_metric: boolean, metric data flag
     """
-    logger.info(f"I got these var binds: {varBinds}")
+    logger.debug(f"I got these var binds: {varBinds}")
     # Get Original varbinds as backup in case the mib-server is unreachable
     try:
         for name, val in varBinds:
@@ -107,38 +107,33 @@ async def get_translated_string(mib_server_url, varBinds, return_multimetric=Fal
                 result = '{oid}="{value}"'.format(
                     oid=name.prettyPrint(), value=val.prettyPrint()
                 )
-                logger.info("Our result is - %s", result)
+                logger.debug("Our result is - %s", result)
     except Exception as e:
-        logger.info(
+        logger.error(
             f"Exception occurred while logging varBinds name & value. Exception: {e}"
         )
 
     # Override the varBinds string with translated varBinds string
     try:
         data_format = _get_data_format(is_metric, return_multimetric)
-        logger.debug(
-            "==========result before translated -- is_metric={is_metric}============\n%s",
-            result,
-        )
+        logger.debug(f"result before translated -- is_metric={is_metric}\n{result}")
         result = await get_translation(varBinds, mib_server_url, data_format)
         if data_format == "MULTIMETRIC":
             result = json.loads(result)["metric"]
-            logger.info(f"=========result=======\n{result}")
+            logger.debug(f"multimetric result\n{result}")
         # TODO double check the result to handle the edge case,
         # where the value of an metric data was translated from int to string
         if "metric_name" in result:
             result_dict = json.loads(result)
             _value = result_dict.get("_value", None)
-            logger.debug(f"=========_value=======\n{_value}")
+            logger.debug(f"metric value\n{_value}")
             if not is_metric_data(_value):
                 is_metric = False
                 data_format = _get_data_format(is_metric, return_multimetric)
                 result = await get_translation(varBinds, mib_server_url, data_format)
     except Exception as e:
-        logger.info(f"Could not perform translation. Exception: {e}")
-    logger.info(
-        f"###############final result -- metric: {is_metric}#######################\n{result}"
-    )
+        logger.error(f"Could not perform translation. Exception: {e}")
+    logger.debug(f"final result -- metric: {is_metric}\n{result}")
     return result, is_metric
 
 
@@ -307,7 +302,7 @@ def _any_walk_failure_happened(
 ):
     if errorIndication:
         result = f"error: {errorIndication}"
-        logger.info(result)
+        logger.info(f"Result with error indication - {result}")
         post_data_to_splunk_hec(
             host,
             otel_logs_url,

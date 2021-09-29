@@ -134,18 +134,18 @@ async def snmp_polling_async(
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
     otel_metrics_url = os.environ["OTEL_SERVER_METRICS_URL"]
     host, port = parse_port(ir.host)
-    logger.info("Using the following MIBS server URL: %s", mib_server_url)
+    logger.debug("Using the following MIBS server URL: %s", mib_server_url)
 
     # create one SnmpEngie for snmp_get_handler, walk_handler, mib_string_handler
     snmp_engine = get_shared_snmp_engine()
 
     # create auth_data depending on SNMP's version
     auth_data = build_authData(ir.version, ir.community, server_config)
-    logger.debug("==========auth_data=========\n%s", auth_data)
+    logger.debug("auth_data\n%s", auth_data)
 
     # create context_data for SNMP v3
     context_data = build_contextData(ir.version, ir.community, server_config)
-    logger.debug("==========context_data=========\n%s", context_data)
+    logger.debug("context_data\n%s", context_data)
 
     mongo_connection = WalkedHostsRepository(server_config["mongo"])
     additional_metric_fields = server_config.get("additionalMetricField")
@@ -179,7 +179,7 @@ async def snmp_polling_async(
                 var_binds = mib_profile.get("varBinds", None)
                 # Divide varBinds for WALK/BULK actions
                 varbind_collection = sort_varbinds(var_binds)
-                logger.info(f"Varbind collection: {varbind_collection}")
+                logger.debug(f"Varbind collection: {varbind_collection}")
                 # Perform SNMP BULK
                 await get_snmp_data(
                     varbind_collection.bulk,

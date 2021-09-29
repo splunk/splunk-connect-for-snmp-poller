@@ -101,7 +101,7 @@ class Poller:
                     continue
 
                 inventory_hosts.add(entry_key)
-                logger.info(
+                logger.debug(
                     "[-] server_config['profiles']: %s", self._server_config["profiles"]
                 )
                 if entry_key not in self._jobs_map:
