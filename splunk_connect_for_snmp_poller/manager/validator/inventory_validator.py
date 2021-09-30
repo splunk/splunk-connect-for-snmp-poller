@@ -115,11 +115,6 @@ def is_valid_profile(profile):
 
 
 def is_valid_inventory_line_from_dict(host, version, community, profile, seconds):
-    logger.info(
-        f"Validating host = [{host}], version = [{version}], community = [{community}], profile = [{profile}], "
-        f"seconds = [{seconds}]"
-    )
-
     if None in [host, version, community, profile, seconds]:
         return False
 
@@ -131,5 +126,8 @@ def is_valid_inventory_line_from_dict(host, version, community, profile, seconds
         and is_valid_second_quantity(seconds.strip())
     )
     if not valid_inventory_line:
-        logger.error("Invalid inventory line")
+        logger.error(
+            f"Invalid inventory line [{host}], version = [{version}], community = [{community}], profile = [{profile}],"
+            f" seconds = [{seconds}]"
+        )
     return valid_inventory_line
