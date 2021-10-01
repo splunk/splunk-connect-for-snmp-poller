@@ -246,6 +246,20 @@ async def snmp_get_handler(
                 one_time_flag,
                 mib_enricher,
             )
+    else:
+        is_error, result = prepare_error_message(errorIndication, errorStatus, errorIndex, varBinds)
+        if is_error:
+            post_data_to_splunk_hec(
+                host,
+                otel_logs_url,
+                otel_metrics_url,
+                result,
+                False,  # fail during bulk so sending to event index
+                index,
+                ir,
+                additional_metric_fields,
+                one_time_flag,
+            )
 
 
 def _enrich_response(mongo_connection, enricher_presence, hostname):
@@ -262,23 +276,23 @@ def _enrich_response(mongo_connection, enricher_presence, hostname):
 
 
 def _any_failure_happened(
-    errorIndication, errorStatus, errorIndex, varBinds: list
+    error_indication, error_status, error_index, var_binds: list
 ) -> bool:
     """
     This function checks if any failure happened during GET or BULK operation.
-    @param errorIndication:
-    @param errorStatus:
-    @param errorIndex: index of varbind where error appeared
-    @param varBinds: list of varbinds
+    @param error_indication:
+    @param error_status:
+    @param error_index: index of varbind where error appeared
+    @param var_binds: list of varbinds
     @return: if any failure happened
     """
-    if errorIndication:
-        result = f"error: {errorIndication}"
+    if error_indication:
+        result = f"error: {error_indication}"
         logger.error(result)
-    elif errorStatus:
+    elif error_status:
         result = "error: {} at {}".format(
-            errorStatus.prettyPrint(),
-            errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
+            error_status.prettyPrint(),
+            error_index and var_binds[int(error_index) - 1][0] or "?",
         )
         logger.error(result)
     else:
@@ -287,9 +301,9 @@ def _any_failure_happened(
 
 
 def _any_walk_failure_happened(
-    errorIndication,
-    errorStatus,
-    errorIndex,
+    error_indication,
+    error_status,
+    error_index,
     host,
     index,
     otel_logs_url,
@@ -298,11 +312,11 @@ def _any_walk_failure_happened(
     is_metric,
     ir,
     additional_metric_fields,
-    varBinds,
+    var_binds,
 ):
-    if errorIndication:
-        result = f"error: {errorIndication}"
-        logger.info(f"Result with error indication - {result}")
+    is_error, result = prepare_error_message(error_indication, error_status, error_index, var_binds)
+
+    if is_error:
         post_data_to_splunk_hec(
             host,
             otel_logs_url,
@@ -314,26 +328,24 @@ def _any_walk_failure_happened(
             additional_metric_fields,
             one_time_flag,
         )
-        return True
-    elif errorStatus:
+
+    return is_error
+
+
+def prepare_error_message(error_indication, error_status, error_index, var_binds) -> (bool, str):
+    result = ""
+    is_error = False
+    if error_indication:
+        logger.debug(f"Result with error indication - {result}")
+        result = f"error: {error_indication}"
+        is_error = True
+    elif error_status:
         result = "error: {} at {}".format(
-            errorStatus.prettyPrint(),
-            errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
+            error_status.prettyPrint(),
+            error_index and var_binds[int(error_index) - 1][0] or "?",
         )
-        post_data_to_splunk_hec(
-            host,
-            otel_logs_url,
-            otel_metrics_url,
-            result,
-            is_metric,
-            index,
-            ir,
-            additional_metric_fields,
-            one_time_flag,
-        )
-        return True
-    else:
-        return False
+        is_error = True
+    return is_error, result
 
 
 async def snmp_bulk_handler(
@@ -390,6 +402,20 @@ async def snmp_bulk_handler(
                     additional_metric_fields,
                     one_time_flag,
                     mib_enricher,
+                )
+        else:
+            is_error, result = prepare_error_message(errorIndication, errorStatus, errorIndex, varBinds)
+            if is_error:
+                post_data_to_splunk_hec(
+                    host,
+                    otel_logs_url,
+                    otel_metrics_url,
+                    result,
+                    False,  # fail during bulk so sending to event index
+                    index,
+                    ir,
+                    additional_metric_fields,
+                    one_time_flag,
                 )
 
 
