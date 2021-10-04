@@ -17,6 +17,7 @@ import json
 import os
 import re
 from collections import namedtuple
+from typing import Tuple
 
 from celery.utils.log import get_task_logger
 from pysmi import debug as pysmi_debug
@@ -247,7 +248,9 @@ async def snmp_get_handler(
                 mib_enricher,
             )
     else:
-        is_error, result = prepare_error_message(errorIndication, errorStatus, errorIndex, varBinds)
+        is_error, result = prepare_error_message(
+            errorIndication, errorStatus, errorIndex, varBinds
+        )
         if is_error:
             post_data_to_splunk_hec(
                 host,
@@ -314,7 +317,9 @@ def _any_walk_failure_happened(
     additional_metric_fields,
     var_binds,
 ):
-    is_error, result = prepare_error_message(error_indication, error_status, error_index, var_binds)
+    is_error, result = prepare_error_message(
+        error_indication, error_status, error_index, var_binds
+    )
 
     if is_error:
         post_data_to_splunk_hec(
@@ -332,7 +337,9 @@ def _any_walk_failure_happened(
     return is_error
 
 
-def prepare_error_message(error_indication, error_status, error_index, var_binds) -> (bool, str):
+def prepare_error_message(
+    error_indication, error_status, error_index, var_binds
+) -> Tuple[bool, str]:
     result = ""
     is_error = False
     if error_indication:
@@ -404,7 +411,9 @@ async def snmp_bulk_handler(
                     mib_enricher,
                 )
         else:
-            is_error, result = prepare_error_message(errorIndication, errorStatus, errorIndex, varBinds)
+            is_error, result = prepare_error_message(
+                errorIndication, errorStatus, errorIndex, varBinds
+            )
             if is_error:
                 post_data_to_splunk_hec(
                     host,
