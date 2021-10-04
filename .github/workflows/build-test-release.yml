@@ -78,7 +78,7 @@ jobs:
         run: |
           # shellcheck disable=SC1090
           source "$HOME/.poetry/env"
-          poetry run pytest --cov=./ --cov-report=xml --junitxml=test-results/junit.xml
+          poetry run pytest --cov=./splunk_connect_for_snmp_poller --cov-report=xml --junitxml=test-results/junit.xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:

@@ -13,9 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import json
 from unittest import TestCase
 
+import pytest as pytest
+import responses
+from responses.matchers import json_params_matcher
+
 from splunk_connect_for_snmp_poller.manager.hec_sender import (
+    HecSender,
     _enrich_event_data,
     _enrich_metric_data,
 )
@@ -160,3 +166,70 @@ class TestHecSender(TestCase):
         )
         variables_binds_processed = _enrich_event_data(_MibEnricher, variables_binds)
         self.assertEqual(variables_binds_processed, variables_binds_result)
+
+    @responses.activate
+    def test_send_metric_request(self):
+        # given
+        test_request_data = {"test": "data", "index": "test_index"}
+        response_json = {"Success": "you did it"}
+        responses.add(
+            responses.POST,
+            "http://test_metrics_endpoint",
+            json=response_json,
+            match=[json_params_matcher(test_request_data)],
+            status=200,
+        )
+        hec_sender = HecSender(
+            "http://test_metrics_endpoint", "http://test_event_endpoint"
+        )
+
+        # when
+        rep = hec_sender.send_hec_request(True, test_request_data)
+
+        # then
+        self.assertEqual(rep.status_code, 200)
+        self.assertEqual(json.loads(rep.content), response_json)
+
+    @responses.activate
+    def test_send_event_request(self):
+        # given
+        test_request_data = {"test": "data", "index": "test_index"}
+        response_json = {"Success": "you did it"}
+        responses.add(
+            responses.POST,
+            "http://test_event_endpoint",
+            json=response_json,
+            match=[json_params_matcher(test_request_data)],
+            status=200,
+        )
+        hec_sender = HecSender(
+            "http://test_metrics_endpoint", "http://test_event_endpoint"
+        )
+
+        # when
+        rep = hec_sender.send_hec_request(False, test_request_data)
+
+        # then
+        self.assertEqual(rep.status_code, 200)
+        self.assertEqual(json.loads(rep.content), response_json)
+
+    @responses.activate
+    @pytest.mark.usefixtures
+    def test_send_event_request_with_error(self):
+        # given
+        test_request_data = {"index": "test_index"}
+        responses.add(responses.POST, "http://test_event_endpoint", json={}, status=404)
+        hec_sender = HecSender(
+            "http://test_metrics_endpoint", "http://test_event_endpoint2"
+        )
+
+        # when
+        with self.assertLogs(level="ERROR") as log:
+            hec_sender.send_hec_request(False, test_request_data)
+            # then
+            self.assertEqual(len(log.output), 1)
+            self.assertEqual(len(log.records), 1)
+            self.assertIn(
+                "Connection error when sending data to HEC index - test_index",
+                log.output[0],
+            )
