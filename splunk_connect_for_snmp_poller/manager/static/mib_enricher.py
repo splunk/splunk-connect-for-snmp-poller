@@ -95,7 +95,7 @@ class MibEnricher:
                     )["indexNum"]
                     return [{index_field: index}]
                 except KeyError:
-                    logger.error("Enricher additionalVarBinds badly formatted")
+                    logger.debug("Enricher additionalVarBinds badly formatted")
                 except TypeError:
                     logger.debug(f"Can't get the index from metric name: {metric_name}")
         return []
