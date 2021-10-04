@@ -236,6 +236,7 @@ async def snmp_get_handler(
             )
             post_data_to_splunk_hec(
                 hec_sender,
+                host,
                 result,
                 is_metric,
                 index,
@@ -251,6 +252,7 @@ async def snmp_get_handler(
         if is_error:
             post_data_to_splunk_hec(
                 hec_sender,
+                host,
                 result,
                 False,  # fail during bulk so sending to event index
                 index,

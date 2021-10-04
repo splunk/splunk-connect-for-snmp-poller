@@ -64,8 +64,8 @@ class HecSender:
 
 def post_data_to_splunk_hec(
     hec_sender: HecSender,
-    variables_binds,
     host,
+    variables_binds,
     is_metric,
     index,
     ir: InventoryRecord,
