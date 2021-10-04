@@ -22,6 +22,7 @@ from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
 
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
+from splunk_connect_for_snmp_poller.manager.hec_sender import HecSender
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     VarbindCollection,
     build_authData,
@@ -130,9 +131,10 @@ def snmp_polling(ir_json: str, server_config, index, one_time_flag=False):
 async def snmp_polling_async(
     ir: InventoryRecord, server_config, index, one_time_flag=False
 ):
+    hec_sender = HecSender(
+        os.environ["OTEL_SERVER_METRICS_URL"], os.environ["OTEL_SERVER_LOGS_URL"]
+    )
     mib_server_url = os.environ["MIBS_SERVER_URL"]
-    otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
-    otel_metrics_url = os.environ["OTEL_SERVER_METRICS_URL"]
     host, port = parse_port(ir.host)
     logger.debug("Using the following MIBS server URL: %s", mib_server_url)
 
@@ -152,14 +154,13 @@ async def snmp_polling_async(
     enricher_presence = "enricher" in server_config
     static_parameters = [
         snmp_engine,
+        hec_sender,
         auth_data,
         context_data,
         host,
         port,
         mib_server_url,
         index,
-        otel_logs_url,
-        otel_metrics_url,
         one_time_flag,
         ir,
         additional_metric_fields,

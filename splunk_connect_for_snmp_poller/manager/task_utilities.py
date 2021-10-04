@@ -200,14 +200,13 @@ async def snmp_get_handler(
     mongo_connection,
     enricher_presence,
     snmp_engine,
+    hec_sender,
     auth_data,
     context_data,
     host,
     port,
     mib_server_url,
     index,
-    otel_logs_url,
-    otel_metrics_url,
     one_time_flag,
     ir,
     additional_metric_fields,
@@ -236,9 +235,7 @@ async def snmp_get_handler(
                 mib_server_url, [varbind], return_multimetric
             )
             post_data_to_splunk_hec(
-                host,
-                otel_logs_url,
-                otel_metrics_url,
+                hec_sender,
                 result,
                 is_metric,
                 index,
@@ -253,9 +250,7 @@ async def snmp_get_handler(
         )
         if is_error:
             post_data_to_splunk_hec(
-                host,
-                otel_logs_url,
-                otel_metrics_url,
+                hec_sender,
                 result,
                 False,  # fail during bulk so sending to event index
                 index,
@@ -304,13 +299,12 @@ def _any_failure_happened(
 
 
 def _any_walk_failure_happened(
+    hec_sender,
     error_indication,
     error_status,
     error_index,
     host,
     index,
-    otel_logs_url,
-    otel_metrics_url,
     one_time_flag,
     is_metric,
     ir,
@@ -323,9 +317,8 @@ def _any_walk_failure_happened(
 
     if is_error:
         post_data_to_splunk_hec(
+            hec_sender,
             host,
-            otel_logs_url,
-            otel_metrics_url,
             result,
             is_metric,
             index,
@@ -359,14 +352,13 @@ async def snmp_bulk_handler(
     mongo_connection,
     enricher_presence,
     snmp_engine,
+    hec_sender,
     auth_data,
     context_data,
     host,
     port,
     mib_server_url,
     index,
-    otel_logs_url,
-    otel_metrics_url,
     one_time_flag,
     ir,
     additional_metric_fields,
@@ -399,9 +391,8 @@ async def snmp_bulk_handler(
                     mib_server_url, [varbind], return_multimetric
                 )
                 post_data_to_splunk_hec(
+                    hec_sender,
                     host,
-                    otel_logs_url,
-                    otel_metrics_url,
                     result,
                     is_metric,
                     index,
@@ -416,9 +407,8 @@ async def snmp_bulk_handler(
             )
             if is_error:
                 post_data_to_splunk_hec(
+                    hec_sender,
                     host,
-                    otel_logs_url,
-                    otel_metrics_url,
                     result,
                     False,  # fail during bulk so sending to event index
                     index,
@@ -431,14 +421,13 @@ async def snmp_bulk_handler(
 async def walk_handler(
     profile,
     snmp_engine,
+    hec_sender,
     auth_data,
     context_data,
     host,
     port,
     mib_server_url,
     index,
-    otel_logs_url,
-    otel_metrics_url,
     one_time_flag,
     ir,
     additional_metric_fields,
@@ -459,13 +448,12 @@ async def walk_handler(
     ):
         is_metric = False
         if _any_walk_failure_happened(
+            hec_sender,
             errorIndication,
             errorStatus,
             errorIndex,
             host,
             index,
-            otel_logs_url,
-            otel_metrics_url,
             one_time_flag,
             is_metric,
             ir,
@@ -476,9 +464,8 @@ async def walk_handler(
         else:
             result, is_metric = await get_translated_string(mib_server_url, varBinds)
             post_data_to_splunk_hec(
+                hec_sender,
                 host,
-                otel_logs_url,
-                otel_metrics_url,
                 result,
                 is_metric,
                 index,
@@ -493,14 +480,13 @@ async def walk_handler_with_enricher(
     enricher,
     mongo_connection,
     snmp_engine,
+    hec_sender,
     auth_data,
     context_data,
     host,
     port,
     mib_server_url,
     index,
-    otel_logs_url,
-    otel_metrics_url,
     one_time_flag,
     ir,
     additional_metric_fields,
@@ -523,13 +509,12 @@ async def walk_handler_with_enricher(
     ):
         is_metric = False
         if _any_walk_failure_happened(
+            hec_sender,
             errorIndication,
             errorStatus,
             errorIndex,
             host,
             index,
-            otel_logs_url,
-            otel_metrics_url,
             ir,
             additional_metric_fields,
             one_time_flag,
@@ -561,8 +546,6 @@ async def walk_handler_with_enricher(
     )
     post_walk_data_to_splunk_arguments = [
         host,
-        otel_logs_url,
-        otel_metrics_url,
         index,
         one_time_flag,
         ir,
@@ -570,10 +553,10 @@ async def walk_handler_with_enricher(
         mib_enricher,
     ]
     _post_walk_data_to_splunk(
-        merged_result_metric, True, *post_walk_data_to_splunk_arguments
+        hec_sender, merged_result_metric, True, *post_walk_data_to_splunk_arguments
     )
     _post_walk_data_to_splunk(
-        merged_result_non_metric, False, *post_walk_data_to_splunk_arguments
+        hec_sender, merged_result_non_metric, False, *post_walk_data_to_splunk_arguments
     )
 
 
@@ -628,11 +611,10 @@ def _return_mib_enricher_for_walk(
 
 
 def _post_walk_data_to_splunk(
+    hec_sender,
     result_list,
     is_metric,
     host,
-    otel_logs_url,
-    otel_metrics_url,
     index,
     one_time_flag,
     ir,
@@ -641,9 +623,8 @@ def _post_walk_data_to_splunk(
 ):
     for result in result_list:
         post_data_to_splunk_hec(
+            hec_sender,
             host,
-            otel_logs_url,
-            otel_metrics_url,
             result,
             is_metric,
             index,
