@@ -89,7 +89,7 @@ def get_mib_profiles():
     profiles_url = os.path.join(mib_server_url.strip("/"), endpoint)
 
     try:
-        return requests.get(profiles_url).text
+        return requests.get(profiles_url, timeout=3).text
     except Exception:
         return {}
 
