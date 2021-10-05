@@ -28,15 +28,6 @@ class __RealTimeData:
         return self.element_value
 
 
-def _device_probably_restarted(old_sysuptime, new_sysuptime):
-    try:
-        return TimeTicks(int(old_sysuptime.value())) > TimeTicks(
-            int(new_sysuptime.value())
-        )
-    except ValueError:
-        return False
-
-
 """"
 With virtualization becoming more and more common, we need some way of detecting when, for the same IP, a new device
 was redeployed. One common way of doing this is to analyze DISMAN-EVENT-MIB::sysUpTimeInstance.
@@ -58,13 +49,19 @@ less than  realtime_collection. False otherwise.
 
 
 def _device_restarted(realtime_collection, input_data_collection):
-    if OidConstant.SYS_UP_TIME_INSTANCE in realtime_collection:
-        if OidConstant.SYS_UP_TIME_INSTANCE in input_data_collection:
-            old_value = realtime_collection[OidConstant.SYS_UP_TIME_INSTANCE]
-            old_rt_record = __RealTimeData(old_value["type"], old_value["value"])
-            new_value = input_data_collection[OidConstant.SYS_UP_TIME_INSTANCE]
-            new_rt_record = __RealTimeData(new_value["type"], new_value["value"])
-            return _device_probably_restarted(old_rt_record, new_rt_record)
+    if (OidConstant.SYS_UP_TIME_INSTANCE in realtime_collection
+            and OidConstant.SYS_UP_TIME_INSTANCE in input_data_collection):
+        old_value = realtime_collection[OidConstant.SYS_UP_TIME_INSTANCE]
+        old_rt_record = __RealTimeData(old_value["type"], old_value["value"])
+        new_value = input_data_collection[OidConstant.SYS_UP_TIME_INSTANCE]
+        new_rt_record = __RealTimeData(new_value["type"], new_value["value"])
+
+        try:
+            return TimeTicks(int(old_rt_record.value())) > TimeTicks(
+                int(new_rt_record.value())
+            )
+        except ValueError:
+            return False
     return False
 
 

@@ -15,6 +15,7 @@
 #
 import os
 import threading
+import traceback
 
 from asgiref.sync import async_to_sync
 from celery.utils.log import get_task_logger
@@ -119,16 +120,16 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 
 # TODO remove the debugging statement later
 @app.task
-def snmp_polling(ir_json: str, server_config, index, one_time_flag=False):
+def snmp_polling(ir_json: str, server_config, index, profiles, one_time_flag=False):
     ir = InventoryRecord.from_json(ir_json)
 
-    async_to_sync(snmp_polling_async)(ir, server_config, index, one_time_flag)
+    async_to_sync(snmp_polling_async)(ir, server_config, index, profiles, one_time_flag)
 
     return f"Executing SNMP Polling for {ir.host} version={ir.version} profile={ir.profile}"
 
 
 async def snmp_polling_async(
-    ir: InventoryRecord, server_config, index, one_time_flag=False
+    ir: InventoryRecord, server_config, index, profiles, one_time_flag=False
 ):
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
@@ -174,7 +175,7 @@ async def snmp_polling_async(
                 host,
                 ir.profile,
             )
-            mib_profile = server_config["profiles"].get(ir.profile, None)
+            mib_profile = profiles["profiles"].get(ir.profile, None)
             if mib_profile:
                 var_binds = mib_profile.get("varBinds", None)
                 # Divide varBinds for WALK/BULK actions
@@ -204,7 +205,7 @@ async def snmp_polling_async(
                         ir.profile, server_config, mongo_connection, *static_parameters
                     )
                 else:
-                    await walk_handler(ir.profile, *static_parameters)
+                    await walk_handler(ir.profile, mongo_connection, *static_parameters)
             # Perform SNNP GET for an oid
             else:
                 logger.info("Executing SNMP GET for %s profile=%s", host, ir.profile)
@@ -214,6 +215,7 @@ async def snmp_polling_async(
                 )
 
     except Exception as e:
+        traceback.print_exc()
         logger.error(
             f"Error occurred while executing SNMP polling for {host}, version={ir.version}, profile={ir.profile}: {e}"
         )

@@ -128,7 +128,7 @@ def is_valid_inventory_line_from_dict(host, version, community, profile, seconds
         and is_valid_version(version.strip())
         and is_valid_community(community.strip())
         and is_valid_profile(profile.strip())
-        and is_valid_second_quantity(seconds.strip())
+        and is_valid_second_quantity(seconds)
     )
     if not valid_inventory_line:
         logger.error("Invalid inventory line")

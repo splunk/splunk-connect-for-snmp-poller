@@ -15,6 +15,9 @@
 #
 import csv
 import logging.config
+import threading
+import traceback
+from pathlib import Path
 
 import schedule
 from pysnmp.hlapi import ObjectIdentity, ObjectType, UdpTransportTarget, getCmd
@@ -53,12 +56,19 @@ def onetime_task(inventory_record: InventoryRecord, server_config, splunk_indexe
         inventory_record.to_json(),
         server_config,
         splunk_indexes,
+        None,
         one_time_flag=True,
     )
     return schedule.CancelJob
 
 
-def parse_inventory_file(inventory_file_path):
+def refresh_inventory(inventory_file_path):
+    Path('path/to/file.txt').touch(inventory_file_path)
+
+    return schedule.CancelJob
+
+
+def parse_inventory_file(inventory_file_path, profiles):
     with open(inventory_file_path, newline="") as inventory_file:
         for agent in csv.DictReader(inventory_file, delimiter=","):
             inventory_record = InventoryRecord(
@@ -66,7 +76,8 @@ def parse_inventory_file(inventory_file_path):
                 agent["version"],
                 agent["community"],
                 agent["profile"],
-                agent["freqinseconds"],
+                profiles["profiles"][agent["profile"]]['frequency']
+                if profiles and agent["profile"] != '*' and agent["profile"] in profiles["profiles"] else 60,
             )
             if _should_process_current_line(inventory_record):
                 yield inventory_record
@@ -120,7 +131,13 @@ def _update_mongo(
     if not host_already_walked:
         logger.info("Adding host: %s into Mongo database", host)
         all_walked_hosts_collection.add_host(host)
-    all_walked_hosts_collection.update_real_time_data_for(host, current_sys_up_time)
+
+    prev_content = all_walked_hosts_collection.real_time_data_for(host)
+    if not prev_content:
+        prev_content = {}
+    prev_content.update(current_sys_up_time)
+
+    all_walked_hosts_collection.update_real_time_data_for(host, prev_content)
 
 
 """
@@ -130,6 +147,18 @@ This is the realtime task responsible for executing an SNMPWALK when
 """
 
 
+def automatic_realtime_job(
+        all_walked_hosts_collection,
+        inventory_file_path,
+        splunk_indexes,
+        server_config,
+        local_snmp_engine,
+):
+    job_thread = threading.Thread(target=automatic_realtime_task,
+                                  args=[all_walked_hosts_collection, inventory_file_path, splunk_indexes, server_config, local_snmp_engine])
+    job_thread.start()
+
+
 def automatic_realtime_task(
     all_walked_hosts_collection,
     inventory_file_path,
@@ -137,31 +166,44 @@ def automatic_realtime_task(
     server_config,
     local_snmp_engine,
 ):
-    for inventory_record in parse_inventory_file(inventory_file_path):
-        db_host_id = return_database_id(inventory_record.host)
-        sys_up_time = _extract_sys_uptime_instance(
-            local_snmp_engine,
-            db_host_id,
-            inventory_record.version,
-            inventory_record.community,
-            server_config,
-        )
-        host_already_walked, should_do_walk = _walk_info(
-            all_walked_hosts_collection, db_host_id, sys_up_time
-        )
-        if should_do_walk:
-            schedule.every().second.do(
-                onetime_task,
-                inventory_record,
+    try:
+        # see https://www.alvestrand.no/objectid/1.3.6.1.html for a better understanding
+        universal_base_oid = "1.3.6.1.*"
+
+        for inventory_record in parse_inventory_file(inventory_file_path, profiles=None):
+            db_host_id = return_database_id(inventory_record.host)
+            sys_up_time = _extract_sys_uptime_instance(
+                local_snmp_engine,
+                db_host_id,
+                inventory_record.version,
+                inventory_record.community,
                 server_config,
-                splunk_indexes,
             )
-        _update_mongo(
-            all_walked_hosts_collection,
-            db_host_id,
-            host_already_walked,
-            sys_up_time,
-        )
+            host_already_walked, should_do_walk = _walk_info(
+                all_walked_hosts_collection, db_host_id, sys_up_time
+            )
+            if should_do_walk:
+                logger.info("Scheduling WALK of full tree")
+                inventory_record.profile = universal_base_oid
+                schedule.every().second.do(
+                    onetime_task,
+                    inventory_record,
+                    server_config,
+                    splunk_indexes,
+                )
+                # touch inventory file after 2 min to trigger reloading of inventory with new walk data
+                schedule.every(2).minutes.do(
+                    refresh_inventory,
+                    inventory_file_path,
+                )
+            _update_mongo(
+                all_walked_hosts_collection,
+                db_host_id,
+                host_already_walked,
+                sys_up_time,
+            )
+    except Exception:
+        traceback.print_exc()
 
 
 def create_poller_scheduler_entry_key(host, profile):

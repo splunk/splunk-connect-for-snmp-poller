@@ -1,0 +1,28 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="scheduler" type="PythonConfigurationType" factoryName="Python">
+    <module name="splunk-connect-for-snmp-poller" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
+      <env name="CELERY_BROKER_URL" value="localhost" />
+      <env name="MONGO_SERVICE_SERVICE_HOST" value="localhost" />
+      <env name="MONGO_SERVICE_SERVICE_PORT" value="27017" />
+      <env name="MIBS_SERVER_URL" value="http://localhost:5000" />
+    </envs>
+    <option name="SDK_HOME" value="" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/splunk_connect_for_snmp_poller" />
+    <option name="IS_MODULE_SDK" value="true" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/splunk_connect_for_snmp_poller/snmp_poller_server.py" />
+    <option name="PARAMETERS" value="-c ../config.yaml -i ../inventory.csv --event_index em_events --metric_index em_metrics --meta_index em_meta" />
+    <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="EMULATE_TERMINAL" value="false" />
+    <option name="MODULE_MODE" value="false" />
+    <option name="REDIRECT_INPUT" value="false" />
+    <option name="INPUT_FILE" value="" />
+    <method v="2" />
+  </configuration>
+</component>

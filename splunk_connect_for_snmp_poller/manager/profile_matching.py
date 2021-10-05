@@ -26,10 +26,11 @@ logger = logging.getLogger(__name__)
 def assign_profiles_to_device(profiles, device_desc):
     result = []
     for profile in profiles:
-        for pattern in profile['patterns']:
-            if re.compile(pattern).match(device_desc):
-                result.append(profile)
-                continue
+        if 'patterns' in profiles[profile]:
+            for pattern in profiles[profile]['patterns']:
+                if re.compile(pattern).match(device_desc):
+                    result.append((profile, profiles[profile]['frequency']))
+                    continue
     return result
 
 
