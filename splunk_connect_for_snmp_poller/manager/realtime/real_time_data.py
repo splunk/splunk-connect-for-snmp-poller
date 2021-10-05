@@ -49,8 +49,10 @@ less than  realtime_collection. False otherwise.
 
 
 def _device_restarted(realtime_collection, input_data_collection):
-    if (OidConstant.SYS_UP_TIME_INSTANCE in realtime_collection
-            and OidConstant.SYS_UP_TIME_INSTANCE in input_data_collection):
+    if (
+        OidConstant.SYS_UP_TIME_INSTANCE in realtime_collection
+        and OidConstant.SYS_UP_TIME_INSTANCE in input_data_collection
+    ):
         old_value = realtime_collection[OidConstant.SYS_UP_TIME_INSTANCE]
         old_rt_record = __RealTimeData(old_value["type"], old_value["value"])
         new_value = input_data_collection[OidConstant.SYS_UP_TIME_INSTANCE]

@@ -108,7 +108,7 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
                 }
                 result = json.dumps(result)
             else:
-                result = '{{\"metric\": \'{{"{oid}":"{value}"}}\'}}'.format(
+                result = '{{"metric": \'{{"{oid}":"{value}"}}\'}}'.format(
                     oid=name.prettyPrint(), value=val.prettyPrint()
                 )
                 logger.debug("Our result is - %s", result)
@@ -453,6 +453,7 @@ async def walk_handler(
         lexicographicMode=False,
     ):
         is_metric = False
+        extract_data_to_mongo(host, port, mongo_connection, var_binds)
         if _any_walk_failure_happened(
             hec_sender,
             errorIndication,
@@ -480,14 +481,12 @@ async def walk_handler(
                 one_time_flag,
             )
 
-        extract_data_to_mongo(host, port, mongo_connection, var_binds)
-
 
 def extract_data_to_mongo(host, port, mongo_connection, var_binds):
     oid = str(var_binds[0][0].getOid())
     val = str(var_binds[0][1])
     if oid in oids_to_store:
-        host_id = '{host}:{port}'.format(host=host, port=port)
+        host_id = "{host}:{port}".format(host=host, port=port)
 
         prev_content = mongo_connection.real_time_data_for(host_id)
         if not prev_content:
@@ -533,6 +532,7 @@ async def walk_handler_with_enricher(
         lexicographicMode=False,
     ):
         is_metric = False
+        extract_data_to_mongo(host, port, mongo_connection, var_binds)
         if _any_walk_failure_happened(
             hec_sender,
             errorIndication,
@@ -558,7 +558,6 @@ async def walk_handler_with_enricher(
                 merged_result,
                 result,
             )
-            extract_data_to_mongo(host, port, mongo_connection, var_binds)
 
     logger.debug(merged_result)
 

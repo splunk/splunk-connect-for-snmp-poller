@@ -24,18 +24,23 @@ from pysnmp.hlapi import SnmpEngine
 
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.poller_utilities import (
+    automatic_realtime_job,
     create_poller_scheduler_entry_key,
     parse_inventory_file,
-    return_database_id, automatic_realtime_job,
+    return_database_id,
 )
-from splunk_connect_for_snmp_poller.manager.profile_matching import get_profiles, \
-    assign_profiles_to_device
+from splunk_connect_for_snmp_poller.manager.profile_matching import (
+    assign_profiles_to_device,
+    get_profiles,
+)
+
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 from splunk_connect_for_snmp_poller.utilities import (
     file_was_modified,
-    parse_config_file, multi_key_lookup,
+    multi_key_lookup,
+    parse_config_file,
 )
 
 logger = logging.getLogger(__name__)
@@ -101,12 +106,13 @@ class Poller:
                     )
                     continue
                 inventory_hosts.add(entry_key)
-                if ir.profile == '*':
+                if ir.profile == "*":
                     self.delete_all_entries_per_host(ir.host)
                     self.add_device_for_profile_matching(ir)
                 else:
                     logger.debug(
-                        "[-] server_config['profiles']: %s", self._server_config["profiles"]
+                        "[-] server_config['profiles']: %s",
+                        self._server_config["profiles"],
                     )
                     if entry_key not in self._jobs_map:
                         self.process_new_job(entry_key, ir, profiles)
@@ -117,7 +123,7 @@ class Poller:
 
     def delete_all_entries_per_host(self, host):
         for entry_key in list(self._jobs_map.keys()):
-            if entry_key.split('#')[0] == host:
+            if entry_key.split("#")[0] == host:
                 schedule.cancel_job(self._jobs_map.get(entry_key))
                 del self._jobs_map[entry_key]
 
@@ -134,7 +140,9 @@ class Poller:
     def update_schedule_for_changed_conf(self, entry_key, ir, profiles):
         old_conf = self._jobs_map.get(entry_key).job_func.args
         if self.is_conf_changed(entry_key, ir, old_conf):
-            self.__update_schedule(ir, self._server_config, self.__get_splunk_indexes(), profiles)
+            self.__update_schedule(
+                ir, self._server_config, self.__get_splunk_indexes(), profiles
+            )
 
     def is_conf_changed(self, entry_key, ir, old_conf):
         interval = self._jobs_map.get(entry_key).interval
@@ -142,8 +150,8 @@ class Poller:
         indexes = self.__get_splunk_indexes()
         frequency = int(ir.frequency_str)
         return (
-                old_conf != (ir.host, ir.version, ir.community, ir.profile, config, indexes)
-                or frequency != interval
+            old_conf != (ir.host, ir.version, ir.community, ir.profile, config, indexes)
+            or frequency != interval
         )
 
     def process_new_job(self, entry_key, ir, profiles):
@@ -197,8 +205,13 @@ class Poller:
             self._server_config,
         )
 
-        automatic_realtime_job(self._mongo_walked_hosts_coll, self._args.inventory, self.__get_splunk_indexes(),
-                               self._server_config, self._local_snmp_engine)
+        automatic_realtime_job(
+            self._mongo_walked_hosts_coll,
+            self._args.inventory,
+            self.__get_splunk_indexes(),
+            self._server_config,
+            self._local_snmp_engine,
+            )
 
     def add_device_for_profile_matching(self, device: InventoryRecord):
         self._lock.acquire()
@@ -206,7 +219,9 @@ class Poller:
         self._lock.release()
 
     def process_unmatched_devices_job(self, server_config):
-        job_thread = threading.Thread(target=self.process_unmatched_devices, args=[server_config])
+        job_thread = threading.Thread(
+            target=self.process_unmatched_devices, args=[server_config]
+        )
         job_thread.start()
 
     def process_unmatched_devices(self, server_config):
@@ -216,21 +231,37 @@ class Poller:
                 self._lock.acquire()
                 processed_devices = set()
                 for host, device in self._unmatched_devices.items():
-                    realtime_collection = self._mongo_walked_hosts_coll.real_time_data_for(
-                        return_database_id(host))
+                    realtime_collection = (
+                        self._mongo_walked_hosts_coll.real_time_data_for(
+                            return_database_id(host)
+                        )
+                    )
                     if realtime_collection:
-                        sys_descr = multi_key_lookup(realtime_collection, (OidConstant.SYS_DESCR, "value"))
-                        sys_object_id = multi_key_lookup(realtime_collection, (OidConstant.SYS_OBJECT_ID, "value"))
+                        sys_descr = multi_key_lookup(
+                            realtime_collection, (OidConstant.SYS_DESCR, "value")
+                        )
+                        sys_object_id = multi_key_lookup(
+                            realtime_collection, (OidConstant.SYS_OBJECT_ID, "value")
+                        )
                         descr = sys_descr if sys_descr is not None else sys_object_id
 
                         if descr:
-                            assigned_profiles = assign_profiles_to_device(profiles['profiles'], descr)
+                            assigned_profiles = assign_profiles_to_device(
+                                profiles["profiles"], descr
+                            )
                             processed_devices.add(host)
 
                             for profile, frequency in assigned_profiles:
-                                entry_key = create_poller_scheduler_entry_key(host, profile)
-                                new_record = InventoryRecord(host, device.version, device.community, profile,
-                                                             frequency)
+                                entry_key = create_poller_scheduler_entry_key(
+                                    host, profile
+                                )
+                                new_record = InventoryRecord(
+                                    host,
+                                    device.version,
+                                    device.community,
+                                    profile,
+                                    frequency,
+                                )
                                 self.process_new_job(entry_key, new_record, profiles)
                 for d in processed_devices:
                     self._unmatched_devices.pop(d)

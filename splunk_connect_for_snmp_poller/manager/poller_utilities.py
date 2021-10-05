@@ -63,7 +63,7 @@ def onetime_task(inventory_record: InventoryRecord, server_config, splunk_indexe
 
 
 def refresh_inventory(inventory_file_path):
-    Path('path/to/file.txt').touch(inventory_file_path)
+    Path(inventory_file_path).touch()
 
     return schedule.CancelJob
 
@@ -76,8 +76,11 @@ def parse_inventory_file(inventory_file_path, profiles):
                 agent["version"],
                 agent["community"],
                 agent["profile"],
-                profiles["profiles"][agent["profile"]]['frequency']
-                if profiles and agent["profile"] != '*' and agent["profile"] in profiles["profiles"] else 60,
+                profiles["profiles"][agent["profile"]]["frequency"]
+                if profiles
+                and agent["profile"] != "*"
+                and agent["profile"] in profiles["profiles"]
+                else 60,
             )
             if _should_process_current_line(inventory_record):
                 yield inventory_record
@@ -148,14 +151,22 @@ This is the realtime task responsible for executing an SNMPWALK when
 
 
 def automatic_realtime_job(
-        all_walked_hosts_collection,
-        inventory_file_path,
-        splunk_indexes,
-        server_config,
-        local_snmp_engine,
+    all_walked_hosts_collection,
+    inventory_file_path,
+    splunk_indexes,
+    server_config,
+    local_snmp_engine,
 ):
-    job_thread = threading.Thread(target=automatic_realtime_task,
-                                  args=[all_walked_hosts_collection, inventory_file_path, splunk_indexes, server_config, local_snmp_engine])
+    job_thread = threading.Thread(
+        target = automatic_realtime_task,
+        args = [
+            all_walked_hosts_collection,
+            inventory_file_path,
+            splunk_indexes,
+            server_config,
+            local_snmp_engine,
+        ],
+    )
     job_thread.start()
 
 
@@ -170,7 +181,9 @@ def automatic_realtime_task(
         # see https://www.alvestrand.no/objectid/1.3.6.1.html for a better understanding
         universal_base_oid = "1.3.6.1.*"
 
-        for inventory_record in parse_inventory_file(inventory_file_path, profiles=None):
+        for inventory_record in parse_inventory_file(
+            inventory_file_path, profiles=None
+        ):
             db_host_id = return_database_id(inventory_record.host)
             sys_up_time = _extract_sys_uptime_instance(
                 local_snmp_engine,

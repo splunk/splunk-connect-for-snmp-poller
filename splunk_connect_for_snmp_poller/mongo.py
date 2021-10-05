@@ -117,7 +117,10 @@ class WalkedHostsRepository:
 
     def real_time_data_for(self, host):
         full_collection = self._walked_hosts.find_one({"_id": host})
-        if full_collection and WalkedHostsRepository.MIB_REAL_TIME_DATA in full_collection:
+        if (
+            full_collection
+            and WalkedHostsRepository.MIB_REAL_TIME_DATA in full_collection
+        ):
             return full_collection[WalkedHostsRepository.MIB_REAL_TIME_DATA]
         else:
             return None
@@ -161,8 +164,12 @@ class WalkedHostsRepository:
             }
         }
         """
-        static_data_dictionary = {WalkedHostsRepository.MIB_STATIC_DATA: defaultdict(dict)}
-        static_data_dictionary_mib = static_data_dictionary[WalkedHostsRepository.MIB_STATIC_DATA]
+        static_data_dictionary = {
+            WalkedHostsRepository.MIB_STATIC_DATA: defaultdict(dict)
+        }
+        static_data_dictionary_mib = static_data_dictionary[
+            WalkedHostsRepository.MIB_STATIC_DATA
+        ]
         if existing_data:
             static_data_dictionary_mib[InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER][
                 enricher_existing_varbinds

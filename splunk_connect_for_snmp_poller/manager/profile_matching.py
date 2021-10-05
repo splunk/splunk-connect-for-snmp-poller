@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 def assign_profiles_to_device(profiles, device_desc):
     result = []
     for profile in profiles:
-        if 'patterns' in profiles[profile]:
-            for pattern in profiles[profile]['patterns']:
+        if "patterns" in profiles[profile]:
+            for pattern in profiles[profile]["patterns"]:
                 if re.compile(pattern).match(device_desc):
-                    result.append((profile, profiles[profile]['frequency']))
+                    result.append((profile, profiles[profile]["frequency"]))
                     continue
     return result
 
@@ -40,8 +40,8 @@ def get_profiles(server_config):
     result = {}
     merged_profiles = {}
 
-    merged_profiles.update(mib_profiles['profiles'])
-    merged_profiles.update(server_config['profiles'])
+    merged_profiles.update(mib_profiles["profiles"])
+    merged_profiles.update(server_config["profiles"])
 
-    result['profiles'] = merged_profiles
+    result["profiles"] = merged_profiles
     return result

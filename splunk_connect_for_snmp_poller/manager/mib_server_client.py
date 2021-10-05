@@ -16,10 +16,10 @@
 import json
 import logging
 import os
-import requests
 
 import aiohttp
 import backoff as backoff
+import requests
 from aiohttp import ClientSession
 
 from splunk_connect_for_snmp_poller.utilities import format_value_for_mib_server
