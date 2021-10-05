@@ -76,8 +76,8 @@ def parse_command_line_arguments():
     parser.add_argument(
         "-l",
         "--loglevel",
-        default="debug",
-        help="Provide logging level. Example --loglevel debug, default=warning",
+        default="info",
+        help="Provide logging level. Example --loglevel debug, default=info",
     )
     parser.add_argument("-c", "--config", default="config.yaml", help="Config File")
     parser.add_argument(

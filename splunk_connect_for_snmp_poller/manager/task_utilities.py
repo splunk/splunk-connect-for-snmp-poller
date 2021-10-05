@@ -17,6 +17,7 @@ import json
 import os
 import re
 from collections import namedtuple
+from typing import Tuple
 
 from celery.utils.log import get_task_logger
 from pysmi import debug as pysmi_debug
@@ -85,7 +86,7 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
     @return result: formated string ready to be sent to Splunk HEC
     @return is_metric: boolean, metric data flag
     """
-    logger.info(f"I got these var binds: {var_binds}")
+    logger.debug(f"I got these var binds: {var_binds}")
     # Get Original varbinds as backup in case the mib-server is unreachable
     try:
         for name, val in var_binds:
@@ -110,38 +111,33 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
                 result = '{{\"metric\": \'{{"{oid}":"{value}"}}\'}}'.format(
                     oid=name.prettyPrint(), value=val.prettyPrint()
                 )
-                logger.info("Our result is - %s", result)
+                logger.debug("Our result is - %s", result)
     except Exception as e:
-        logger.info(
+        logger.error(
             f"Exception occurred while logging varBinds name & value. Exception: {e}"
         )
 
     # Override the varBinds string with translated varBinds string
     try:
         data_format = _get_data_format(is_metric, return_multimetric)
-        logger.debug(
-            "==========result before translated -- is_metric={is_metric}============\n%s",
-            result,
-        )
+        logger.debug(f"result before translated -- is_metric={is_metric}\n{result}")
         result = await get_translation(var_binds, mib_server_url, data_format)
         if data_format == "MULTIMETRIC":
             result = json.loads(result)["metric"]
-            logger.info(f"=========result=======\n{result}")
+            logger.debug(f"multimetric result\n{result}")
         # TODO double check the result to handle the edge case,
         # where the value of an metric data was translated from int to string
         if "metric_name" in result:
             result_dict = json.loads(result)
             _value = result_dict.get("_value", None)
-            logger.debug(f"=========_value=======\n{_value}")
+            logger.debug(f"metric value\n{_value}")
             if not is_metric_data(_value):
                 is_metric = False
                 data_format = _get_data_format(is_metric, return_multimetric)
                 result = await get_translation(var_binds, mib_server_url, data_format)
     except Exception as e:
-        logger.info(f"Could not perform translation. Exception: {e}")
-    logger.info(
-        f"###############final result -- metric: {is_metric}#######################\n{result}"
-    )
+        logger.error(f"Could not perform translation. Exception: {e}")
+    logger.debug(f"final result -- metric: {is_metric}\n{result}")
     return result, is_metric
 
 
@@ -207,14 +203,13 @@ async def snmp_get_handler(
     mongo_connection,
     enricher_presence,
     snmp_engine,
+    hec_sender,
     auth_data,
     context_data,
     host,
     port,
     mib_server_url,
     index,
-    otel_logs_url,
-    otel_metrics_url,
     one_time_flag,
     ir,
     additional_metric_fields,
@@ -243,9 +238,8 @@ async def snmp_get_handler(
                 mib_server_url, [varbind], return_multimetric
             )
             post_data_to_splunk_hec(
+                hec_sender,
                 host,
-                otel_logs_url,
-                otel_metrics_url,
                 result,
                 is_metric,
                 index,
@@ -253,6 +247,21 @@ async def snmp_get_handler(
                 additional_metric_fields,
                 one_time_flag,
                 mib_enricher,
+            )
+    else:
+        is_error, result = prepare_error_message(
+            errorIndication, errorStatus, errorIndex, varBinds
+        )
+        if is_error:
+            post_data_to_splunk_hec(
+                hec_sender,
+                host,
+                result,
+                False,  # fail during bulk so sending to event index
+                index,
+                ir,
+                additional_metric_fields,
+                one_time_flag,
             )
 
 
@@ -270,23 +279,23 @@ def _enrich_response(mongo_connection, enricher_presence, hostname):
 
 
 def _any_failure_happened(
-    errorIndication, errorStatus, errorIndex, varBinds: list
+    error_indication, error_status, error_index, var_binds: list
 ) -> bool:
     """
     This function checks if any failure happened during GET or BULK operation.
-    @param errorIndication:
-    @param errorStatus:
-    @param errorIndex: index of varbind where error appeared
-    @param varBinds: list of varbinds
+    @param error_indication:
+    @param error_status:
+    @param error_index: index of varbind where error appeared
+    @param var_binds: list of varbinds
     @return: if any failure happened
     """
-    if errorIndication:
-        result = f"error: {errorIndication}"
+    if error_indication:
+        result = f"error: {error_indication}"
         logger.error(result)
-    elif errorStatus:
+    elif error_status:
         result = "error: {} at {}".format(
-            errorStatus.prettyPrint(),
-            errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
+            error_status.prettyPrint(),
+            error_index and var_binds[int(error_index) - 1][0] or "?",
         )
         logger.error(result)
     else:
@@ -295,26 +304,26 @@ def _any_failure_happened(
 
 
 def _any_walk_failure_happened(
-    errorIndication,
-    errorStatus,
-    errorIndex,
+    hec_sender,
+    error_indication,
+    error_status,
+    error_index,
     host,
     index,
-    otel_logs_url,
-    otel_metrics_url,
     one_time_flag,
     is_metric,
     ir,
     additional_metric_fields,
-    varBinds,
+    var_binds,
 ):
-    if errorIndication:
-        result = f"error: {errorIndication}"
-        logger.info(result)
+    is_error, result = prepare_error_message(
+        error_indication, error_status, error_index, var_binds
+    )
+
+    if is_error:
         post_data_to_splunk_hec(
+            hec_sender,
             host,
-            otel_logs_url,
-            otel_metrics_url,
             result,
             is_metric,
             index,
@@ -322,40 +331,39 @@ def _any_walk_failure_happened(
             additional_metric_fields,
             one_time_flag,
         )
-        return True
-    elif errorStatus:
+
+    return is_error
+
+
+def prepare_error_message(
+    error_indication, error_status, error_index, var_binds
+) -> Tuple[bool, str]:
+    result = ""
+    is_error = False
+    if error_indication:
+        logger.debug(f"Result with error indication - {result}")
+        result = f"error: {error_indication}"
+        is_error = True
+    elif error_status:
         result = "error: {} at {}".format(
-            errorStatus.prettyPrint(),
-            errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
+            error_status.prettyPrint(),
+            error_index and var_binds[int(error_index) - 1][0] or "?",
         )
-        post_data_to_splunk_hec(
-            host,
-            otel_logs_url,
-            otel_metrics_url,
-            result,
-            is_metric,
-            index,
-            ir,
-            additional_metric_fields,
-            one_time_flag,
-        )
-        return True
-    else:
-        return False
+        is_error = True
+    return is_error, result
 
 
 async def snmp_bulk_handler(
     mongo_connection,
     enricher_presence,
     snmp_engine,
+    hec_sender,
     auth_data,
     context_data,
     host,
     port,
     mib_server_url,
     index,
-    otel_logs_url,
-    otel_metrics_url,
     one_time_flag,
     ir,
     additional_metric_fields,
@@ -388,9 +396,8 @@ async def snmp_bulk_handler(
                     mib_server_url, [varbind], return_multimetric
                 )
                 post_data_to_splunk_hec(
+                    hec_sender,
                     host,
-                    otel_logs_url,
-                    otel_metrics_url,
                     result,
                     is_metric,
                     index,
@@ -399,20 +406,34 @@ async def snmp_bulk_handler(
                     one_time_flag,
                     mib_enricher,
                 )
+        else:
+            is_error, result = prepare_error_message(
+                errorIndication, errorStatus, errorIndex, varBinds
+            )
+            if is_error:
+                post_data_to_splunk_hec(
+                    hec_sender,
+                    host,
+                    result,
+                    False,  # fail during bulk so sending to event index
+                    index,
+                    ir,
+                    additional_metric_fields,
+                    one_time_flag,
+                )
 
 
 async def walk_handler(
     profile,
     mongo_connection,
     snmp_engine,
+    hec_sender,
     auth_data,
     context_data,
     host,
     port,
     mib_server_url,
     index,
-    otel_logs_url,
-    otel_metrics_url,
     one_time_flag,
     ir,
     additional_metric_fields,
@@ -433,13 +454,12 @@ async def walk_handler(
     ):
         is_metric = False
         if _any_walk_failure_happened(
+            hec_sender,
             errorIndication,
             errorStatus,
             errorIndex,
             host,
             index,
-            otel_logs_url,
-            otel_metrics_url,
             one_time_flag,
             is_metric,
             ir,
@@ -450,9 +470,8 @@ async def walk_handler(
         else:
             result, is_metric = await get_translated_string(mib_server_url, var_binds)
             post_data_to_splunk_hec(
+                hec_sender,
                 host,
-                otel_logs_url,
-                otel_metrics_url,
                 result,
                 is_metric,
                 index,
@@ -486,14 +505,13 @@ async def walk_handler_with_enricher(
     enricher,
     mongo_connection,
     snmp_engine,
+    hec_sender,
     auth_data,
     context_data,
     host,
     port,
     mib_server_url,
     index,
-    otel_logs_url,
-    otel_metrics_url,
     one_time_flag,
     ir,
     additional_metric_fields,
@@ -516,13 +534,12 @@ async def walk_handler_with_enricher(
     ):
         is_metric = False
         if _any_walk_failure_happened(
+            hec_sender,
             errorIndication,
             errorStatus,
             errorIndex,
             host,
             index,
-            otel_logs_url,
-            otel_metrics_url,
             ir,
             additional_metric_fields,
             one_time_flag,
@@ -557,8 +574,6 @@ async def walk_handler_with_enricher(
     )
     post_walk_data_to_splunk_arguments = [
         host,
-        otel_logs_url,
-        otel_metrics_url,
         index,
         one_time_flag,
         ir,
@@ -566,10 +581,10 @@ async def walk_handler_with_enricher(
         mib_enricher,
     ]
     _post_walk_data_to_splunk(
-        merged_result_metric, True, *post_walk_data_to_splunk_arguments
+        hec_sender, merged_result_metric, True, *post_walk_data_to_splunk_arguments
     )
     _post_walk_data_to_splunk(
-        merged_result_non_metric, False, *post_walk_data_to_splunk_arguments
+        hec_sender, merged_result_non_metric, False, *post_walk_data_to_splunk_arguments
     )
 
 
@@ -624,11 +639,10 @@ def _return_mib_enricher_for_walk(
 
 
 def _post_walk_data_to_splunk(
+    hec_sender,
     result_list,
     is_metric,
     host,
-    otel_logs_url,
-    otel_metrics_url,
     index,
     one_time_flag,
     ir,
@@ -637,9 +651,8 @@ def _post_walk_data_to_splunk(
 ):
     for result in result_list:
         post_data_to_splunk_hec(
+            hec_sender,
             host,
-            otel_logs_url,
-            otel_metrics_url,
             result,
             is_metric,
             index,

@@ -65,7 +65,7 @@ def extract_network_interface_data_from_existing_config(config_as_dict):
                         "splunk_dimension_name": splunk_dimension[key],
                     }
                 )
-    logger.info(f"IF-MIB additional attributes for Splunk: {result}")
+    logger.debug(f"IF-MIB additional attributes for Splunk: {result}")
     return result
 
 

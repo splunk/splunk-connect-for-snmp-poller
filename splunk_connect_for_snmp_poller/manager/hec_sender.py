@@ -30,24 +30,52 @@ from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnrich
 logger = get_logger(__name__)
 
 
+class HecSender:
+    def __init__(self, metrics_endpoint, logs_endpoint):
+        logger.debug(f"[-] logs : {logs_endpoint}, metrics : {metrics_endpoint}")
+        self.metrics_endpoint = metrics_endpoint
+        self.logs_endpoint = logs_endpoint
+
+    def send_hec_request(self, is_metric: bool, data):
+        if is_metric:
+            return self.send_metric_request(data)
+        else:
+            return self.send_event_request(data)
+
+    def send_event_request(self, data):
+        return HecSender.send_request(self.logs_endpoint, data)
+
+    def send_metric_request(self, data):
+        return HecSender.send_request(self.metrics_endpoint, data)
+
+    @staticmethod
+    def send_request(endpoint, data):
+        try:
+            logger.debug("+++++++++endpoint+++++++++\n%s", endpoint)
+            response = requests.post(url=endpoint, json=data, timeout=60)
+            logger.debug("Response code is %s", response.status_code)
+            logger.debug("Response is %s", response.text)
+            return response
+        except requests.ConnectionError as e:
+            logger.error(
+                f"Connection error when sending data to HEC index - {data['index']}: {e}"
+            )
+
+
 def post_data_to_splunk_hec(
+    hec_sender: HecSender,
     host,
-    logs_endpoint,
-    metrics_endpoint,
     variables_binds,
     is_metric,
     index,
-    ir,
+    ir: InventoryRecord,
     additional_metric_fields,
     one_time_flag=False,
     mib_enricher=None,
 ):
-    logger.debug(f"[-] logs : {logs_endpoint}, metrics : {metrics_endpoint}")
-
     if is_metric:
-        logger.debug(f"+++++++++metric index: {index['metric_index']} +++++++++")
-        post_metric_data(
-            metrics_endpoint,
+        logger.debug(f"metric index: {index['metric_index']}")
+        data = build_metric_data(
             host,
             variables_binds,
             index["metric_index"],
@@ -56,20 +84,20 @@ def post_data_to_splunk_hec(
             mib_enricher,
         )
     else:
-        logger.debug(f"*********event index: {index['event_index']} ********")
-        post_event_data(
-            logs_endpoint,
+        logger.debug(f"event index: {index['event_index']}")
+        data = build_event_data(
             host,
             variables_binds,
             index,
             one_time_flag,
             mib_enricher,
         )
+    hec_sender.send_hec_request(is_metric, data)
 
 
 # TODO Discuss the format of event data payload
-def post_event_data(
-    endpoint, host, variables_binds, indexes, one_time_flag=False, mib_enricher=None
+def build_event_data(
+    host, variables_binds, indexes, one_time_flag=False, mib_enricher=None
 ):
     variables_binds = prepare_variable_binds(mib_enricher, variables_binds)
 
@@ -82,17 +110,7 @@ def post_event_data(
         builder.add(EventField.INDEX, indexes["event_index"])
         builder.add(EventField.SOURCETYPE, EventType.ERROR.value)
 
-    data = builder.build()
-
-    try:
-        logger.debug("+++++++++endpoint+++++++++\n%s", endpoint)
-        response = requests.post(url=endpoint, json=data, timeout=60)
-        logger.debug("Response code is %s", response.status_code)
-        logger.debug("Response is %s", response.text)
-    except requests.ConnectionError as e:
-        logger.error(
-            f"Connection error when sending data to HEC index - {data['index']}: {e}"
-        )
+    return builder.build()
 
 
 def init_builder_with_common_data(current_time, host, index) -> EventBuilder:
@@ -137,15 +155,14 @@ def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
     metric_result = json.loads(variables_binds["metric"])
     non_metric_result = variables_binds["non_metric"]
     additional_dimensions = mib_enricher.append_additional_dimensions(metric_result)
-    logger.info(additional_dimensions)
+    logger.debug(additional_dimensions)
     for field_name in additional_dimensions:
         if field_name in metric_result:
             non_metric_result += f'{field_name}="{metric_result[field_name]}" '
     return non_metric_result
 
 
-def post_metric_data(
-    endpoint,
+def build_metric_data(
     host,
     variables_binds,
     index,
@@ -170,15 +187,7 @@ def post_metric_data(
     builder.add(EventField.EVENT, EventType.METRIC.value)
     builder.add_fields(fields)
 
-    data = builder.build()
-
-    try:
-        logger.debug("-----endpoint------\n%s", endpoint)
-        response = requests.post(url=endpoint, json=data, timeout=60)
-        logger.debug("Response code is %s", response.status_code)
-        logger.debug("Response is %s", response.text)
-    except requests.ConnectionError as e:
-        logger.error(f"Connection error when sending data to HEC index - {index}: {e}")
+    return builder.build()
 
 
 def _enrich_metric_data(

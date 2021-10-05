@@ -105,7 +105,7 @@ class Poller:
                     self.delete_all_entries_per_host(ir.host)
                     self.add_device_for_profile_matching(ir)
                 else:
-                    logger.info(
+                    logger.debug(
                         "[-] server_config['profiles']: %s", self._server_config["profiles"]
                     )
                     if entry_key not in self._jobs_map:

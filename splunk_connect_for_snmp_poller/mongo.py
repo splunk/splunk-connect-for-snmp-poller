@@ -109,7 +109,7 @@ class WalkedHostsRepository:
         self._walked_hosts.insert_one({"_id": host})
 
     def delete_host(self, host):
-        logger.info(f"Delete host {host} from walked_host collection")
+        logger.debug("Delete host %s from walked_host collection", host)
         self._walked_hosts.delete_one({"_id": host})
 
     def clear(self):
@@ -125,7 +125,7 @@ class WalkedHostsRepository:
     def static_data_for(self, host):
         full_collection = self._walked_hosts.find_one({"_id": host})
         if not full_collection:
-            logger.info(f"No id {host} in walked_host collection")
+            logger.debug("No id %s in walked_host collection", host)
             return None
         if WalkedHostsRepository.MIB_STATIC_DATA in full_collection:
             mib_static_data = full_collection[WalkedHostsRepository.MIB_STATIC_DATA]

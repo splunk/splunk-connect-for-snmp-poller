@@ -23,6 +23,7 @@ from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
 
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
+from splunk_connect_for_snmp_poller.manager.hec_sender import HecSender
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     VarbindCollection,
     build_authData,
@@ -55,14 +56,13 @@ async def get_snmp_data(
     mongo_connection,
     enricher,
     snmp_engine,
+    hec_sender,
     auth_data,
     context_data,
     host,
     port,
     mib_server_url,
     index,
-    otel_logs_url,
-    otel_metrics_url,
     one_time_flag,
     ir,
     additional_metric_fields,
@@ -73,14 +73,13 @@ async def get_snmp_data(
                 mongo_connection,
                 enricher,
                 snmp_engine,
+                hec_sender,
                 auth_data,
                 context_data,
                 host,
                 port,
                 mib_server_url,
                 index,
-                otel_logs_url,
-                otel_metrics_url,
                 one_time_flag,
                 ir,
                 additional_metric_fields,
@@ -131,36 +130,36 @@ def snmp_polling(ir_json: str, server_config, index, profiles, one_time_flag=Fal
 async def snmp_polling_async(
     ir: InventoryRecord, server_config, index, profiles, one_time_flag=False
 ):
+    hec_sender = HecSender(
+        os.environ["OTEL_SERVER_METRICS_URL"], os.environ["OTEL_SERVER_LOGS_URL"]
+    )
     mib_server_url = os.environ["MIBS_SERVER_URL"]
-    otel_logs_url = os.environ["OTEL_SERVER_LOGS_URL"]
-    otel_metrics_url = os.environ["OTEL_SERVER_METRICS_URL"]
     host, port = parse_port(ir.host)
-    logger.info("Using the following MIBS server URL: %s", mib_server_url)
+    logger.debug("Using the following MIBS server URL: %s", mib_server_url)
 
     # create one SnmpEngie for snmp_get_handler, walk_handler, mib_string_handler
     snmp_engine = get_shared_snmp_engine()
 
     # create auth_data depending on SNMP's version
     auth_data = build_authData(ir.version, ir.community, server_config)
-    logger.debug("==========auth_data=========\n%s", auth_data)
+    logger.debug("auth_data\n%s", auth_data)
 
     # create context_data for SNMP v3
     context_data = build_contextData(ir.version, ir.community, server_config)
-    logger.debug("==========context_data=========\n%s", context_data)
+    logger.debug("context_data\n%s", context_data)
 
     mongo_connection = WalkedHostsRepository(server_config["mongo"])
     additional_metric_fields = server_config.get("additionalMetricField")
     enricher_presence = "enricher" in server_config
     static_parameters = [
         snmp_engine,
+        hec_sender,
         auth_data,
         context_data,
         host,
         port,
         mib_server_url,
         index,
-        otel_logs_url,
-        otel_metrics_url,
         one_time_flag,
         ir,
         additional_metric_fields,
@@ -180,7 +179,7 @@ async def snmp_polling_async(
                 var_binds = mib_profile.get("varBinds", None)
                 # Divide varBinds for WALK/BULK actions
                 varbind_collection = sort_varbinds(var_binds)
-                logger.info(f"Varbind collection: {varbind_collection}")
+                logger.debug(f"Varbind collection: {varbind_collection}")
                 # Perform SNMP BULK
                 await get_snmp_data(
                     varbind_collection.bulk,
