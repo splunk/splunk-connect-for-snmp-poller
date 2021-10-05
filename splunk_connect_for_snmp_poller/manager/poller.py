@@ -33,7 +33,6 @@ from splunk_connect_for_snmp_poller.manager.profile_matching import (
     assign_profiles_to_device,
     get_profiles,
 )
-
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
@@ -211,7 +210,7 @@ class Poller:
             self.__get_splunk_indexes(),
             self._server_config,
             self._local_snmp_engine,
-            )
+        )
 
     def add_device_for_profile_matching(self, device: InventoryRecord):
         self._lock.acquire()

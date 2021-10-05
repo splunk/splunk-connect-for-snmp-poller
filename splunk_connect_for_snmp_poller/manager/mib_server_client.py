@@ -92,4 +92,3 @@ def get_mib_profiles():
         return requests.get(profiles_url, timeout=3).text
     except Exception:
         return {}
-

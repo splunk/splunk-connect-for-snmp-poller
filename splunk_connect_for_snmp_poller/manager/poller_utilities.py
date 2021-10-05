@@ -158,8 +158,8 @@ def automatic_realtime_job(
     local_snmp_engine,
 ):
     job_thread = threading.Thread(
-        target = automatic_realtime_task,
-        args = [
+        target=automatic_realtime_task,
+        args=[
             all_walked_hosts_collection,
             inventory_file_path,
             splunk_indexes,
