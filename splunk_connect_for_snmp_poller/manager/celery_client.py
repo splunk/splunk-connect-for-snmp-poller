@@ -37,4 +37,7 @@ app.conf.update(
 
 
 if __name__ == "__main__":
+    i = app.control.inspect()
+    logger.info("after inspect")
+    logger.info(f"scheduled {i.scheduled()}")
     app.start()
