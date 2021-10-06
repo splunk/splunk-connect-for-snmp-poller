@@ -19,8 +19,20 @@ import re
 import yaml
 
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_mib_profiles
+from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
+from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
 logger = logging.getLogger(__name__)
+
+
+def extract_desc(realtime_collection):
+    sys_descr = multi_key_lookup(
+        realtime_collection, (OidConstant.SYS_DESCR, "value")
+    )
+    sys_object_id = multi_key_lookup(
+        realtime_collection, (OidConstant.SYS_OBJECT_ID, "value")
+    )
+    return sys_descr if sys_descr is not None else sys_object_id
 
 
 def assign_profiles_to_device(profiles, device_desc):

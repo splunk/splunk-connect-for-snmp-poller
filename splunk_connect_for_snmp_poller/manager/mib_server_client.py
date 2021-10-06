@@ -16,6 +16,7 @@
 import json
 import logging
 import os
+import traceback
 
 import aiohttp
 import backoff as backoff
@@ -67,6 +68,7 @@ async def get_translation(var_binds, mib_server_url, data_format):
         return await get_url(translation_url, headers, payload, data_format)
     except Exception as e:
         logger.error(f"Error getting translation from MIB Server: {e}")
+        traceback.print_exc()
         raise SharedException(f"Error getting translation from MIB Server: {e}")
 
 

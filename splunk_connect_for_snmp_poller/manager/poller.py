@@ -31,14 +31,12 @@ from splunk_connect_for_snmp_poller.manager.poller_utilities import (
 )
 from splunk_connect_for_snmp_poller.manager.profile_matching import (
     assign_profiles_to_device,
-    get_profiles,
+    get_profiles, extract_desc,
 )
-from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 from splunk_connect_for_snmp_poller.utilities import (
     file_was_modified,
-    multi_key_lookup,
     parse_config_file,
 )
 
@@ -236,13 +234,7 @@ class Poller:
                         )
                     )
                     if realtime_collection:
-                        sys_descr = multi_key_lookup(
-                            realtime_collection, (OidConstant.SYS_DESCR, "value")
-                        )
-                        sys_object_id = multi_key_lookup(
-                            realtime_collection, (OidConstant.SYS_OBJECT_ID, "value")
-                        )
-                        descr = sys_descr if sys_descr is not None else sys_object_id
+                        descr = extract_desc(realtime_collection)
 
                         if descr:
                             assigned_profiles = assign_profiles_to_device(

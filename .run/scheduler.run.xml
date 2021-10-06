@@ -33,7 +33,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/splunk_connect_for_snmp_poller/snmp_poller_server.py" />
-    <option name="PARAMETERS" value="-c ../config.yaml -i ../inventory.csv --event_index em_events --metric_index em_metrics --meta_index em_meta" />
+    <option name="PARAMETERS" value="-c ../config.yaml -i ../inventory.csv --event_index em_events --metric_index em_metrics --meta_index em_meta --loglevel debug" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />
