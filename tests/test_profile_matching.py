@@ -22,7 +22,6 @@ from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidCons
 
 
 class TestProfileMatching(TestCase):
-
     def test_return_sysdescr(self):
         realtime_collection = {OidConstant.SYS_DESCR: {"value": "Linux Suse 1.2.3.4"}}
 
