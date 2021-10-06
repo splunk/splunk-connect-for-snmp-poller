@@ -26,9 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 def extract_desc(realtime_collection):
-    sys_descr = multi_key_lookup(
-        realtime_collection, (OidConstant.SYS_DESCR, "value")
-    )
+    sys_descr = multi_key_lookup(realtime_collection, (OidConstant.SYS_DESCR, "value"))
     sys_object_id = multi_key_lookup(
         realtime_collection, (OidConstant.SYS_OBJECT_ID, "value")
     )

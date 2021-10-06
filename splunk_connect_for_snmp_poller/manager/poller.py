@@ -31,7 +31,8 @@ from splunk_connect_for_snmp_poller.manager.poller_utilities import (
 )
 from splunk_connect_for_snmp_poller.manager.profile_matching import (
     assign_profiles_to_device,
-    get_profiles, extract_desc,
+    extract_desc,
+    get_profiles,
 )
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
