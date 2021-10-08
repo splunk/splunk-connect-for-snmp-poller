@@ -65,8 +65,10 @@ def _device_restarted(realtime_collection, input_data_collection):
                 int(new_rt_record.value())
             )
         except ValueError as e:
-            logger.exception(f"Error when calculating if device was restarted: {e},"
-                             f" old value = {old_value}, new value = {new_value}")
+            logger.exception(
+                f"Error when calculating if device was restarted: {e},"
+                f" old value = {old_value}, new value = {new_value}"
+            )
             return False
     return False
 

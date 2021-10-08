@@ -82,10 +82,15 @@ def parse_inventory_file(inventory_file_path, profiles):
 
 
 def get_frequency(agent, profiles, default_frequency):
-    if profiles and "profile" in agent and agent["profile"] != "*" and agent["profile"] in profiles["profiles"]:
+    if (
+        profiles
+        and "profile" in agent
+        and agent["profile"] != "*"
+        and agent["profile"] in profiles["profiles"]
+    ):
         return profiles["profiles"][agent["profile"]]["frequency"]
     else:
-        logger.debug(f'Default frequency was assigned for agent = {agent["host"]}')
+        logger.debug(f'Default frequency was assigned for agent = {agent.get("host")}')
         return default_frequency
 
 
