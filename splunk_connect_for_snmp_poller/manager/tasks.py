@@ -212,7 +212,6 @@ async def snmp_polling_async(
                     *get_bulk_specific_parameters, *static_parameters, prepared_profile  # type: ignore
                 )
 
-        raise Exception("Random exception to test if it fixes rabbitmq")
     except Exception:
         logger.exception(
             f"Error occurred while executing SNMP polling for {host}, version={ir.version}, profile={ir.profile}"
