@@ -55,7 +55,7 @@ class HecSender:
         logger.debug("Response code is %s", response.status_code)
         logger.debug("Response is %s", response.text)
         logger.info(f"data: {data}")
-        if data.get("sourcetype") == "sc4snmp:error":
+        if data.get("sourcetype", "") == "sc4snmp:error":
             raise Exception("Error happened during snmp pooling")
         return response
 
