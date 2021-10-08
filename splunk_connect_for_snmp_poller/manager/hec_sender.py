@@ -50,14 +50,16 @@ class HecSender:
 
     @staticmethod
     def send_request(endpoint, data):
-        logger.debug("+++++++++endpoint+++++++++\n%s", endpoint)
-        response = requests.post(url=endpoint, json=data, timeout=60)
-        logger.debug("Response code is %s", response.status_code)
-        logger.debug("Response is %s", response.text)
-        logger.info(f"data: {data}")
-        if data.get("sourcetype", "") == "sc4snmp:error":
-            raise Exception("Error happened during snmp pooling")
-        return response
+        try:
+            logger.debug("+++++++++endpoint+++++++++\n%s", endpoint)
+            response = requests.post(url=endpoint, json=data, timeout=60)
+            logger.debug("Response code is %s", response.status_code)
+            logger.debug("Response is %s", response.text)
+            return response
+        except requests.ConnectionError as e:
+            logger.error(
+                f"Connection error when sending data to HEC index - {data['index']}: {e}"
+            )
 
 
 def post_data_to_splunk_hec(
