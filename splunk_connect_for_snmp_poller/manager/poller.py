@@ -17,7 +17,6 @@ import functools
 import logging.config
 import threading
 import time
-import traceback
 
 import schedule
 from pysnmp.hlapi import SnmpEngine
@@ -257,8 +256,8 @@ class Poller:
                                 self.process_new_job(entry_key, new_record, profiles)
                 for d in processed_devices:
                     self._unmatched_devices.pop(d)
-            except Exception:
-                traceback.print_exc()
+            except Exception as e:
+                logger.exception(f"Error processing unmatched device {e}")
             finally:
                 if self._lock.locked():
                     self._lock.release()

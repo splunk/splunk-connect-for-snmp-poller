@@ -13,11 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import logging
 
 from pysnmp.proto.rfc1902 import TimeTicks
 
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 
+logger = logging.getLogger(__name__)
 
 class __RealTimeData:
     def __init__(self, element_type, element_value):
@@ -62,7 +64,9 @@ def _device_restarted(realtime_collection, input_data_collection):
             return TimeTicks(int(old_rt_record.value())) > TimeTicks(
                 int(new_rt_record.value())
             )
-        except ValueError:
+        except ValueError as e:
+            logger.exception(f"Error when calculating if device was restarted: {e},"
+                             f" old value = {old_value}, new value = {new_value}")
             return False
     return False
 

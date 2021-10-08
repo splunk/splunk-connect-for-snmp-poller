@@ -15,7 +15,6 @@
 #
 import os
 import threading
-import traceback
 
 from asgiref.sync import async_to_sync
 from celery.utils.log import get_task_logger
@@ -214,7 +213,6 @@ async def snmp_polling_async(
                 )
 
     except Exception as e:
-        traceback.print_exc()
-        logger.error(
+        logger.exception(
             f"Error occurred while executing SNMP polling for {host}, version={ir.version}, profile={ir.profile}: {e}"
         )

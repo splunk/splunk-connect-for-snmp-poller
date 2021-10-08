@@ -112,5 +112,6 @@ def get_mib_profiles():
 
     try:
         return requests.get(profiles_url, timeout=3).text
-    except Exception:
+    except Exception as e:
+        logger.exception(f"Error getting profiles from MIB server: {e}")
         return {}

@@ -20,7 +20,7 @@ from unittest.mock import Mock
 sys.modules["splunk_connect_for_snmp_poller.manager.celery_client"] = Mock()
 from splunk_connect_for_snmp_poller.manager.poller_utilities import (  # noqa: E402
     create_poller_scheduler_entry_key,
-    return_database_id,
+    return_database_id, get_frequency,
 )
 
 
@@ -46,3 +46,41 @@ class TestPollerUtilities(TestCase):
             create_poller_scheduler_entry_key("127.0.0.1", "1.3.6.1.2.1.2"),
             "127.0.0.1#1.3.6.1.2.1.2",
         )
+
+    def test_return_frequency(self):
+        agent = {"profile": "some_profile"}
+        profiles = {"profiles": {"some_profile":
+                        {"frequency": 20}
+                    }}
+        result = get_frequency(agent, profiles, 60)
+        self.assertEqual(result, 20)
+
+    def test_return_default_frequency_when_agent_does_not_have_profile(self):
+        agent = {}
+        profiles = {"profiles": {"some_profile":
+                        {"frequency": 20}
+                    }}
+        result = get_frequency(agent, profiles, 60)
+        self.assertEqual(result, 60)
+
+    def test_return_default_frequency_when_agent_profile_not_present_in_profiles(self):
+        agent = {"profile": "some_profile"}
+        profiles = {"profiles": {"some_profile_2":
+                        {"frequency": 20}
+                    }}
+        result = get_frequency(agent, profiles, 60)
+        self.assertEqual(result, 60)
+
+    def test_return_default_frequency_when_profiles_are_empty(self):
+        agent = {"profile": "some_profile"}
+        profiles = {}
+        result = get_frequency(agent, profiles, 60)
+        self.assertEqual(result, 60)
+
+    def test_return_default_frequency_when_profile_matched_is_dynamic(self):
+        agent = {"profile": "*"}
+        profiles = {"profiles": {"some_profile":
+                        {"frequency": 20}
+                    }}
+        result = get_frequency(agent, profiles, 60)
+        self.assertEqual(result, 60)

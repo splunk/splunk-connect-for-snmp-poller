@@ -16,7 +16,6 @@
 import csv
 import logging.config
 import threading
-import traceback
 from pathlib import Path
 
 import schedule
@@ -76,14 +75,18 @@ def parse_inventory_file(inventory_file_path, profiles):
                 agent["version"],
                 agent["community"],
                 agent["profile"],
-                profiles["profiles"][agent["profile"]]["frequency"]
-                if profiles
-                and agent["profile"] != "*"
-                and agent["profile"] in profiles["profiles"]
-                else 60,
+                get_frequency(agent, profiles, 60),
             )
             if _should_process_current_line(inventory_record):
                 yield inventory_record
+
+
+def get_frequency(agent, profiles, default_frequency):
+    if profiles and "profile" in agent and agent["profile"] != "*" and agent["profile"] in profiles["profiles"]:
+        return profiles["profiles"][agent["profile"]]["frequency"]
+    else:
+        logger.debug(f'Default frequency was assigned for agent = {agent["host"]}')
+        return default_frequency
 
 
 def _extract_sys_uptime_instance(
@@ -178,9 +181,6 @@ def automatic_realtime_task(
     local_snmp_engine,
 ):
     try:
-        # see https://www.alvestrand.no/objectid/1.3.6.1.html for a better understanding
-        universal_base_oid = "1.3.6.1.*"
-
         for inventory_record in parse_inventory_file(
             inventory_file_path, profiles=None
         ):
@@ -197,7 +197,7 @@ def automatic_realtime_task(
             )
             if should_do_walk:
                 logger.info("Scheduling WALK of full tree")
-                inventory_record.profile = universal_base_oid
+                inventory_record.profile = OidConstant.UNIVERSAL_BASE_OID
                 schedule.every().second.do(
                     onetime_task,
                     inventory_record,
@@ -215,8 +215,8 @@ def automatic_realtime_task(
                 host_already_walked,
                 sys_up_time,
             )
-    except Exception:
-        traceback.print_exc()
+    except Exception as e:
+        logger.exception(e)
 
 
 def create_poller_scheduler_entry_key(host, profile):

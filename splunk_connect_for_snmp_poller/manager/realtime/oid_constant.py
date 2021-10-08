@@ -17,3 +17,5 @@ class OidConstant:
     SYS_DESCR = "1.3.6.1.2.1.1.1.0"
     SYS_OBJECT_ID = "1.3.6.1.2.1.1.2.0"
     SYS_UP_TIME_INSTANCE = "1.3.6.1.2.1.1.3.0"
+    # see https://www.alvestrand.no/objectid/1.3.6.1.html for a better understanding
+    UNIVERSAL_BASE_OID = "1.3.6.1.*"
