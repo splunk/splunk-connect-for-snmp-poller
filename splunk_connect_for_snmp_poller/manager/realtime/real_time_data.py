@@ -21,6 +21,7 @@ from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidCons
 
 logger = logging.getLogger(__name__)
 
+
 class __RealTimeData:
     def __init__(self, element_type, element_value):
         self.element_type = element_type
