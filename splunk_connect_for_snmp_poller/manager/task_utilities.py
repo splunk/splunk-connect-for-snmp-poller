@@ -86,41 +86,12 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
     @return result: formated string ready to be sent to Splunk HEC
     @return is_metric: boolean, metric data flag
     """
-    logger.debug(f"I got these var binds: {var_binds}")
-    # Get Original varbinds as backup in case the mib-server is unreachable
-    try:
-        for name, val in var_binds:
-            # Original oid
-            # TODO Discuss: should we return the original oid
-            # if the mib server is unreachable
-            # should we format it align with the format of the translated one
-            # result = "{} = {}".format(name.prettyPrint(), val.prettyPrint())
-
-            # check if this is metric data
-            is_metric = is_metric_data(val.prettyPrint())
-            if is_metric:
-                result = {
-                    # Prefix the metric for ux in analytics workspace
-                    # Splunk uses . rather than :: for hierarchy.
-                    # if the metric name contains a . replace with _
-                    "metric_name": f'sc4snmp.{name.prettyPrint().replace(".", "_").replace("::", ".")}',
-                    "_value": val.prettyPrint(),
-                }
-                result = json.dumps(result)
-            else:
-                result = '{{"metric": \'{{"{oid}":"{value}"}}\'}}'.format(
-                    oid=name.prettyPrint(), value=val.prettyPrint()
-                )
-                logger.debug("Our result is - %s", result)
-    except Exception as e:
-        logger.error(
-            f"Exception occurred while logging varBinds name & value. Exception: {e}"
-        )
+    logger.debug(f"Getting translation for the following var_binds: {varBinds}")
+    is_metric, result = await result_without_translation(var_binds)
 
     # Override the varBinds string with translated varBinds string
     try:
         data_format = _get_data_format(is_metric, return_multimetric)
-        logger.debug(f"result before translated -- is_metric={is_metric}\n{result}")
         result = await get_translation(var_binds, mib_server_url, data_format)
         if data_format == "MULTIMETRIC":
             result = json.loads(result)["metric"]
@@ -134,22 +105,46 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
             if not is_metric_data(_value):
                 is_metric = False
                 data_format = _get_data_format(is_metric, return_multimetric)
-                result = await get_translation(var_binds, mib_server_url, data_format)
-    except Exception as e:
-        logger.error(f"Could not perform translation. Exception: {e}")
+                result = await get_translation(varBinds, mib_server_url, data_format)
+    except Exception:
+        logger.exception("Could not perform translation. Returning original varBinds")
     logger.debug(f"final result -- metric: {is_metric}\n{result}")
     return result, is_metric
+
+
+async def result_without_translation(var_binds):
+    # Get Original varbinds as backup in case the mib-server is unreachable
+    for name, val in var_binds:
+        # Original oid
+        # TODO Discuss: should we return the original oid
+        # if the mib server is unreachable
+        # should we format it align with the format of the translated one
+        # result = "{} = {}".format(name.prettyPrint(), val.prettyPrint())
+
+        # check if this is metric data
+        is_metric = is_metric_data(val.prettyPrint())
+        if is_metric:
+            result = {
+                # Prefix the metric for ux in analytics workspace
+                # Splunk uses . rather than :: for hierarchy.
+                # if the metric name contains a . replace with _
+                "metric_name": f'sc4snmp.{name.prettyPrint().replace(".", "_").replace("::", ".")}',
+                "_value": val.prettyPrint(),
+            }
+            result = json.dumps(result)
+        else:
+            result = '{{"metric": \'{{"{oid}":"{value}"}}\'}}'.format(
+                oid=name.prettyPrint(), value=val.prettyPrint()
+            )
+        logger.debug("Our result is_metric - %s and string - %s", is_metric, result)
+    return is_metric, result
 
 
 def _get_data_format(is_metric: bool, return_multimetric: bool):
     # if is_metric is true, return_multimetric doesn't matter
     if is_metric:
         return "METRIC"
-    else:
-        if return_multimetric:
-            return "MULTIMETRIC"
-        else:
-            return "TEXT"
+    return "MULTIMETRIC" if return_multimetric else "TEXT"
 
 
 def mib_string_handler(mib_list: list) -> VarbindCollection:
@@ -558,8 +553,6 @@ async def walk_handler_with_enricher(
                 merged_result,
                 result,
             )
-
-    logger.debug(merged_result)
 
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
     additional_enricher_varbinds = (
