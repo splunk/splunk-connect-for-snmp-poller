@@ -81,15 +81,15 @@ def is_metric_data(value):
 
 async def get_translated_string(mib_server_url, var_binds, return_multimetric=False):
     """
-    Get the translated/formatted var_binds string depending on whether the varBinds is an event or metric
-    Note: if it failed to get translation, return the the original varBinds
+    Get the translated/formatted var_binds string depending on whether the var_binds is an event or metric
+    Note: if it failed to get translation, return the the original var_binds
     @return result: formated string ready to be sent to Splunk HEC
     @return is_metric: boolean, metric data flag
     """
-    logger.debug(f"Getting translation for the following var_binds: {varBinds}")
+    logger.debug(f"Getting translation for the following var_binds: {var_binds}")
     is_metric, result = await result_without_translation(var_binds)
 
-    # Override the varBinds string with translated varBinds string
+    # Override the var_binds string with translated var_binds string
     try:
         data_format = _get_data_format(is_metric, return_multimetric)
         result = await get_translation(var_binds, mib_server_url, data_format)
@@ -105,15 +105,15 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
             if not is_metric_data(_value):
                 is_metric = False
                 data_format = _get_data_format(is_metric, return_multimetric)
-                result = await get_translation(varBinds, mib_server_url, data_format)
+                result = await get_translation(var_binds, mib_server_url, data_format)
     except Exception:
-        logger.exception("Could not perform translation. Returning original varBinds")
+        logger.exception("Could not perform translation. Returning original var_binds")
     logger.debug(f"final result -- metric: {is_metric}\n{result}")
     return result, is_metric
 
 
 async def result_without_translation(var_binds):
-    # Get Original varbinds as backup in case the mib-server is unreachable
+    # Get Original var_binds as backup in case the mib-server is unreachable
     for name, val in var_binds:
         # Original oid
         # TODO Discuss: should we return the original oid
@@ -377,16 +377,16 @@ async def snmp_bulk_handler(
         *var_binds,
         lexicographicMode=False,
     )
-    for (errorIndication, errorStatus, errorIndex, varBinds) in g:
+    for (errorIndication, errorStatus, errorIndex, var_binds) in g:
         if not _any_failure_happened(
-            errorIndication, errorStatus, errorIndex, varBinds
+            errorIndication, errorStatus, errorIndex, var_binds
         ):
             mib_enricher, return_multimetric = _enrich_response(
                 mongo_connection, enricher_presence, f"{host}:{port}"
             )
-            # Bulk operation returns array of varbinds
-            for varbind in varBinds:
-                logger.debug(f"Bulk returned this varbind: {varbind}")
+            # Bulk operation returns array of var_binds
+            for varbind in var_binds:
+                logger.debug(f"Bulk returned this varbind: {var_binds}")
                 result, is_metric = await get_translated_string(
                     mib_server_url, [varbind], return_multimetric
                 )
@@ -403,7 +403,7 @@ async def snmp_bulk_handler(
                 )
         else:
             is_error, result = prepare_error_message(
-                errorIndication, errorStatus, errorIndex, varBinds
+                errorIndication, errorStatus, errorIndex, var_binds
             )
             if is_error:
                 post_data_to_splunk_hec(

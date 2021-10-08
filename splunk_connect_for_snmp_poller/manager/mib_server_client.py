@@ -105,6 +105,7 @@ def format_value_for_mib_server(value, value_type):
     else:
         return str(value)
 
+
 def get_mib_profiles():
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     endpoint = "profiles"
