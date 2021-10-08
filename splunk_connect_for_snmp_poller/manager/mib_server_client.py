@@ -16,7 +16,6 @@
 import json
 import logging
 import os
-import traceback
 
 import aiohttp
 import backoff as backoff
