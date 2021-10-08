@@ -117,7 +117,7 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 
 
 # TODO remove the debugging statement later
-@app.task
+@app.task(max_retries=1)
 def snmp_polling(ir_json: str, server_config, index, one_time_flag=False):
     ir = InventoryRecord.from_json(ir_json)
 
