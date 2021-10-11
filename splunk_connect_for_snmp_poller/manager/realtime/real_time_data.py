@@ -65,9 +65,9 @@ def _device_restarted(realtime_collection, input_data_collection):
             return TimeTicks(int(old_rt_record.value())) > TimeTicks(
                 int(new_rt_record.value())
             )
-        except ValueError as e:
+        except ValueError:
             logger.exception(
-                f"Error when calculating if device was restarted: {e},"
+                f"Error when calculating if device was restarted,"
                 f" old value = {old_value}, new value = {new_value}"
             )
             return False
