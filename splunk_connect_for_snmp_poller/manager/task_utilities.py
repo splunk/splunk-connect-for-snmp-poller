@@ -40,6 +40,7 @@ from splunk_connect_for_snmp_poller.manager.const import (
 )
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
+from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
     extract_network_interface_data_from_additional_config,
     extract_network_interface_data_from_walk,
@@ -58,7 +59,9 @@ class VarbindCollection(namedtuple("VarbindCollection", "get, bulk")):
 # TODO remove the debugging statement later
 # TODO analyze the code here:
 # https://github.com/etingof/pysnmp/blob/becd15c79c9a6b5696928ecd50bf5cca8b1770a1/examples/hlapi/v3arch/asyncore/manager/cmdgen/pull-mibs-from-multiple-agents-at-once-over-ipv4-and-ipv6.py#L57
-# to compare the performace between the runDispatcher() and the current getCmd()/nextCmd() .
+# to compare the performance between the runDispatcher() and the current getCmd()/nextCmd() .
+
+oids_to_store = {OidConstant.SYS_DESCR, OidConstant.SYS_OBJECT_ID}
 
 
 def is_metric_data(value):
@@ -76,20 +79,20 @@ def is_metric_data(value):
         return False
 
 
-async def get_translated_string(mib_server_url, varBinds, return_multimetric=False):
+async def get_translated_string(mib_server_url, var_binds, return_multimetric=False):
     """
-    Get the translated/formatted var_binds string depending on whether the varBinds is an event or metric
-    Note: if it failed to get translation, return the the original varBinds
+    Get the translated/formatted var_binds string depending on whether the var_binds is an event or metric
+    Note: if it failed to get translation, return the the original var_binds
     @return result: formated string ready to be sent to Splunk HEC
     @return is_metric: boolean, metric data flag
     """
-    logger.debug(f"Getting translation for the following varBinds: {varBinds}")
-    is_metric, result = await result_without_translation(varBinds)
+    logger.debug(f"Getting translation for the following var_binds: {var_binds}")
+    is_metric, result = await result_without_translation(var_binds)
 
-    # Override the varBinds string with translated varBinds string
+    # Override the var_binds string with translated var_binds string
     try:
         data_format = _get_data_format(is_metric, return_multimetric)
-        result = await get_translation(varBinds, mib_server_url, data_format)
+        result = await get_translation(var_binds, mib_server_url, data_format)
         if data_format == "MULTIMETRIC":
             result = json.loads(result)["metric"]
             logger.debug(f"multimetric result\n{result}")
@@ -102,15 +105,15 @@ async def get_translated_string(mib_server_url, varBinds, return_multimetric=Fal
             if not is_metric_data(_value):
                 is_metric = False
                 data_format = _get_data_format(is_metric, return_multimetric)
-                result = await get_translation(varBinds, mib_server_url, data_format)
+                result = await get_translation(var_binds, mib_server_url, data_format)
     except Exception:
-        logger.exception("Could not perform translation. Returning original varBinds")
+        logger.exception("Could not perform translation. Returning original var_binds")
     logger.debug(f"final result -- metric: {is_metric}\n{result}")
     return result, is_metric
 
 
 async def result_without_translation(var_binds):
-    # Get Original varbinds as backup in case the mib-server is unreachable
+    # Get Original var_binds as backup in case the mib-server is unreachable
     for name, val in var_binds:
         # Original oid
         # TODO Discuss: should we return the original oid
@@ -130,7 +133,7 @@ async def result_without_translation(var_binds):
             }
             result = json.dumps(result)
         else:
-            result = '{oid}="{value}"'.format(
+            result = '{{"metric": \'{{"{oid}":"{value}"}}\'}}'.format(
                 oid=name.prettyPrint(), value=val.prettyPrint()
             )
         logger.debug("Our result is_metric - %s and string - %s", is_metric, result)
@@ -374,16 +377,16 @@ async def snmp_bulk_handler(
         *var_binds,
         lexicographicMode=False,
     )
-    for (errorIndication, errorStatus, errorIndex, varBinds) in g:
+    for (errorIndication, errorStatus, errorIndex, var_binds) in g:
         if not _any_failure_happened(
-            errorIndication, errorStatus, errorIndex, varBinds
+            errorIndication, errorStatus, errorIndex, var_binds
         ):
             mib_enricher, return_multimetric = _enrich_response(
                 mongo_connection, enricher_presence, f"{host}:{port}"
             )
-            # Bulk operation returns array of varbinds
-            for varbind in varBinds:
-                logger.debug(f"Bulk returned this varbind: {varbind}")
+            # Bulk operation returns array of var_binds
+            for varbind in var_binds:
+                logger.debug(f"Bulk returned this varbind: {var_binds}")
                 result, is_metric = await get_translated_string(
                     mib_server_url, [varbind], return_multimetric
                 )
@@ -400,7 +403,7 @@ async def snmp_bulk_handler(
                 )
         else:
             is_error, result = prepare_error_message(
-                errorIndication, errorStatus, errorIndex, varBinds
+                errorIndication, errorStatus, errorIndex, var_binds
             )
             if is_error:
                 post_data_to_splunk_hec(
@@ -417,6 +420,7 @@ async def snmp_bulk_handler(
 
 async def walk_handler(
     profile,
+    mongo_connection,
     snmp_engine,
     hec_sender,
     auth_data,
@@ -435,7 +439,7 @@ async def walk_handler(
     which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
     """
 
-    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+    for (errorIndication, errorStatus, errorIndex, var_binds) in nextCmd(
         snmp_engine,
         auth_data,
         UdpTransportTarget((host, port)),
@@ -444,6 +448,7 @@ async def walk_handler(
         lexicographicMode=False,
     ):
         is_metric = False
+        extract_data_to_mongo(host, port, mongo_connection, var_binds)
         if _any_walk_failure_happened(
             hec_sender,
             errorIndication,
@@ -455,11 +460,11 @@ async def walk_handler(
             is_metric,
             ir,
             additional_metric_fields,
-            varBinds,
+            var_binds,
         ):
             break
         else:
-            result, is_metric = await get_translated_string(mib_server_url, varBinds)
+            result, is_metric = await get_translated_string(mib_server_url, var_binds)
             post_data_to_splunk_hec(
                 hec_sender,
                 host,
@@ -470,6 +475,23 @@ async def walk_handler(
                 additional_metric_fields,
                 one_time_flag,
             )
+
+
+def extract_data_to_mongo(host, port, mongo_connection, var_binds):
+    oid = str(var_binds[0][0].getOid())
+    val = str(var_binds[0][1])
+    if oid in oids_to_store:
+        host_id = "{host}:{port}".format(host=host, port=port)
+
+        prev_content = mongo_connection.real_time_data_for(host_id)
+        if not prev_content:
+            prev_content = {}
+        prev_content[oid] = {
+            "value": val,
+            "type": "str",
+        }
+
+        mongo_connection.update_real_time_data_for(host_id, prev_content)
 
 
 async def walk_handler_with_enricher(
@@ -496,7 +518,7 @@ async def walk_handler_with_enricher(
     merged_result = []
     merged_result_metric = []
     merged_result_non_metric = []
-    for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+    for (errorIndication, errorStatus, errorIndex, var_binds) in nextCmd(
         snmp_engine,
         auth_data,
         UdpTransportTarget((host, port)),
@@ -505,6 +527,7 @@ async def walk_handler_with_enricher(
         lexicographicMode=False,
     ):
         is_metric = False
+        extract_data_to_mongo(host, port, mongo_connection, var_binds)
         if _any_walk_failure_happened(
             hec_sender,
             errorIndication,
@@ -516,12 +539,12 @@ async def walk_handler_with_enricher(
             additional_metric_fields,
             one_time_flag,
             is_metric,
-            varBinds,
+            var_binds,
         ):
             break
         else:
             result, is_metric = await get_translated_string(
-                mib_server_url, varBinds, True
+                mib_server_url, var_binds, True
             )
             _sort_walk_data(
                 is_metric,

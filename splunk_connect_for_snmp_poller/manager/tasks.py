@@ -118,16 +118,16 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
 
 # TODO remove the debugging statement later
 @app.task(ignore_result=True)
-def snmp_polling(ir_json: str, server_config, index, one_time_flag=False):
+def snmp_polling(ir_json: str, server_config, index, profiles, one_time_flag=False):
     ir = InventoryRecord.from_json(ir_json)
 
-    async_to_sync(snmp_polling_async)(ir, server_config, index, one_time_flag)
+    async_to_sync(snmp_polling_async)(ir, server_config, index, profiles, one_time_flag)
 
     return f"Executing SNMP Polling for {ir.host} version={ir.version} profile={ir.profile}"
 
 
 async def snmp_polling_async(
-    ir: InventoryRecord, server_config, index, one_time_flag=False
+    ir: InventoryRecord, server_config, index, profiles, one_time_flag=False
 ):
     hec_sender = HecSender(
         os.environ["OTEL_SERVER_METRICS_URL"], os.environ["OTEL_SERVER_LOGS_URL"]
@@ -173,7 +173,7 @@ async def snmp_polling_async(
                 host,
                 ir.profile,
             )
-            mib_profile = server_config["profiles"].get(ir.profile, None)
+            mib_profile = profiles["profiles"].get(ir.profile, None)
             if mib_profile:
                 var_binds = mib_profile.get("varBinds", None)
                 # Divide varBinds for WALK/BULK actions
@@ -186,7 +186,7 @@ async def snmp_polling_async(
                     *get_bulk_specific_parameters,
                     *static_parameters,
                 )
-                # Perform SNMP WALK
+                # Perform SNMP GET
                 await get_snmp_data(
                     varbind_collection.get,
                     snmp_get_handler,
@@ -203,7 +203,7 @@ async def snmp_polling_async(
                         ir.profile, server_config, mongo_connection, *static_parameters
                     )
                 else:
-                    await walk_handler(ir.profile, *static_parameters)
+                    await walk_handler(ir.profile, mongo_connection, *static_parameters)
             # Perform SNNP GET for an oid
             else:
                 logger.info("Executing SNMP GET for %s profile=%s", host, ir.profile)

@@ -29,6 +29,7 @@ async def get_translation(var_binds, mib_server_url, data_format):
     """
     @param var_binds: var_binds object getting from SNMP agents
     @param mib_server_url: URL of SNMP MIB server
+    @param data_format: format of data
     @return: translated string
     """
     payload = await prepare_payload(var_binds)
@@ -102,3 +103,15 @@ def format_value_for_mib_server(value, value_type):
         return value.prettyPrint()
     else:
         return str(value)
+
+
+def get_mib_profiles():
+    mib_server_url = os.environ["MIBS_SERVER_URL"]
+    endpoint = "profiles"
+    profiles_url = os.path.join(mib_server_url.strip("/"), endpoint)
+
+    try:
+        return requests.get(profiles_url, timeout=3).text
+    except Exception:
+        logger.exception("Error getting profiles from MIB server")
+        return {}

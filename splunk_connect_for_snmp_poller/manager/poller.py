@@ -15,6 +15,7 @@
 #
 import functools
 import logging.config
+import threading
 import time
 
 import schedule
@@ -22,10 +23,15 @@ from pysnmp.hlapi import SnmpEngine
 
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.poller_utilities import (
-    automatic_realtime_task,
+    automatic_realtime_job,
     create_poller_scheduler_entry_key,
     parse_inventory_file,
     return_database_id,
+)
+from splunk_connect_for_snmp_poller.manager.profile_matching import (
+    assign_profiles_to_device,
+    extract_desc,
+    get_profiles,
 )
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
@@ -38,9 +44,6 @@ logger = logging.getLogger(__name__)
 
 
 class Poller:
-    # see https://www.alvestrand.no/objectid/1.3.6.1.html for a better understanding
-    universal_base_oid = "1.3.6.1.*"
-
     def __init__(self, args, server_config):
         self._args = args
         self._server_config = server_config
@@ -51,6 +54,8 @@ class Poller:
             self._server_config["mongo"]
         )
         self._local_snmp_engine = SnmpEngine()
+        self._unmatched_devices = {}
+        self._lock = threading.Lock()
 
     def __get_splunk_indexes(self):
         return {
@@ -58,9 +63,6 @@ class Poller:
             "metric_index": self._args.metric_index,
             "meta_index": self._args.meta_index,
         }
-
-    def __get_realtime_task_frequency(self):
-        return self._args.realtime_task_frequency
 
     def run(self):
         self.__start_realtime_scheduler_task()
@@ -88,7 +90,8 @@ class Poller:
         # update job when either inventory changes or config changes
         if server_config_modified or inventory_config_modified:
             inventory_hosts = set()
-            for ir in parse_inventory_file(self._args.inventory):
+            profiles = get_profiles(self._server_config)
+            for ir in parse_inventory_file(self._args.inventory, profiles):
                 entry_key = create_poller_scheduler_entry_key(ir.host, ir.profile)
                 if entry_key in inventory_hosts:
                     logger.error(
@@ -99,16 +102,27 @@ class Poller:
                         ir.profile,
                     )
                     continue
-
                 inventory_hosts.add(entry_key)
-                logger.debug(
-                    "[-] server_config['profiles']: %s", self._server_config["profiles"]
-                )
-                if entry_key not in self._jobs_map:
-                    self.process_new_job(entry_key, ir)
+                if ir.profile == "*":
+                    self.delete_all_entries_per_host(ir.host)
+                    self.add_device_for_profile_matching(ir)
                 else:
-                    self.update_schedule_for_changed_conf(entry_key, ir)
+                    logger.debug(
+                        "[-] server_config['profiles']: %s",
+                        self._server_config["profiles"],
+                    )
+                    if entry_key not in self._jobs_map:
+                        self.process_new_job(entry_key, ir, profiles)
+                    else:
+                        self.update_schedule_for_changed_conf(entry_key, ir, profiles)
+
             self.clean_job_inventory(inventory_hosts)
+
+    def delete_all_entries_per_host(self, host):
+        for entry_key in list(self._jobs_map.keys()):
+            if entry_key.split("#")[0] == host:
+                schedule.cancel_job(self._jobs_map.get(entry_key))
+                del self._jobs_map[entry_key]
 
     def clean_job_inventory(self, inventory_hosts):
         for entry_key in list(self._jobs_map):
@@ -120,10 +134,12 @@ class Poller:
                 self._mongo_walked_hosts_coll.delete_host(db_host_id)
                 del self._jobs_map[entry_key]
 
-    def update_schedule_for_changed_conf(self, entry_key, ir):
+    def update_schedule_for_changed_conf(self, entry_key, ir, profiles):
         old_conf = self._jobs_map.get(entry_key).job_func.args
         if self.is_conf_changed(entry_key, ir, old_conf):
-            self.__update_schedule(ir, self._server_config, self.__get_splunk_indexes())
+            self.__update_schedule(
+                ir, self._server_config, self.__get_splunk_indexes(), profiles
+            )
 
     def is_conf_changed(self, entry_key, ir, old_conf):
         interval = self._jobs_map.get(entry_key).interval
@@ -135,17 +151,18 @@ class Poller:
             or frequency != interval
         )
 
-    def process_new_job(self, entry_key, ir):
+    def process_new_job(self, entry_key, ir, profiles):
         logger.debug("Adding configuration for job %s", entry_key)
         job_reference = schedule.every(int(ir.frequency_str)).seconds.do(
             scheduled_task,
             ir,
             self._server_config,
             self.__get_splunk_indexes(),
+            profiles,
         )
         self._jobs_map[entry_key] = job_reference
 
-    def __update_schedule(self, ir, server_config, splunk_indexes):
+    def __update_schedule(self, ir, server_config, splunk_indexes, profiles):
         entry_key = ir.host + "#" + ir.profile
 
         logger.debug("Updating configuration for job %s", entry_key)
@@ -154,6 +171,7 @@ class Poller:
             ir,
             server_config,
             splunk_indexes,
+            profiles,
         )
         functools.update_wrapper(new_job_func, scheduled_task)
 
@@ -171,7 +189,7 @@ class Poller:
         # schedule.every().second.do(
         # For debugging purposes better change it to "one second"
         schedule.every(self._args.realtime_task_frequency).seconds.do(
-            automatic_realtime_task,
+            automatic_realtime_job,
             self._mongo_walked_hosts_coll,
             self._args.inventory,
             self.__get_splunk_indexes(),
@@ -179,7 +197,72 @@ class Poller:
             self._local_snmp_engine,
         )
 
+        schedule.every(self._args.matching_task_frequency).seconds.do(
+            self.process_unmatched_devices_job,
+            self._server_config,
+        )
 
-def scheduled_task(ir: InventoryRecord, server_config, splunk_indexes):
+        automatic_realtime_job(
+            self._mongo_walked_hosts_coll,
+            self._args.inventory,
+            self.__get_splunk_indexes(),
+            self._server_config,
+            self._local_snmp_engine,
+        )
+
+    def add_device_for_profile_matching(self, device: InventoryRecord):
+        self._lock.acquire()
+        self._unmatched_devices[device.host] = device
+        self._lock.release()
+
+    def process_unmatched_devices_job(self, server_config):
+        job_thread = threading.Thread(
+            target=self.process_unmatched_devices, args=[server_config]
+        )
+        job_thread.start()
+
+    def process_unmatched_devices(self, server_config):
+        if self._unmatched_devices:
+            try:
+                profiles = get_profiles(server_config)
+                self._lock.acquire()
+                processed_devices = set()
+                for host, device in self._unmatched_devices.items():
+                    realtime_collection = (
+                        self._mongo_walked_hosts_coll.real_time_data_for(
+                            return_database_id(host)
+                        )
+                    )
+                    if realtime_collection:
+                        descr = extract_desc(realtime_collection)
+
+                        if descr:
+                            assigned_profiles = assign_profiles_to_device(
+                                profiles["profiles"], descr
+                            )
+                            processed_devices.add(host)
+
+                            for profile, frequency in assigned_profiles:
+                                entry_key = create_poller_scheduler_entry_key(
+                                    host, profile
+                                )
+                                new_record = InventoryRecord(
+                                    host,
+                                    device.version,
+                                    device.community,
+                                    profile,
+                                    frequency,
+                                )
+                                self.process_new_job(entry_key, new_record, profiles)
+                for d in processed_devices:
+                    self._unmatched_devices.pop(d)
+            except Exception as e:
+                logger.exception(f"Error processing unmatched device {e}")
+            finally:
+                if self._lock.locked():
+                    self._lock.release()
+
+
+def scheduled_task(ir: InventoryRecord, server_config, splunk_indexes, profiles):
     logger.debug("Executing scheduled_task for %s", ir.__repr__())
-    snmp_polling.delay(ir.to_json(), server_config, splunk_indexes)
+    snmp_polling.delay(ir.to_json(), server_config, splunk_indexes, profiles)
