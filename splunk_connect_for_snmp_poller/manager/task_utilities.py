@@ -413,6 +413,7 @@ async def snmp_bulk_handler(
                     additional_metric_fields,
                     one_time_flag,
                 )
+            break
 
 
 async def walk_handler(
