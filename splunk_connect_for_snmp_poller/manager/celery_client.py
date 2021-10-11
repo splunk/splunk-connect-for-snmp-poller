@@ -33,6 +33,7 @@ app.conf.update(
         "result_serializer": "json",
         "accept_content": ["json"],
         "result_expires": 1,
+        "task_ignore_result": True,
     }
 )
 
