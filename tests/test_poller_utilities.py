@@ -77,3 +77,15 @@ class TestPollerUtilities(TestCase):
         profiles = {"profiles": {"some_profile": {"frequency": 20}}}
         result = get_frequency(agent, profiles, 60)
         self.assertEqual(result, 60)
+
+    def test_return_default_frequency_when_frequency_is_missing(self):
+        agent = {"profile": "some_profile"}
+        profiles = {"profiles": {"some_profile_2": {}}}
+        result = get_frequency(agent, profiles, 60)
+        self.assertEqual(result, 60)
+
+    def test_return_default_frequency_when_there_is_no_profiles(self):
+        agent = {"profile": "some_profile"}
+        profiles = {"profiles": {}}
+        result = get_frequency(agent, profiles, 60)
+        self.assertEqual(result, 60)
