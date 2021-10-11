@@ -32,6 +32,7 @@ from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import
     is_valid_inventory_line_from_dict,
     should_process_inventory_line,
 )
+from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
 logger = logging.getLogger(__name__)
 
@@ -82,16 +83,14 @@ def parse_inventory_file(inventory_file_path, profiles):
 
 
 def get_frequency(agent, profiles, default_frequency):
-    if (
-        profiles
-        and "profile" in agent
-        and agent["profile"] != "*"
-        and agent["profile"] in profiles["profiles"]
-    ):
-        return profiles["profiles"][agent["profile"]]["frequency"]
-    else:
-        logger.debug(f'Default frequency was assigned for agent = {agent.get("host")}')
-        return default_frequency
+    if "profile" in agent:
+        frequency = multi_key_lookup(
+            profiles, ("profiles", agent["profile"], "frequency")
+        )
+        if frequency:
+            return frequency
+    logger.debug(f'Default frequency was assigned for agent = {agent.get("host")}')
+    return default_frequency
 
 
 def _extract_sys_uptime_instance(
