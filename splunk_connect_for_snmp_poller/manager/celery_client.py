@@ -34,6 +34,7 @@ app.conf.update(
         "accept_content": ["json"],
         "result_expires": 1,
         "task_ignore_result": True,
+        "result_persistent": False,
     }
 )
 
