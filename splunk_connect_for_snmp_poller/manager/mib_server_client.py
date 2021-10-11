@@ -19,18 +19,10 @@ import os
 
 import aiohttp
 import backoff as backoff
+import requests as requests
 from aiohttp import ClientSession
 
-from splunk_connect_for_snmp_poller.utilities import format_value_for_mib_server
-
 logger = logging.getLogger(__name__)
-
-
-class SharedException(Exception):
-    """Raised when the input value is too large"""
-
-    def __init__(self, msg="Default Shared Exception occurred.", *args):
-        super().__init__(msg, *args)
 
 
 async def get_translation(var_binds, mib_server_url, data_format):
@@ -39,11 +31,25 @@ async def get_translation(var_binds, mib_server_url, data_format):
     @param mib_server_url: URL of SNMP MIB server
     @return: translated string
     """
-    # Construct the payload
+    payload = await prepare_payload(var_binds)
+
+    try:
+        return await get_url(mib_server_url, payload, data_format)
+    except requests.Timeout:
+        logger.exception("Time out occurred during call to MIB Server")
+        raise
+    except requests.ConnectionError:
+        logger.exception("Can not connect to MIB Server for url - %s", mib_server_url)
+        raise
+    except Exception:
+        logger.exception("Error getting translation from MIB Server")
+        raise
+
+
+async def prepare_payload(var_binds):
     payload = {}
     var_binds_list = []
     # *TODO*: Below differs a bit between poller and trap!
-
     for name, val in var_binds:
         var_bind = {
             "oid": str(name),
@@ -54,28 +60,45 @@ async def get_translation(var_binds, mib_server_url, data_format):
         var_binds_list.append(var_bind)
     payload["var_binds"] = var_binds_list
     payload = json.dumps(payload)
-
-    # Send the POST request to mib server
-    headers = {"Content-type": "application/json"}
-    endpoint = "translation"
-    translation_url = os.path.join(mib_server_url.strip("/"), endpoint)
-    logger.debug(f"[-] translation_url: {translation_url}")
-
-    try:
-        return await get_url(translation_url, headers, payload, data_format)
-    except Exception as e:
-        logger.error(f"Error getting translation from MIB Server: {e}")
-        raise SharedException(f"Error getting translation from MIB Server: {e}")
+    return payload
 
 
 @backoff.on_exception(backoff.expo, aiohttp.ClientError, max_tries=3)
-async def get_url(url, headers, payload, data_format):
+async def get_url(mib_server_url, payload, data_format):
+    headers = {"Content-type": "application/json"}
+    endpoint = "translation"
+    translation_url = os.path.join(mib_server_url.strip("/"), endpoint)
+    logger.debug("[-] translation_url: %s", translation_url)
+
     async with ClientSession(raise_for_status=True) as session:
         resp = await session.post(
-            url,
+            translation_url,
             headers=headers,
             data=payload,
             params={"data_format": data_format},
-            timeout=1,
+            timeout=5,
         )
         return await resp.text()
+
+
+# 1.3.6.1.2.1.2.2.1.4.1|Integer|16436|16436|True
+# 1.3.6.1.2.1.1.6.0|DisplayString|San Francisco, California, United States|San Francisco, California, United States|True
+# 1.3.6.1.2.1.2.2.1.6.2|OctetString|<null>ybù@|0x00127962f940|False
+# 1.3.6.1.2.1.1.9.1.2.7|ObjectIdentity|1.3.6.1.2.1.50|SNMPv2-SMI::mib-2.50|False
+# 1.3.6.1.2.1.6.13.1.4.195.218.254.105.51684.194.67.10.226.22|IpAddress|ÂCâ|194.67.10.226|False
+# 1.3.6.1.2.1.25.3.2.1.6.1025|Counter32|0|0|True
+# 1.3.6.1.2.1.31.1.1.1.15.2|Gauge32|100|100|True
+# 1.3.6.1.2.1.1.3.0|TimeTicks|148271768|148271768|True
+# 1.3.6.1.4.1.2021.10.1.6.1|Opaque|x>ë|0x9f78043eeb851f|False
+# 1.3.6.1.2.1.31.1.1.1.10.1|Counter64|453477588|453477588|True
+#
+# As you can see, for most types str(value) == value.prettyPrint(), however:
+# - for Opaque, IpAddress, and OctetString we need to use prettyPrint(), otherwise the data is rubbish
+# - any other type should use str() before sending data to MIB-server
+
+
+def format_value_for_mib_server(value, value_type):
+    if value_type in ("OctetString", "IpAddress", "Opaque"):
+        return value.prettyPrint()
+    else:
+        return str(value)
