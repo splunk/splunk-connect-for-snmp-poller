@@ -115,7 +115,7 @@ def is_valid_profile(profile):
 
 
 def is_valid_inventory_line_from_dict(host, version, community, profile, seconds):
-    if None in [host, version, community, profile, seconds]:
+    if None in [host, version, community, profile]:
         return False
 
     valid_inventory_line = (
@@ -123,7 +123,7 @@ def is_valid_inventory_line_from_dict(host, version, community, profile, seconds
         and is_valid_version(version.strip())
         and is_valid_community(community.strip())
         and is_valid_profile(profile.strip())
-        and is_valid_second_quantity(seconds)
+        and (seconds is None or is_valid_second_quantity(seconds))
     )
     if not valid_inventory_line:
         logger.error(
