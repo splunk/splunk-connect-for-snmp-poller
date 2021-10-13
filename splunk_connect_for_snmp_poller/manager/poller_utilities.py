@@ -68,7 +68,7 @@ def iterate_through_unwalked_hosts_scheduler(
             server_config,
             splunk_indexes,
             None,
-            one_time_flag=True,
+            one_time_flag="after_fail",
         )
 
 
@@ -80,7 +80,7 @@ def onetime_task(inventory_record: InventoryRecord, server_config, splunk_indexe
         server_config,
         splunk_indexes,
         None,
-        one_time_flag=True,
+        one_time_flag="first_time",
     )
     logger.debug("Cancelling onetime_task for %s", inventory_record.__repr__())
     return schedule.CancelJob

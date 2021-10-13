@@ -479,9 +479,9 @@ async def walk_handler(
                 additional_metric_fields,
                 one_time_flag,
             )
-    if one_time_flag and error_in_one_time_walk:
-        mongo_connection.add_onetime_walk_result(
-            f"{host}:{port}", ir.version, ir.community
+    if one_time_flag:
+        process_one_time_flag(
+            one_time_flag, error_in_one_time_walk, f"{host}:{port}", ir
         )
 
 
@@ -500,6 +500,15 @@ def extract_data_to_mongo(host, port, mongo_connection, var_binds):
         }
 
         mongo_connection.update_real_time_data_for(host_id, prev_content)
+
+
+def process_one_time_flag(
+    one_time_flag, error_in_one_time_walk, mongo_connection, host, ir
+):
+    if one_time_flag == "first_time" and error_in_one_time_walk:
+        mongo_connection.add_onetime_walk_result(host, ir.version, ir.community)
+    if one_time_flag == "after_fail" and not error_in_one_time_walk:
+        mongo_connection.delete_onetime_walk_result(host, ir.version, ir.community)
 
 
 async def walk_handler_with_enricher(
@@ -564,10 +573,11 @@ async def walk_handler_with_enricher(
                 merged_result,
                 result,
             )
-    if one_time_flag and error_in_one_time_walk:
-        mongo_connection.add_onetime_walk_result(
-            f"{host}:{port}", ir.version, ir.community
+    if one_time_flag:
+        process_one_time_flag(
+            one_time_flag, error_in_one_time_walk, f"{host}:{port}", ir
         )
+
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
     additional_enricher_varbinds = (
         extract_network_interface_data_from_additional_config(enricher)
