@@ -62,9 +62,8 @@ def onetime_task(inventory_record: InventoryRecord, server_config, splunk_indexe
     return schedule.CancelJob
 
 
-def refresh_inventory(inventory_file_path):
-    Path(inventory_file_path).touch()
-
+def refresh_inventory(force_inventory_refresh):
+    force_inventory_refresh()
     return schedule.CancelJob
 
 
@@ -163,6 +162,8 @@ def automatic_realtime_job(
     splunk_indexes,
     server_config,
     local_snmp_engine,
+    force_inventory_refresh,
+    initial_walk,
 ):
     job_thread = threading.Thread(
         target=automatic_realtime_task,
@@ -172,6 +173,8 @@ def automatic_realtime_job(
             splunk_indexes,
             server_config,
             local_snmp_engine,
+            force_inventory_refresh,
+            initial_walk,
         ],
     )
     job_thread.start()
@@ -183,6 +186,8 @@ def automatic_realtime_task(
     splunk_indexes,
     server_config,
     local_snmp_engine,
+    force_inventory_refresh,
+    initial_walk
 ):
     try:
         for inventory_record in parse_inventory_file(
@@ -208,11 +213,12 @@ def automatic_realtime_task(
                     server_config,
                     splunk_indexes,
                 )
-                # touch inventory file after 2 min to trigger reloading of inventory with new walk data
-                schedule.every(2).minutes.do(
-                    refresh_inventory,
-                    inventory_file_path,
-                )
+                if not initial_walk:
+                    # force inventory reloading after 2 min with new walk data
+                    schedule.every(2).minutes.do(
+                        refresh_inventory,
+                        force_inventory_refresh
+                    )
             _update_mongo(
                 all_walked_hosts_collection,
                 db_host_id,
