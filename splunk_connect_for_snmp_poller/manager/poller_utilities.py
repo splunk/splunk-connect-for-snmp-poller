@@ -16,7 +16,6 @@
 import csv
 import logging.config
 import threading
-from pathlib import Path
 
 import schedule
 from pysnmp.hlapi import ObjectIdentity, ObjectType, UdpTransportTarget, getCmd
@@ -187,7 +186,7 @@ def automatic_realtime_task(
     server_config,
     local_snmp_engine,
     force_inventory_refresh,
-    initial_walk
+    initial_walk,
 ):
     try:
         for inventory_record in parse_inventory_file(
@@ -216,8 +215,7 @@ def automatic_realtime_task(
                 if not initial_walk:
                     # force inventory reloading after 2 min with new walk data
                     schedule.every(2).minutes.do(
-                        refresh_inventory,
-                        force_inventory_refresh
+                        refresh_inventory, force_inventory_refresh
                     )
             _update_mongo(
                 all_walked_hosts_collection,
