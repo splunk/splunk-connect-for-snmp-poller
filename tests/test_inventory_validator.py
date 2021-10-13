@@ -18,7 +18,8 @@ from unittest import TestCase
 
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     is_valid_inventory_line_from_dict,
-    should_process_inventory_line, is_valid_profile,
+    is_valid_profile,
+    should_process_inventory_line,
 )
 from tests.static_inventory_test_data import InventoryLineBuilder
 
