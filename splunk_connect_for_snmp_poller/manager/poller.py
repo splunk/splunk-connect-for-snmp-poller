@@ -23,6 +23,7 @@ from pysnmp.hlapi import SnmpEngine
 
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.poller_utilities import (
+    automatic_onetime_task,
     automatic_realtime_job,
     create_poller_scheduler_entry_key,
     parse_inventory_file,
@@ -196,12 +197,12 @@ class Poller:
             self._server_config,
             self._local_snmp_engine,
         )
-
+        logger.info("After automatic_realtime_job")
         schedule.every(self._args.matching_task_frequency).seconds.do(
             self.process_unmatched_devices_job,
             self._server_config,
         )
-
+        logger.info("After process_unmatched_devices_job")
         automatic_realtime_job(
             self._mongo_walked_hosts_coll,
             self._args.inventory,
@@ -209,6 +210,14 @@ class Poller:
             self._server_config,
             self._local_snmp_engine,
         )
+        logger.info("After automatic_realtime_job single")
+        schedule.every(self._args.onetime_task_frequency).minutes.do(
+            automatic_onetime_task,
+            self._mongo_walked_hosts_coll,
+            self.__get_splunk_indexes(),
+            self._server_config,
+        )
+        logger.info("After automatic_onetime_task")
 
     def add_device_for_profile_matching(self, device: InventoryRecord):
         self._lock.acquire()

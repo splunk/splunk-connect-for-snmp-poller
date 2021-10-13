@@ -311,6 +311,7 @@ def _any_walk_failure_happened(
     additional_metric_fields,
     var_binds,
 ):
+    logger.info(" IN _any_walk_failure_happened ")
     is_error, result = prepare_error_message(
         error_indication, error_status, error_index, var_binds
     )
@@ -439,7 +440,7 @@ async def walk_handler(
     e.g. 1.3.6.1.2.1.1.9.*,
     which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
     """
-
+    error_in_one_time_walk = False
     for (errorIndication, errorStatus, errorIndex, var_binds) in nextCmd(
         snmp_engine,
         auth_data,
@@ -463,6 +464,8 @@ async def walk_handler(
             additional_metric_fields,
             var_binds,
         ):
+            if one_time_flag:
+                error_in_one_time_walk = True
             break
         else:
             result, is_metric = await get_translated_string(mib_server_url, var_binds)
@@ -476,6 +479,10 @@ async def walk_handler(
                 additional_metric_fields,
                 one_time_flag,
             )
+    if one_time_flag and error_in_one_time_walk:
+        mongo_connection.add_onetime_walk_result(
+            f"{host}:{port}", ir.version, ir.community
+        )
 
 
 def extract_data_to_mongo(host, port, mongo_connection, var_binds):
@@ -516,6 +523,7 @@ async def walk_handler_with_enricher(
     e.g. 1.3.6.1.2.1.1.9.*,
     which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
     """
+    error_in_one_time_walk = False
     merged_result = []
     merged_result_metric = []
     merged_result_non_metric = []
@@ -536,12 +544,14 @@ async def walk_handler_with_enricher(
             errorIndex,
             host,
             index,
-            ir,
-            additional_metric_fields,
             one_time_flag,
             is_metric,
+            ir,
+            additional_metric_fields,
             var_binds,
         ):
+            if one_time_flag:
+                error_in_one_time_walk = True
             break
         else:
             result, is_metric = await get_translated_string(
@@ -554,7 +564,10 @@ async def walk_handler_with_enricher(
                 merged_result,
                 result,
             )
-
+    if one_time_flag and error_in_one_time_walk:
+        mongo_connection.add_onetime_walk_result(
+            f"{host}:{port}", ir.version, ir.community
+        )
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
     additional_enricher_varbinds = (
         extract_network_interface_data_from_additional_config(enricher)

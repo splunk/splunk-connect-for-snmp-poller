@@ -49,6 +49,29 @@ def _should_process_current_line(inventory_record):
     )
 
 
+def iterate_through_unwalked_hosts_scheduler(
+    server_config, splunk_indexes, mongo_connection
+):
+    logger.debug("Executing iterate_through_unwalked_hosts_scheduler")
+    profile = OidConstant.UNIVERSAL_BASE_OID
+    unwalked_hosts = mongo_connection.get_all_unwalked_hosts()
+    for unwalked_host in unwalked_hosts:
+        inventory_record = InventoryRecord(
+            unwalked_host["host"],
+            unwalked_host["version"],
+            unwalked_host["community"],
+            profile,
+            "60",
+        )
+        snmp_polling.delay(
+            inventory_record.to_json(),
+            server_config,
+            splunk_indexes,
+            None,
+            one_time_flag=True,
+        )
+
+
 def onetime_task(inventory_record: InventoryRecord, server_config, splunk_indexes):
     logger.debug("Executing onetime_task for %s", inventory_record.__repr__())
 
@@ -59,6 +82,7 @@ def onetime_task(inventory_record: InventoryRecord, server_config, splunk_indexe
         None,
         one_time_flag=True,
     )
+    logger.debug("Cancelling onetime_task for %s", inventory_record.__repr__())
     return schedule.CancelJob
 
 
@@ -177,6 +201,22 @@ def automatic_realtime_job(
     job_thread.start()
 
 
+def automatic_onetime_task(
+    all_walked_hosts_collection,
+    splunk_indexes,
+    server_config,
+):
+    job_thread = threading.Thread(
+        target=iterate_through_unwalked_hosts_scheduler,
+        args=[
+            server_config,
+            splunk_indexes,
+            all_walked_hosts_collection,
+        ],
+    )
+    job_thread.start()
+
+
 def automatic_realtime_task(
     all_walked_hosts_collection,
     inventory_file_path,
@@ -208,6 +248,7 @@ def automatic_realtime_task(
                     server_config,
                     splunk_indexes,
                 )
+                logger.info("After onetime_task first")
                 # touch inventory file after 2 min to trigger reloading of inventory with new walk data
                 schedule.every(2).minutes.do(
                     refresh_inventory,
