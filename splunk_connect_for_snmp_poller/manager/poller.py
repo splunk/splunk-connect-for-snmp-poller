@@ -94,9 +94,11 @@ class Poller:
         # update job when either inventory changes or config changes
         if server_config_modified or inventory_config_modified or self._force_refresh:
             self._force_refresh = False
-            logger.info(f"Refreshing inventory and config: server_config_modified = {server_config_modified}, "
-                        f"inventory_config_modified = {inventory_config_modified}, "
-                        f"force_refresh = {self._force_refresh}")
+            logger.info(
+                f"Refreshing inventory and config: server_config_modified = {server_config_modified}, "
+                f"inventory_config_modified = {inventory_config_modified}, "
+                f"force_refresh = {self._force_refresh}"
+            )
 
             inventory_hosts = set()
             profiles = get_profiles(self._server_config)
