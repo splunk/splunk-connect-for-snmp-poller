@@ -66,7 +66,7 @@ def refresh_inventory(force_inventory_refresh):
     return schedule.CancelJob
 
 
-def parse_inventory_file(inventory_file_path, profiles):
+def parse_inventory_file(inventory_file_path, profiles, fetch_frequency=True):
     with open(inventory_file_path, newline="") as inventory_file:
         for agent in csv.DictReader(inventory_file, delimiter=","):
             inventory_record = InventoryRecord(
@@ -74,7 +74,7 @@ def parse_inventory_file(inventory_file_path, profiles):
                 agent["version"],
                 agent["community"],
                 agent["profile"],
-                get_frequency(agent, profiles, 60),
+                get_frequency(agent, profiles, 60) if fetch_frequency else None
             )
             if _should_process_current_line(inventory_record):
                 yield inventory_record
@@ -190,7 +190,7 @@ def automatic_realtime_task(
 ):
     try:
         for inventory_record in parse_inventory_file(
-            inventory_file_path, profiles=None
+            inventory_file_path, profiles=None, fetch_frequency=False
         ):
             db_host_id = return_database_id(inventory_record.host)
             sys_up_time = _extract_sys_uptime_instance(
