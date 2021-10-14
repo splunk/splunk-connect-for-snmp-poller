@@ -74,7 +74,7 @@ def parse_inventory_file(inventory_file_path, profiles, fetch_frequency=True):
                 agent["version"],
                 agent["community"],
                 agent["profile"],
-                get_frequency(agent, profiles, 60) if fetch_frequency else None
+                get_frequency(agent, profiles, 60) if fetch_frequency else None,
             )
             if _should_process_current_line(inventory_record):
                 yield inventory_record
