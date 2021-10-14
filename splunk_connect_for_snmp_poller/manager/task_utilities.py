@@ -575,7 +575,11 @@ async def walk_handler_with_enricher(
             )
     if one_time_flag:
         process_one_time_flag(
-            one_time_flag, error_in_one_time_walk, f"{host}:{port}", ir
+            one_time_flag,
+            error_in_one_time_walk,
+            mongo_connection,
+            f"{host}:{port}",
+            ir,
         )
 
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
