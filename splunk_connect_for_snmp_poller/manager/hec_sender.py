@@ -72,9 +72,13 @@ def post_data_to_splunk_hec(
     additional_metric_fields,
     one_time_flag=False,
     mib_enricher=None,
+    is_error=False,
 ):
-    if is_metric:
-        logger.debug(f"metric index: {index['metric_index']}")
+    if is_error:
+        logger.debug("sending error to index - %s", index["event_index"])
+        data = build_error_data(host, variables_binds, index["event_index"])
+    elif is_metric:
+        logger.debug("metric index: %s", index["metric_index"])
         data = build_metric_data(
             host,
             variables_binds,
@@ -84,7 +88,7 @@ def post_data_to_splunk_hec(
             mib_enricher,
         )
     else:
-        logger.debug(f"event index: {index['event_index']}")
+        logger.debug("event index - %s", index["event_index"])
         data = build_event_data(
             host,
             variables_binds,
@@ -187,6 +191,17 @@ def build_metric_data(
     builder.add(EventField.EVENT, EventType.METRIC.value)
     builder.add_fields(fields)
 
+    return builder.build()
+
+
+def build_error_data(
+    host,
+    variables_binds,
+    index,
+):
+    builder = init_builder_with_common_data(time.time(), host, index)
+    builder.add(EventField.EVENT, str(variables_binds))
+    builder.add(EventField.SOURCETYPE, EventType.ERROR.value)
     return builder.build()
 
 

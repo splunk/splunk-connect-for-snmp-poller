@@ -32,8 +32,11 @@
 # under the License.
 
 import logging
+import re
 
 logger = logging.getLogger(__name__)
+
+profile_pattern = re.compile("^[A-Za-z0-9_-]*$")
 
 SNMP_VERSION_1 = "1"
 SNMP_VERSION_2C = "2c"
@@ -111,11 +114,11 @@ def is_valid_community(community_string):
 
 
 def is_valid_profile(profile):
-    return True if profile.strip() else False
+    return profile_pattern.match(profile.strip())
 
 
 def is_valid_inventory_line_from_dict(host, version, community, profile, seconds):
-    if None in [host, version, community, profile, seconds]:
+    if None in [host, version, community, profile]:
         return False
 
     valid_inventory_line = (
@@ -123,7 +126,7 @@ def is_valid_inventory_line_from_dict(host, version, community, profile, seconds
         and is_valid_version(version.strip())
         and is_valid_community(community.strip())
         and is_valid_profile(profile.strip())
-        and is_valid_second_quantity(seconds)
+        and (seconds is None or is_valid_second_quantity(seconds))
     )
     if not valid_inventory_line:
         logger.error(

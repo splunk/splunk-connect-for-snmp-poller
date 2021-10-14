@@ -20,7 +20,6 @@ from collections import namedtuple
 from typing import Tuple
 
 from celery.utils.log import get_task_logger
-from pysmi import debug as pysmi_debug
 from pysnmp.hlapi import (
     CommunityData,
     ContextData,
@@ -47,7 +46,6 @@ from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities imp
 )
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
-pysmi_debug.setLogger(pysmi_debug.Debug("compiler"))
 logger = get_task_logger(__name__)
 
 
@@ -56,7 +54,6 @@ class VarbindCollection(namedtuple("VarbindCollection", "get, bulk")):
         return VarbindCollection(bulk=self.bulk + other.bulk, get=self.get + other.get)
 
 
-# TODO remove the debugging statement later
 # TODO analyze the code here:
 # https://github.com/etingof/pysnmp/blob/becd15c79c9a6b5696928ecd50bf5cca8b1770a1/examples/hlapi/v3arch/asyncore/manager/cmdgen/pull-mibs-from-multiple-agents-at-once-over-ipv4-and-ipv6.py#L57
 # to compare the performance between the runDispatcher() and the current getCmd()/nextCmd() .
@@ -257,6 +254,7 @@ async def snmp_get_handler(
                 ir,
                 additional_metric_fields,
                 one_time_flag,
+                is_error=is_error,
             )
 
 
@@ -326,6 +324,7 @@ def _any_walk_failure_happened(
             ir,
             additional_metric_fields,
             one_time_flag,
+            is_error=is_error,
         )
 
     return is_error
@@ -416,6 +415,7 @@ async def snmp_bulk_handler(
                     ir,
                     additional_metric_fields,
                     one_time_flag,
+                    is_error=is_error,
                 )
             break
 
