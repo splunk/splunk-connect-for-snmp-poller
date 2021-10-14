@@ -108,7 +108,7 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
                 result = await get_translation(var_binds, mib_server_url, data_format)
     except Exception:
         logger.exception("Could not perform translation. Returning original var_binds")
-    logger.debug(f"final result -- metric: {is_metric}\n{result}")
+    logger.info(f"final result -- metric: {is_metric}\n{result}")
     return result, is_metric
 
 

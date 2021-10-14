@@ -53,7 +53,7 @@ class HecSender:
         try:
             logger.debug("+++++++++endpoint+++++++++\n%s", endpoint)
             response = requests.post(url=endpoint, json=data, timeout=60)
-            logger.debug("Response code is %s", response.status_code)
+            logger.info("Response code is %s", response.status_code)
             logger.debug("Response is %s", response.text)
             return response
         except requests.ConnectionError as e:
