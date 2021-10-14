@@ -16,7 +16,6 @@
 import csv
 import logging.config
 import threading
-from enum import Enum
 from pathlib import Path
 
 import schedule
@@ -33,14 +32,9 @@ from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import
     is_valid_inventory_line_from_dict,
     should_process_inventory_line,
 )
-from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
+from splunk_connect_for_snmp_poller.utilities import OnetimeFlag, multi_key_lookup
 
 logger = logging.getLogger(__name__)
-
-
-class OnetimeFlag(Enum):
-    FIRST_WALK = "first_time"
-    AFTER_FAIL = "after_fail"
 
 
 def _should_process_current_line(inventory_record: dict):

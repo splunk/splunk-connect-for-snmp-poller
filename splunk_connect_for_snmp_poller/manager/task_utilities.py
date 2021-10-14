@@ -39,13 +39,13 @@ from splunk_connect_for_snmp_poller.manager.const import (
 )
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
-from splunk_connect_for_snmp_poller.manager.poller_utilities import OnetimeFlag
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
     extract_network_interface_data_from_additional_config,
     extract_network_interface_data_from_walk,
 )
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
+from splunk_connect_for_snmp_poller.utilities import OnetimeFlag
 
 logger = get_task_logger(__name__)
 

@@ -37,6 +37,7 @@ import logging
 import os
 import signal
 import sys
+from enum import Enum
 
 import yaml
 
@@ -146,3 +147,8 @@ def multi_key_lookup(dictionary, tuple_of_keys):
         return reduce(dict.get, tuple_of_keys, dictionary)
     except TypeError:
         return None
+
+
+class OnetimeFlag(Enum):
+    FIRST_WALK = "first_time"
+    AFTER_FAIL = "after_fail"
