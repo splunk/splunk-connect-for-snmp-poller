@@ -28,7 +28,9 @@ logger = logging.getLogger(__name__)
 def main():
     logger.info("Startup Config")
     args = parse_command_line_arguments()
-    logging.getLogger().setLevel(args.loglevel.upper())
+    log_level = args.loglevel.upper()
+    logger.info("Passed log Level is %s", log_level)
+    logging.getLogger().setLevel(log_level)
 
     poller_server = Poller(args, parse_config_file(args.config))
     poller_server.run()

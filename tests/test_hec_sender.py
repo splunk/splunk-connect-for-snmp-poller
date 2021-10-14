@@ -15,6 +15,7 @@
 #
 import json
 from unittest import TestCase
+from unittest.mock import patch
 
 import pytest as pytest
 import responses
@@ -24,6 +25,7 @@ from splunk_connect_for_snmp_poller.manager.hec_sender import (
     HecSender,
     _enrich_event_data,
     _enrich_metric_data,
+    post_data_to_splunk_hec,
 )
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
@@ -233,3 +235,77 @@ class TestHecSender(TestCase):
                 "Connection error when sending data to HEC index - test_index",
                 log.output[0],
             )
+
+    @patch("splunk_connect_for_snmp_poller.manager.hec_sender.HecSender")
+    @patch(
+        "splunk_connect_for_snmp_poller.manager.data.inventory_record.InventoryRecord"
+    )
+    def test_build_error_data_for_metric(self, mocked_hec, mocked_ir):
+        # given
+        test_index = {"event_index": "test_index"}
+        expected_data = {
+            "time": 1634124054.27087,
+            "host": "test_host",
+            "index": "test_index",
+            "event": "error message",
+            "sourcetype": "sc4snmp:error",
+        }
+
+        # when
+        post_data_to_splunk_hec(
+            mocked_hec,
+            "test_host",
+            "error message",
+            True,
+            test_index,
+            mocked_ir,
+            None,
+            is_error=True,
+        )
+
+        # then
+        spl = mocked_hec.send_hec_request.call_args.args
+        is_metric = spl[0]
+        data = spl[1]
+        self.assertTrue(is_metric)
+        self.assertEqual(data["host"], expected_data["host"])
+        self.assertEqual(data["index"], expected_data["index"])
+        self.assertEqual(data["event"], expected_data["event"])
+        self.assertEqual(data["sourcetype"], expected_data["sourcetype"])
+
+    @patch("splunk_connect_for_snmp_poller.manager.hec_sender.HecSender")
+    @patch(
+        "splunk_connect_for_snmp_poller.manager.data.inventory_record.InventoryRecord"
+    )
+    def test_build_error_data_for_non_metric(self, mocked_hec, mocked_ir):
+        # given
+        test_index = {"event_index": "test_index"}
+        expected_data = {
+            "time": 1634124054.27087,
+            "host": "test_host",
+            "index": "test_index",
+            "event": "error message",
+            "sourcetype": "sc4snmp:error",
+        }
+
+        # when
+        post_data_to_splunk_hec(
+            mocked_hec,
+            "test_host",
+            "error message",
+            False,
+            test_index,
+            mocked_ir,
+            None,
+            is_error=True,
+        )
+
+        # then
+        spl = mocked_hec.send_hec_request.call_args.args
+        is_metric = spl[0]
+        data = spl[1]
+        self.assertFalse(is_metric)
+        self.assertEqual(data["host"], expected_data["host"])
+        self.assertEqual(data["index"], expected_data["index"])
+        self.assertEqual(data["event"], expected_data["event"])
+        self.assertEqual(data["sourcetype"], expected_data["sourcetype"])

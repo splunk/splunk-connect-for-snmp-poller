@@ -45,7 +45,8 @@ def assign_profiles_to_device(profiles, device_desc):
 
 
 def get_profiles(server_config):
-    mib_profiles = yaml.safe_load(get_mib_profiles())
+    profiles = get_mib_profiles()
+    mib_profiles = profiles if not profiles else yaml.safe_load(profiles)
 
     result = {}
     merged_profiles = {}
