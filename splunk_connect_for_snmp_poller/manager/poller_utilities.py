@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 import csv
+import json
 import logging.config
 import threading
 from pathlib import Path
@@ -68,7 +69,7 @@ def iterate_through_unwalked_hosts_scheduler(
             inventory_record,
             server_config,
             splunk_indexes,
-            OnetimeFlag.AFTER_FAIL,
+            json.dumps(OnetimeFlag.AFTER_FAIL),
         )
 
 
@@ -76,7 +77,7 @@ def onetime_task(
     inventory_record: InventoryRecord,
     server_config,
     splunk_indexes,
-    one_time_flag=OnetimeFlag.FIRST_WALK,
+    one_time_flag=json.dumps(OnetimeFlag.FIRST_WALK),
 ):
     logger.debug("Executing onetime_task for %s", inventory_record.__repr__())
 
