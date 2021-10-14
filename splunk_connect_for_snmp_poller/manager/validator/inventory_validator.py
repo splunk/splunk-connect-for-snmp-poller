@@ -38,6 +38,8 @@ logger = logging.getLogger(__name__)
 
 profile_pattern = re.compile("^[A-Za-z0-9_-]*$")
 
+DYNAMIC_PROFILE = "*"
+
 SNMP_VERSION_1 = "1"
 SNMP_VERSION_2C = "2c"
 SNMP_VERSION_3 = "3"
@@ -114,7 +116,7 @@ def is_valid_community(community_string):
 
 
 def is_valid_profile(profile):
-    return profile_pattern.match(profile.strip())
+    return profile == DYNAMIC_PROFILE or profile_pattern.match(profile.strip())
 
 
 def is_valid_inventory_line_from_dict(host, version, community, profile, seconds):
