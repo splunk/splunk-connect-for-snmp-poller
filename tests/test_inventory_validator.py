@@ -18,6 +18,7 @@ from unittest import TestCase
 
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     is_valid_inventory_line_from_dict,
+    is_valid_profile,
     should_process_inventory_line,
 )
 from tests.static_inventory_test_data import InventoryLineBuilder
@@ -62,3 +63,8 @@ class TestInventoryLine(TestCase):
         for line in InventoryLineBuilder().invalid_snmp_versions():
             logger.info(f"Invalid SNMP protocol version: {line}")
             self.assertFalse(is_valid_inventory_line(line))
+
+    def test_invalid_profile_name(self):
+        self.assertFalse(is_valid_profile("asd sa"))
+        self.assertFalse(is_valid_profile("&asd"))
+        self.assertTrue(is_valid_profile("1_asd-asds"))
