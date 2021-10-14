@@ -149,6 +149,6 @@ def multi_key_lookup(dictionary, tuple_of_keys):
         return None
 
 
-class OnetimeFlag(Enum):
+class OnetimeFlag(str, Enum):
     FIRST_WALK = "first_time"
     AFTER_FAIL = "after_fail"
