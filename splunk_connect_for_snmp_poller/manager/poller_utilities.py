@@ -16,6 +16,7 @@
 import csv
 import logging.config
 import threading
+from enum import Enum
 from pathlib import Path
 
 import schedule
@@ -35,6 +36,11 @@ from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
 logger = logging.getLogger(__name__)
+
+
+class OnetimeFlag(Enum):
+    FIRST_WALK = "first_time"
+    AFTER_FAIL = "after_fail"
 
 
 def _should_process_current_line(inventory_record: dict):
@@ -68,7 +74,7 @@ def iterate_through_unwalked_hosts_scheduler(
             inventory_record,
             server_config,
             splunk_indexes,
-            "after_fail",
+            OnetimeFlag.AFTER_FAIL,
         )
 
 
@@ -76,7 +82,7 @@ def onetime_task(
     inventory_record: InventoryRecord,
     server_config,
     splunk_indexes,
-    one_time_flag="first_time",
+    one_time_flag=OnetimeFlag.FIRST_WALK,
 ):
     logger.debug("Executing onetime_task for %s", inventory_record.__repr__())
 

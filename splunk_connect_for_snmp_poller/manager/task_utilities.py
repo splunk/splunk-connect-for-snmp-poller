@@ -39,6 +39,7 @@ from splunk_connect_for_snmp_poller.manager.const import (
 )
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
+from splunk_connect_for_snmp_poller.manager.poller_utilities import OnetimeFlag
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
     extract_network_interface_data_from_additional_config,
@@ -104,8 +105,8 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
                 data_format = _get_data_format(is_metric, return_multimetric)
                 result = await get_translation(var_binds, mib_server_url, data_format)
     except Exception:
-        logger.info("Could not perform translation. Returning original var_binds")
-    logger.info(f"final result -- metric: {is_metric}\n{result}")
+        logger.exception("Could not perform translation. Returning original var_binds")
+    logger.debug(f"final result -- metric: {is_metric}\n{result}")
     return result, is_metric
 
 
@@ -309,7 +310,6 @@ def _any_walk_failure_happened(
     additional_metric_fields,
     var_binds,
 ):
-    logger.info(" IN _any_walk_failure_happened ")
     is_error, result = prepare_error_message(
         error_indication, error_status, error_index, var_binds
     )
@@ -509,9 +509,9 @@ def extract_data_to_mongo(host, port, mongo_connection, var_binds):
 def process_one_time_flag(
     one_time_flag, error_in_one_time_walk, mongo_connection, host, ir
 ):
-    if one_time_flag == "first_time" and error_in_one_time_walk:
+    if one_time_flag == OnetimeFlag.FIRST_WALK and error_in_one_time_walk:
         mongo_connection.add_onetime_walk_result(host, ir.version, ir.community)
-    if one_time_flag == "after_fail" and not error_in_one_time_walk:
+    if one_time_flag == OnetimeFlag.AFTER_FAIL and not error_in_one_time_walk:
         mongo_connection.delete_onetime_walk_result(host)
 
 
