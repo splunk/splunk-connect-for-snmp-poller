@@ -40,7 +40,7 @@ class EventBuilder:
             self.data[EventField.SOURCETYPE.value] = EventType.WALK.value
 
     def build(self) -> dict:
-        logger.debug("--------data------\n%s", self.data)
+        logger.debug("data builder result - %s", self.data)
         return self.data
 
 
