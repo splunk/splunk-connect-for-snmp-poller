@@ -63,16 +63,21 @@ def iterate_through_unwalked_hosts_scheduler(
             profile,
             "60",
         )
-        snmp_polling.delay(
-            inventory_record.to_json(),
+        schedule.every().second.do(
+            onetime_task,
+            inventory_record,
             server_config,
             splunk_indexes,
-            None,
-            one_time_flag="after_fail",
+            "after_fail",
         )
 
 
-def onetime_task(inventory_record: InventoryRecord, server_config, splunk_indexes):
+def onetime_task(
+    inventory_record: InventoryRecord,
+    server_config,
+    splunk_indexes,
+    one_time_flag="first_time",
+):
     logger.debug("Executing onetime_task for %s", inventory_record.__repr__())
 
     snmp_polling.delay(
@@ -80,7 +85,7 @@ def onetime_task(inventory_record: InventoryRecord, server_config, splunk_indexe
         server_config,
         splunk_indexes,
         None,
-        one_time_flag="first_time",
+        one_time_flag=one_time_flag,
     )
     logger.debug("Cancelling onetime_task for %s", inventory_record.__repr__())
     return schedule.CancelJob
