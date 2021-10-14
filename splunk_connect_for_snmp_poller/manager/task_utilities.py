@@ -481,7 +481,11 @@ async def walk_handler(
             )
     if one_time_flag:
         process_one_time_flag(
-            one_time_flag, error_in_one_time_walk, f"{host}:{port}", ir
+            one_time_flag,
+            error_in_one_time_walk,
+            mongo_connection,
+            f"{host}:{port}",
+            ir,
         )
 
 

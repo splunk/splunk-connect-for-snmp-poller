@@ -119,7 +119,7 @@ class WalkedHostsRepository:
         logger.info(host)
         self._unwalked_hosts.insert_one(
             {
-                "_id": f"{host}:{version}",
+                "_id": host,
                 "host": host,
                 "version": version,
                 "community": community,

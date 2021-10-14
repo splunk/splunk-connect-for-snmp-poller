@@ -133,6 +133,7 @@ class Poller:
                 db_host_id = return_database_id(entry_key)
                 logger.debug("Removing _id %s from mongo database", db_host_id)
                 self._mongo_walked_hosts_coll.delete_host(db_host_id)
+                self._mongo_walked_hosts_coll.delete_onetime_walk_result(db_host_id)
                 del self._jobs_map[entry_key]
 
     def update_schedule_for_changed_conf(self, entry_key, ir, profiles):
