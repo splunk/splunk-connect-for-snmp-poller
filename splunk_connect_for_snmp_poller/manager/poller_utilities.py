@@ -36,15 +36,15 @@ from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 logger = logging.getLogger(__name__)
 
 
-def _should_process_current_line(inventory_record):
+def _should_process_current_line(inventory_record: dict):
     return should_process_inventory_line(
-        inventory_record.host
+        inventory_record.get("host")
     ) and is_valid_inventory_line_from_dict(
-        inventory_record.host,
-        inventory_record.version,
-        inventory_record.community,
-        inventory_record.profile,
-        inventory_record.frequency_str,
+        inventory_record.get("host"),
+        inventory_record.get("version"),
+        inventory_record.get("community"),
+        inventory_record.get("profile"),
+        inventory_record.get("frequency_str"),
     )
 
 
@@ -66,18 +66,17 @@ def refresh_inventory(force_inventory_refresh):
     return schedule.CancelJob
 
 
-def parse_inventory_file(inventory_file_path, profiles, fetch_frequency=True):
+def parse_inventory_file(inventory_file_path, profiles, fetch_frequency):
     with open(inventory_file_path, newline="") as inventory_file:
         for agent in csv.DictReader(inventory_file, delimiter=","):
-            inventory_record = InventoryRecord(
-                agent["host"],
-                agent["version"],
-                agent["community"],
-                agent["profile"],
-                get_frequency(agent, profiles, 60) if fetch_frequency else None,
-            )
-            if _should_process_current_line(inventory_record):
-                yield inventory_record
+            if _should_process_current_line(agent):
+                yield InventoryRecord(
+                    agent["host"],
+                    agent["version"],
+                    agent["community"],
+                    agent["profile"],
+                    get_frequency(agent, profiles, 60) if fetch_frequency else None,
+                )
 
 
 def get_frequency(agent, profiles, default_frequency):
