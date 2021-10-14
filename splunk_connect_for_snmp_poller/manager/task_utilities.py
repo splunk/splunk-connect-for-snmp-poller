@@ -512,7 +512,7 @@ def process_one_time_flag(
     if one_time_flag == "first_time" and error_in_one_time_walk:
         mongo_connection.add_onetime_walk_result(host, ir.version, ir.community)
     if one_time_flag == "after_fail" and not error_in_one_time_walk:
-        mongo_connection.delete_onetime_walk_result(host, ir.version, ir.community)
+        mongo_connection.delete_onetime_walk_result(host)
 
 
 async def walk_handler_with_enricher(
