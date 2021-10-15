@@ -615,26 +615,6 @@ def _sort_walk_data(
     return result_to_send_to_hec
 
 
-def _return_mib_enricher_for_walk(
-    mongo_connection, hostname, existing_data, additional_data
-):
-    """
-    This function works only when an enricher is specified in the config and walk is being ran.
-    If any data was derived from walk result, then the function updates MongoDB with the result.
-    If no data was derived from the walk, then it's being retrieved from the MongoDB.
-    """
-    if existing_data or additional_data:
-        processed_result = mongo_connection.update_mib_static_data_for(
-            hostname, existing_data, additional_data
-        )
-        return MibEnricher(processed_result)
-    else:
-        processed_data = mongo_connection.static_data_for(hostname)
-        if not processed_data:
-            return None
-        return MibEnricher(processed_data)
-
-
 def parse_port(host):
     """
     @params host: host filed in inventory.csv. e.g 10.202.12.56, 127.0.0.1:1162
