@@ -93,13 +93,13 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
         result = await get_translation(var_binds, mib_server_url, data_format)
         if data_format == "MULTIMETRIC":
             result = json.loads(result)["metric"]
-            logger.debug(f"multimetric result\n{result}")
+            logger.info(f"multimetric result\n{result}")
         # TODO double check the result to handle the edge case,
         # where the value of an metric data was translated from int to string
         if "metric_name" in result:
             result_dict = json.loads(result)
             _value = result_dict.get("_value", None)
-            logger.debug(f"metric value\n{_value}")
+            logger.info(f"metric value\n{_value}")
             if not is_metric_data(_value):
                 is_metric = False
                 data_format = _get_data_format(is_metric, return_multimetric)
