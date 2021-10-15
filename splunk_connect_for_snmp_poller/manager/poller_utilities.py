@@ -251,7 +251,7 @@ def automatic_realtime_task(
             if should_do_walk:
                 logger.info("Scheduling WALK of full tree")
                 inventory_record.profile = OidConstant.UNIVERSAL_BASE_OID
-                schedule.every().second.do(
+                schedule.every(60).second.do(
                     onetime_task,
                     inventory_record,
                     server_config,
