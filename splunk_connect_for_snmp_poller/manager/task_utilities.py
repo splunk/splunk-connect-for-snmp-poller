@@ -509,9 +509,12 @@ def extract_data_to_mongo(host, port, mongo_connection, var_binds):
 def process_one_time_flag(
     one_time_flag, error_in_one_time_walk, mongo_connection, host, ir
 ):
-    if one_time_flag == OnetimeFlag.FIRST_WALK and error_in_one_time_walk:
+    if one_time_flag == json.dumps(OnetimeFlag.FIRST_WALK) and error_in_one_time_walk:
         mongo_connection.add_onetime_walk_result(host, ir.version, ir.community)
-    if one_time_flag == OnetimeFlag.AFTER_FAIL and not error_in_one_time_walk:
+    if (
+        one_time_flag == json.dumps(OnetimeFlag.AFTER_FAI)
+        and not error_in_one_time_walk
+    ):
         mongo_connection.delete_onetime_walk_result(host)
 
 
