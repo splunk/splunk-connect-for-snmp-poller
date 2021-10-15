@@ -601,15 +601,15 @@ def _sort_walk_data(
     """
     if is_metric:
         merged_result_metric.append(varbind)
-        result = varbind
+        result_to_send_to_hec = varbind
         merged_result.append(eval(varbind))
     else:
         merged_result_non_metric.append(varbind)
-        result = eval(varbind)
-        metric_part = result["metric"]
+        result_dict = eval(varbind)
+        metric_part = eval(result_dict["metric"])
         merged_result.append(metric_part)
-        result = result["non_metric"]
-    return result
+        result_to_send_to_hec = result_dict["non_metric"]
+    return result_to_send_to_hec
 
 
 def _return_mib_enricher_for_walk(
