@@ -84,7 +84,7 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
     @return is_metric: boolean, metric data flag
     """
     logger.debug(f"Getting translation for the following var_binds: {var_binds}")
-    is_metric, result = await result_without_translation(var_binds)
+    is_metric, result = await result_without_translation(var_binds, return_multimetric)
 
     # Override the var_binds string with translated var_binds string
     try:
@@ -109,7 +109,7 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
     return result, is_metric
 
 
-async def result_without_translation(var_binds):
+async def result_without_translation(var_binds, return_multimetric):
     # Get Original var_binds as backup in case the mib-server is unreachable
     for name, val in var_binds:
         # Original oid
@@ -117,7 +117,6 @@ async def result_without_translation(var_binds):
         # if the mib server is unreachable
         # should we format it align with the format of the translated one
         # result = "{} = {}".format(name.prettyPrint(), val.prettyPrint())
-
         # check if this is metric data
         is_metric = is_metric_data(val.prettyPrint())
         if is_metric:
@@ -130,9 +129,14 @@ async def result_without_translation(var_binds):
             }
             result = json.dumps(result)
         else:
-            result = '{{"metric": \'{{"{oid}":"{value}"}}\'}}'.format(
-                oid=name.prettyPrint(), value=val.prettyPrint()
-            )
+            if return_multimetric:
+                result = '{{"metric": {{"{oid}":"{value}"}}, "non_metric": "{oid}={value}"}}'.format(
+                    oid=name.prettyPrint(), value=val.prettyPrint()
+                )
+            else:
+                result = '{oid}="{value}"'.format(
+                    oid=name.prettyPrint(), value=val.prettyPrint()
+                )
         logger.debug("Our result is_metric - %s and string - %s", is_metric, result)
     return is_metric, result
 
@@ -536,10 +540,10 @@ async def walk_handler_with_enricher(
             errorIndex,
             host,
             index,
-            ir,
-            additional_metric_fields,
             one_time_flag,
             is_metric,
+            ir,
+            additional_metric_fields,
             var_binds,
         ):
             break
@@ -547,37 +551,30 @@ async def walk_handler_with_enricher(
             result, is_metric = await get_translated_string(
                 mib_server_url, var_binds, True
             )
-            _sort_walk_data(
+            new_result = _sort_walk_data(
                 is_metric,
                 merged_result_metric,
                 merged_result_non_metric,
                 merged_result,
                 result,
             )
+            post_data_to_splunk_hec(
+                hec_sender,
+                host,
+                new_result,
+                is_metric,
+                index,
+                ir,
+                additional_metric_fields,
+                one_time_flag,
+            )
 
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
     additional_enricher_varbinds = (
         extract_network_interface_data_from_additional_config(enricher)
     )
-    mib_enricher = _return_mib_enricher_for_walk(
-        mongo_connection,
-        f"{host}:{port}",
-        processed_result,
-        additional_enricher_varbinds,
-    )
-    post_walk_data_to_splunk_arguments = [
-        host,
-        index,
-        one_time_flag,
-        ir,
-        additional_metric_fields,
-        mib_enricher,
-    ]
-    _post_walk_data_to_splunk(
-        hec_sender, merged_result_metric, True, *post_walk_data_to_splunk_arguments
-    )
-    _post_walk_data_to_splunk(
-        hec_sender, merged_result_non_metric, False, *post_walk_data_to_splunk_arguments
+    mongo_connection.update_mib_static_data_for(
+        f"{host}:{port}", processed_result, additional_enricher_varbinds
     )
 
 
@@ -604,11 +601,17 @@ def _sort_walk_data(
     """
     if is_metric:
         merged_result_metric.append(varbind)
+        result = varbind
         merged_result.append(eval(varbind))
     else:
         merged_result_non_metric.append(varbind)
         result = eval(varbind)
-        merged_result.append(eval(result["metric"]))
+        metric_part = result["metric"]
+        if isinstance(metric_part, str):
+            metric_part = eval(metric_part)
+        merged_result.append(metric_part)
+        result = result["non_metric"]
+    return result
 
 
 def _return_mib_enricher_for_walk(
@@ -629,31 +632,6 @@ def _return_mib_enricher_for_walk(
         if not processed_data:
             return None
         return MibEnricher(processed_data)
-
-
-def _post_walk_data_to_splunk(
-    hec_sender,
-    result_list,
-    is_metric,
-    host,
-    index,
-    one_time_flag,
-    ir,
-    additional_metric_fields,
-    mib_enricher,
-):
-    for result in result_list:
-        post_data_to_splunk_hec(
-            hec_sender,
-            host,
-            result,
-            is_metric,
-            index,
-            ir,
-            additional_metric_fields,
-            one_time_flag,
-            mib_enricher,
-        )
 
 
 def parse_port(host):
