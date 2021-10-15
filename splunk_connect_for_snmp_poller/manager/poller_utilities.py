@@ -66,7 +66,7 @@ def refresh_inventory(force_inventory_refresh):
     return schedule.CancelJob
 
 
-def parse_inventory_file(inventory_file_path, profiles, fetch_frequency):
+def parse_inventory_file(inventory_file_path, profiles, fetch_frequency=True):
     with open(inventory_file_path, newline="") as inventory_file:
         for agent in csv.DictReader(inventory_file, delimiter=","):
             if _should_process_current_line(agent):
