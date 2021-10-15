@@ -665,7 +665,7 @@ def _sort_walk_data(
         if isinstance(metric_part, str):
             metric_part = eval(metric_part)
         merged_result.append(metric_part)
-        result = metric_part
+        result = result["non_metric"]
     return result
 
 
