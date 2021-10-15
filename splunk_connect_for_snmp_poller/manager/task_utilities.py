@@ -607,7 +607,9 @@ def _sort_walk_data(
     else:
         merged_result_non_metric.append(varbind)
         result_dict = eval(varbind)
-        metric_part = eval(result_dict["metric"])
+        metric_part = result_dict["metric"]
+        if isinstance(metric_part, str):
+            metric_part = eval(metric_part)
         merged_result.append(metric_part)
         result_to_send_to_hec = result_dict["non_metric"]
     return result_to_send_to_hec
