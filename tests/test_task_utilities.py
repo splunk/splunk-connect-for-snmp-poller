@@ -81,7 +81,7 @@ class TestTaskUtilities(TestCase):
         }
         is_metric = True
         merged_result_metric, merged_result_non_metric, merged_result = [], [], []
-        _sort_walk_data(
+        result = _sort_walk_data(
             is_metric,
             merged_result_metric,
             merged_result_non_metric,
@@ -91,9 +91,11 @@ class TestTaskUtilities(TestCase):
         self.assertEqual(merged_result_metric, [varbind])
         self.assertEqual(merged_result, [varbind_dict])
         self.assertEqual(merged_result_non_metric, [])
+        self.assertEqual(result, varbind)
 
     def test__sort_walk_data_non_metric(self):
         varbind = '{"metric":"{\\"metric_name\\": \\"sc4snmp.IF-MIB.ifDescr_1\\", \\"_value\\": \\"lo\\", \\"metric_type\\": \\"OctetString\\"}","metric_name":"sc4snmp.IF-MIB.ifDescr_1","non_metric":"oid-type1=\\"ObjectIdentity\\" value1-type=\\"OctetString\\" 1.3.6.1.2.1.2.2.1.2.1=\\"lo\\" value1=\\"lo\\" IF-MIB::ifDescr.1=\\"lo\\" "}'  # noqa: E501
+        expected_result = """oid-type1="ObjectIdentity" value1-type="OctetString" 1.3.6.1.2.1.2.2.1.2.1="lo" value1="lo" IF-MIB::ifDescr.1="lo" """  # noqa: E501
         varbind_metric_dict = {
             "metric_name": "sc4snmp.IF-MIB.ifDescr_1",
             "_value": "lo",
@@ -101,7 +103,7 @@ class TestTaskUtilities(TestCase):
         }
         is_metric = False
         merged_result_metric, merged_result_non_metric, merged_result = [], [], []
-        _sort_walk_data(
+        result = _sort_walk_data(
             is_metric,
             merged_result_metric,
             merged_result_non_metric,
@@ -111,6 +113,48 @@ class TestTaskUtilities(TestCase):
         self.assertEqual(merged_result_metric, [])
         self.assertEqual(merged_result, [varbind_metric_dict])
         self.assertEqual(merged_result_non_metric, [varbind])
+        self.assertEqual(result, expected_result)
+
+    def test__sort_walk_data_without_mib_server_metric(self):
+        varbind = '{"metric_name": "sc4snmp.SNMPv2-SMI.mib-2_2_2_1_10_2", "_value": "137003294"}'
+        varbind_metric_dict = {
+            "metric_name": "sc4snmp.SNMPv2-SMI.mib-2_2_2_1_10_2",
+            "_value": "137003294",
+        }
+        is_metric = True
+        merged_result_metric, merged_result_non_metric, merged_result = [], [], []
+        result = _sort_walk_data(
+            is_metric,
+            merged_result_metric,
+            merged_result_non_metric,
+            merged_result,
+            varbind,
+        )
+        self.assertEqual(merged_result_metric, [varbind])
+        self.assertEqual(merged_result, [varbind_metric_dict])
+        self.assertEqual(merged_result_non_metric, [])
+        self.assertEqual(result, varbind)
+
+    def test__sort_walk_data_without_mib_server_non_metric(self):
+        varbind = '{"metric": {"metric_name": "SNMPv2-SMI::mib-2.2.2.1.2.1", "_value": "lo"}, "non_metric": "SNMPv2-SMI::mib-2.2.2.1.2.1=lo"}'  # noqa: E501
+        varbind_metric_dict = {
+            "metric_name": "SNMPv2-SMI::mib-2.2.2.1.2.1",
+            "_value": "lo",
+        }
+        expected_result = "SNMPv2-SMI::mib-2.2.2.1.2.1=lo"
+        is_metric = False
+        merged_result_metric, merged_result_non_metric, merged_result = [], [], []
+        result = _sort_walk_data(
+            is_metric,
+            merged_result_metric,
+            merged_result_non_metric,
+            merged_result,
+            varbind,
+        )
+        self.assertEqual(merged_result_metric, [])
+        self.assertEqual(merged_result, [varbind_metric_dict])
+        self.assertEqual(merged_result_non_metric, [varbind])
+        self.assertEqual(result, expected_result)
 
     def test_is_oid_asterisk(self):
         oid = "1.3.6.1.2.1.2.2.1.1.*"
