@@ -512,7 +512,7 @@ def process_one_time_flag(
     if one_time_flag == json.dumps(OnetimeFlag.FIRST_WALK) and error_in_one_time_walk:
         mongo_connection.add_onetime_walk_result(host, ir.version, ir.community)
     if (
-        one_time_flag == json.dumps(OnetimeFlag.AFTER_FAI)
+        one_time_flag == json.dumps(OnetimeFlag.AFTER_FAIL)
         and not error_in_one_time_walk
     ):
         mongo_connection.delete_onetime_walk_result(host)
