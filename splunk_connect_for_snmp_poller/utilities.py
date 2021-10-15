@@ -113,7 +113,7 @@ def parse_command_line_arguments():
     parser.add_argument(
         "--onetime_task_frequency",
         type=int,
-        default=1,
+        default=120,
         help="Frequency in seconds for onetime task",
     )
     return parser.parse_args()
