@@ -56,6 +56,10 @@ class Poller:
         self._local_snmp_engine = SnmpEngine()
         self._unmatched_devices = {}
         self._lock = threading.Lock()
+        self._force_refresh = False
+
+    def force_inventory_refresh(self):
+        self._force_refresh = True
 
     def __get_splunk_indexes(self):
         return {
@@ -88,7 +92,14 @@ class Poller:
         )
 
         # update job when either inventory changes or config changes
-        if server_config_modified or inventory_config_modified:
+        if server_config_modified or inventory_config_modified or self._force_refresh:
+            self._force_refresh = False
+            logger.info(
+                f"Refreshing inventory and config: server_config_modified = {server_config_modified}, "
+                f"inventory_config_modified = {inventory_config_modified}, "
+                f"force_refresh = {self._force_refresh}"
+            )
+
             inventory_hosts = set()
             profiles = get_profiles(self._server_config)
             for ir in parse_inventory_file(self._args.inventory, profiles):
@@ -195,6 +206,8 @@ class Poller:
             self.__get_splunk_indexes(),
             self._server_config,
             self._local_snmp_engine,
+            self.force_inventory_refresh,
+            False,
         )
 
         schedule.every(self._args.matching_task_frequency).seconds.do(
@@ -208,6 +221,8 @@ class Poller:
             self.__get_splunk_indexes(),
             self._server_config,
             self._local_snmp_engine,
+            self.force_inventory_refresh,
+            True,
         )
 
     def add_device_for_profile_matching(self, device: InventoryRecord):
