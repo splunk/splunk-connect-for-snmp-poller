@@ -85,7 +85,7 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
     @return is_metric: boolean, metric data flag
     """
     logger.debug(f"Getting translation for the following var_binds: {var_binds}")
-    is_metric, result = await result_without_translation(var_binds)
+    is_metric, result = await result_without_translation(var_binds, return_multimetric)
 
     # Override the var_binds string with translated var_binds string
     try:
@@ -110,7 +110,7 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
     return result, is_metric
 
 
-async def result_without_translation(var_binds):
+async def result_without_translation(var_binds, return_multimetric):
     # Get Original var_binds as backup in case the mib-server is unreachable
     for name, val in var_binds:
         # Original oid
@@ -118,7 +118,6 @@ async def result_without_translation(var_binds):
         # if the mib server is unreachable
         # should we format it align with the format of the translated one
         # result = "{} = {}".format(name.prettyPrint(), val.prettyPrint())
-
         # check if this is metric data
         is_metric = is_metric_data(val.prettyPrint())
         if is_metric:
@@ -131,9 +130,14 @@ async def result_without_translation(var_binds):
             }
             result = json.dumps(result)
         else:
-            result = '{{"metric": \'{{"{oid}":"{value}"}}\'}}'.format(
-                oid=name.prettyPrint(), value=val.prettyPrint()
-            )
+            if return_multimetric:
+                return '{{"metric": {{"{oid}":"{value}"}}, "non_metric": "{oid}={value}"}}'.format(
+                    oid=name.prettyPrint(), value=val.prettyPrint()
+                )
+            else:
+                result = '{oid}="{value}"'.format(
+                    oid=name.prettyPrint(), value=val.prettyPrint()
+                )
         logger.debug("Our result is_metric - %s and string - %s", is_metric, result)
     return is_metric, result
 
