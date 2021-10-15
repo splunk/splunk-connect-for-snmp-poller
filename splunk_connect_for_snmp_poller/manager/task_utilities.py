@@ -138,7 +138,7 @@ async def result_without_translation(var_binds, return_multimetric):
                 result = '{oid}="{value}"'.format(
                     oid=name.prettyPrint(), value=val.prettyPrint()
                 )
-        logger.debug("Our result is_metric - %s and string - %s", is_metric, result)
+        logger.info("Our result is_metric - %s and string - %s", is_metric, result)
     return is_metric, result
 
 
@@ -640,6 +640,7 @@ def _sort_walk_data(
     @param varbind: current varbind
     @return:
     """
+    logger.info(f"In _sort_walk_data: {is_metric} {varbind}")
     if is_metric:
         merged_result_metric.append(varbind)
         merged_result.append(eval(varbind))
