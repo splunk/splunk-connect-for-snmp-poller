@@ -89,35 +89,29 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
 
     # Override the var_binds string with translated var_binds string
     try:
-        logger.info("Inside try in get_translated_string")
         data_format = _get_data_format(is_metric, return_multimetric)
-        logger.info(f"Data: {data_format}")
         result = await get_translation(var_binds, mib_server_url, data_format)
-        logger.info("after getting result")
-        logger.info(f"a result: {result}")
         if data_format == "MULTIMETRIC":
             result = json.loads(result)["metric"]
-            logger.info(f"multimetric result\n{result}")
+            logger.debug(f"multimetric result\n{result}")
         # TODO double check the result to handle the edge case,
         # where the value of an metric data was translated from int to string
         if "metric_name" in result:
             result_dict = json.loads(result)
             _value = result_dict.get("_value", None)
-            logger.info(f"metric value\n{_value}")
+            logger.debug(f"metric value\n{_value}")
             if not is_metric_data(_value):
                 is_metric = False
                 data_format = _get_data_format(is_metric, return_multimetric)
-                logger.info(f"Data: {data_format}")
                 result = await get_translation(var_binds, mib_server_url, data_format)
     except Exception:
         logger.exception("Could not perform translation. Returning original var_binds")
-    logger.info(f"final result -- metric: {is_metric}\n{result}")
+    logger.debug(f"final result -- metric: {is_metric}\n{result}")
     return result, is_metric
 
 
 async def result_without_translation(var_binds, return_multimetric):
     # Get Original var_binds as backup in case the mib-server is unreachable
-    logger.info("result_without_translation")
     for name, val in var_binds:
         # Original oid
         # TODO Discuss: should we return the original oid
@@ -144,7 +138,7 @@ async def result_without_translation(var_binds, return_multimetric):
                 result = '{oid}="{value}"'.format(
                     oid=name.prettyPrint(), value=val.prettyPrint()
                 )
-        logger.info("Our result is_metric - %s and string - %s", is_metric, result)
+        logger.debug("Our result is_metric - %s and string - %s", is_metric, result)
     return is_metric, result
 
 
@@ -609,6 +603,7 @@ async def walk_handler_with_enricher(
         processed_result,
         additional_enricher_varbinds,
     )
+    logger.info("Before post_walk_data_to_splunk_arguments")
     post_walk_data_to_splunk_arguments = [
         host,
         index,
@@ -617,9 +612,11 @@ async def walk_handler_with_enricher(
         additional_metric_fields,
         mib_enricher,
     ]
+    logger.info("Before _post_walk_data_to_splunk")
     _post_walk_data_to_splunk(
         hec_sender, merged_result_metric, True, *post_walk_data_to_splunk_arguments
     )
+    logger.info("Before _post_walk_data_to_splunk non metric")
     _post_walk_data_to_splunk(
         hec_sender, merged_result_non_metric, False, *post_walk_data_to_splunk_arguments
     )

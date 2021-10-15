@@ -52,6 +52,7 @@ class HecSender:
     def send_request(endpoint, data):
         try:
             logger.debug("+++++++++endpoint+++++++++\n%s", endpoint)
+            logger.info("+++++++++data+++++++++\n%s", data)
             response = requests.post(url=endpoint, json=data, timeout=60)
             logger.debug("Response code is %s", response.status_code)
             logger.debug("Response is %s", response.text)
@@ -75,10 +76,10 @@ def post_data_to_splunk_hec(
     is_error=False,
 ):
     if is_error:
-        logger.debug("sending error to index - %s", index["event_index"])
+        logger.info("sending error to index - %s", index["event_index"])
         data = build_error_data(host, variables_binds, index["event_index"])
     elif is_metric:
-        logger.debug("metric index: %s", index["metric_index"])
+        logger.info("metric index: %s", index["metric_index"])
         data = build_metric_data(
             host,
             variables_binds,
@@ -88,7 +89,7 @@ def post_data_to_splunk_hec(
             mib_enricher,
         )
     else:
-        logger.debug("event index - %s", index["event_index"])
+        logger.info("event index - %s", index["event_index"])
         data = build_event_data(
             host,
             variables_binds,
@@ -129,8 +130,14 @@ def prepare_variable_binds(mib_enricher, variables_binds):
     if "NoSuchInstance" in str(variables_binds):
         variables_binds = "error: " + str(variables_binds)
     elif mib_enricher:
+        logger.info(
+            f"Enrich event data: {variables_binds}\ntype: {type(variables_binds)}"
+        )
         variables_binds = _enrich_event_data(mib_enricher, json.loads(variables_binds))
     elif "non_metric" in variables_binds:
+        logger.info(
+            f"non_metric in non_metric: {variables_binds}\ntype: {type(variables_binds)}"
+        )
         variables_binds = json.loads(variables_binds)["non_metric"]
     return variables_binds
 
