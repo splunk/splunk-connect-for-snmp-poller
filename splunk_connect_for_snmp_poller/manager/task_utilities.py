@@ -91,6 +91,7 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
     try:
         logger.info("Inside try in get_translated_string")
         data_format = _get_data_format(is_metric, return_multimetric)
+        logger.info(f"Data: {data_format}")
         result = await get_translation(var_binds, mib_server_url, data_format)
         logger.info("after getting result")
         if data_format == "MULTIMETRIC":
@@ -105,6 +106,7 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
             if not is_metric_data(_value):
                 is_metric = False
                 data_format = _get_data_format(is_metric, return_multimetric)
+                logger.info(f"Data: {data_format}")
                 result = await get_translation(var_binds, mib_server_url, data_format)
     except Exception:
         logger.exception("Could not perform translation. Returning original var_binds")
