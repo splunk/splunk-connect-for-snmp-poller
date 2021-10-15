@@ -89,8 +89,10 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
 
     # Override the var_binds string with translated var_binds string
     try:
+        logger.info("Inside try in get_translated_string")
         data_format = _get_data_format(is_metric, return_multimetric)
         result = await get_translation(var_binds, mib_server_url, data_format)
+        logger.info("after getting result")
         if data_format == "MULTIMETRIC":
             result = json.loads(result)["metric"]
             logger.info(f"multimetric result\n{result}")
@@ -112,6 +114,7 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
 
 async def result_without_translation(var_binds, return_multimetric):
     # Get Original var_binds as backup in case the mib-server is unreachable
+    logger.info("result_without_translation")
     for name, val in var_binds:
         # Original oid
         # TODO Discuss: should we return the original oid
