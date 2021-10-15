@@ -131,7 +131,7 @@ async def result_without_translation(var_binds, return_multimetric):
             result = json.dumps(result)
         else:
             if return_multimetric:
-                return '{{"metric": {{"{oid}":"{value}"}}, "non_metric": "{oid}={value}"}}'.format(
+                result = '{{"metric": {{"{oid}":"{value}"}}, "non_metric": "{oid}={value}"}}'.format(
                     oid=name.prettyPrint(), value=val.prettyPrint()
                 )
             else:
