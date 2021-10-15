@@ -569,6 +569,7 @@ async def walk_handler_with_enricher(
                 one_time_flag,
             )
 
+    logger.info("Walk finished")
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
     additional_enricher_varbinds = (
         extract_network_interface_data_from_additional_config(enricher)
