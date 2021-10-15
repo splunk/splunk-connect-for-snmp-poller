@@ -577,12 +577,22 @@ async def walk_handler_with_enricher(
             result, is_metric = await get_translated_string(
                 mib_server_url, var_binds, True
             )
-            _sort_walk_data(
+            new_result = _sort_walk_data(
                 is_metric,
                 merged_result_metric,
                 merged_result_non_metric,
                 merged_result,
                 result,
+            )
+            post_data_to_splunk_hec(
+                hec_sender,
+                host,
+                new_result,
+                is_metric,
+                index,
+                ir,
+                additional_metric_fields,
+                one_time_flag,
             )
     if one_time_flag:
         process_one_time_flag(
@@ -597,29 +607,29 @@ async def walk_handler_with_enricher(
     additional_enricher_varbinds = (
         extract_network_interface_data_from_additional_config(enricher)
     )
-    mib_enricher = _return_mib_enricher_for_walk(
+    _ = _return_mib_enricher_for_walk(
         mongo_connection,
         f"{host}:{port}",
         processed_result,
         additional_enricher_varbinds,
     )
     logger.info("Before post_walk_data_to_splunk_arguments")
-    post_walk_data_to_splunk_arguments = [
-        host,
-        index,
-        one_time_flag,
-        ir,
-        additional_metric_fields,
-        mib_enricher,
-    ]
-    logger.info("Before _post_walk_data_to_splunk")
-    _post_walk_data_to_splunk(
-        hec_sender, merged_result_metric, True, *post_walk_data_to_splunk_arguments
-    )
-    logger.info("Before _post_walk_data_to_splunk non metric")
-    _post_walk_data_to_splunk(
-        hec_sender, merged_result_non_metric, False, *post_walk_data_to_splunk_arguments
-    )
+    # post_walk_data_to_splunk_arguments = [
+    #     host,
+    #     index,
+    #     one_time_flag,
+    #     ir,
+    #     additional_metric_fields,
+    #     mib_enricher,
+    # ]
+    # logger.info("Before _post_walk_data_to_splunk")
+    # _post_walk_data_to_splunk(
+    #     hec_sender, merged_result_metric, True, *post_walk_data_to_splunk_arguments
+    # )
+    # logger.info("Before _post_walk_data_to_splunk non metric")
+    # _post_walk_data_to_splunk(
+    #     hec_sender, merged_result_non_metric, False, *post_walk_data_to_splunk_arguments
+    # )
 
 
 def _sort_walk_data(
@@ -646,6 +656,7 @@ def _sort_walk_data(
     logger.info(f"In _sort_walk_data: {is_metric} {varbind}")
     if is_metric:
         merged_result_metric.append(varbind)
+        result = varbind
         merged_result.append(eval(varbind))
     else:
         merged_result_non_metric.append(varbind)
@@ -654,6 +665,8 @@ def _sort_walk_data(
         if isinstance(metric_part, str):
             metric_part = eval(metric_part)
         merged_result.append(metric_part)
+        result = metric_part
+    return result
 
 
 def _return_mib_enricher_for_walk(
