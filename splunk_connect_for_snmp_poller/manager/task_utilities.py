@@ -647,7 +647,10 @@ def _sort_walk_data(
     else:
         merged_result_non_metric.append(varbind)
         result = eval(varbind)
-        merged_result.append(eval(result["metric"]))
+        metric_part = result["metric"]
+        if isinstance(metric_part, str):
+            metric_part = eval(metric_part)
+        merged_result.append(metric_part)
 
 
 def _return_mib_enricher_for_walk(
