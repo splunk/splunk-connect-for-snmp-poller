@@ -85,7 +85,7 @@ async def get_snmp_data(
                 var_binds,
             )
         except Exception as e:
-            logger.error(f"Error occurred while calling {handler.__name__}(): {e}")
+            logger.exception(f"Error occurred while calling {handler.__name__}(): {e}")
 
 
 def sort_varbinds(varbind_list: list) -> VarbindCollection:

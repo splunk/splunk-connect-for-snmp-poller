@@ -17,7 +17,6 @@ import csv
 import json
 import logging.config
 import threading
-from pathlib import Path
 
 import schedule
 from pysnmp.hlapi import ObjectIdentity, ObjectType, UdpTransportTarget, getCmd
@@ -92,13 +91,12 @@ def onetime_task(
     return schedule.CancelJob
 
 
-def refresh_inventory(inventory_file_path):
-    Path(inventory_file_path).touch()
-
+def refresh_inventory(force_inventory_refresh):
+    force_inventory_refresh()
     return schedule.CancelJob
 
 
-def parse_inventory_file(inventory_file_path, profiles):
+def parse_inventory_file(inventory_file_path, profiles, fetch_frequency):
     with open(inventory_file_path, newline="") as inventory_file:
         for agent in csv.DictReader(inventory_file, delimiter=","):
             if _should_process_current_line(agent):
@@ -107,7 +105,7 @@ def parse_inventory_file(inventory_file_path, profiles):
                     agent["version"],
                     agent["community"],
                     agent["profile"],
-                    get_frequency(agent, profiles, 60),
+                    get_frequency(agent, profiles, 60) if fetch_frequency else None,
                 )
 
 
@@ -192,6 +190,8 @@ def automatic_realtime_job(
     splunk_indexes,
     server_config,
     local_snmp_engine,
+    force_inventory_refresh,
+    initial_walk,
 ):
     job_thread = threading.Thread(
         target=automatic_realtime_task,
@@ -201,6 +201,8 @@ def automatic_realtime_job(
             splunk_indexes,
             server_config,
             local_snmp_engine,
+            force_inventory_refresh,
+            initial_walk,
         ],
     )
     job_thread.start()
@@ -228,10 +230,12 @@ def automatic_realtime_task(
     splunk_indexes,
     server_config,
     local_snmp_engine,
+    force_inventory_refresh,
+    initial_walk,
 ):
     try:
         for inventory_record in parse_inventory_file(
-            inventory_file_path, profiles=None
+            inventory_file_path, profiles=None, fetch_frequency=False
         ):
             db_host_id = return_database_id(inventory_record.host)
             sys_up_time = _extract_sys_uptime_instance(
@@ -253,12 +257,11 @@ def automatic_realtime_task(
                     server_config,
                     splunk_indexes,
                 )
-                logger.info("After onetime_task first")
-                # touch inventory file after 2 min to trigger reloading of inventory with new walk data
-                schedule.every(2).minutes.do(
-                    refresh_inventory,
-                    inventory_file_path,
-                )
+                if not initial_walk:
+                    # force inventory reloading after 2 min with new walk data
+                    schedule.every(2).minutes.do(
+                        refresh_inventory, force_inventory_refresh
+                    )
             _update_mongo(
                 all_walked_hosts_collection,
                 db_host_id,

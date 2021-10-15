@@ -68,3 +68,4 @@ class TestInventoryLine(TestCase):
         self.assertFalse(is_valid_profile("asd sa"))
         self.assertFalse(is_valid_profile("&asd"))
         self.assertTrue(is_valid_profile("1_asd-asds"))
+        self.assertTrue(is_valid_profile("*"))
