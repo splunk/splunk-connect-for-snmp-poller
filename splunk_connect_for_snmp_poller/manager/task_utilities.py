@@ -607,8 +607,6 @@ def _sort_walk_data(
         merged_result_non_metric.append(varbind)
         result = eval(varbind)
         metric_part = result["metric"]
-        if isinstance(metric_part, str):
-            metric_part = eval(metric_part)
         merged_result.append(metric_part)
         result = result["non_metric"]
     return result
