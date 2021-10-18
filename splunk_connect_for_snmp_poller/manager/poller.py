@@ -34,6 +34,9 @@ from splunk_connect_for_snmp_poller.manager.profile_matching import (
     get_profiles,
 )
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
+from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
+    DYNAMIC_PROFILE,
+)
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 from splunk_connect_for_snmp_poller.utilities import (
     file_was_modified,
@@ -114,7 +117,7 @@ class Poller:
                     )
                     continue
                 inventory_hosts.add(entry_key)
-                if ir.profile == "*":
+                if ir.profile == DYNAMIC_PROFILE:
                     self.delete_all_entries_per_host(ir.host)
                     self.add_device_for_profile_matching(ir)
                 else:
