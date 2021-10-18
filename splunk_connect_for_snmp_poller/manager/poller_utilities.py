@@ -225,8 +225,8 @@ def automatic_realtime_task(
                 host_already_walked,
                 sys_up_time,
             )
-    except Exception as e:
-        logger.exception(e)
+    except Exception:
+        logger.exception("Error during automatic_realtime_task")
 
 
 def create_poller_scheduler_entry_key(host, profile):
