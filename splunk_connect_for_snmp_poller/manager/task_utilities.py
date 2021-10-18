@@ -39,6 +39,7 @@ from splunk_connect_for_snmp_poller.manager.const import (
 )
 from splunk_connect_for_snmp_poller.manager.hec_sender import post_data_to_splunk_hec
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_translation
+from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
     extract_network_interface_data_from_additional_config,
@@ -130,12 +131,24 @@ async def result_without_translation(var_binds, return_multimetric):
             result = json.dumps(result)
         else:
             if return_multimetric:
-                result = (
-                    '{{"metric": {{"metric_name": "{oid}", "_value": "{value}"}}, '
-                    '"non_metric": "{oid}={value}"}}'.format(
-                        oid=name.prettyPrint(), value=val.prettyPrint()
-                    )
+                metric_content_dict = {
+                    name.prettyPrint(): val.prettyPrint(),
+                    InterfaceMib.METRIC_NAME_KEY: name.prettyPrint(),
+                }
+
+                metric_content = json.dumps(metric_content_dict)
+
+                non_metric_content = '{oid}="{value}"'.format(
+                    oid=name.prettyPrint(), value=val.prettyPrint()
                 )
+
+                result_dict = {
+                    "metric": metric_content,
+                    "non_metric": non_metric_content,
+                    "metric_name": name.prettyPrint(),
+                }
+
+                result = json.dumps(result_dict)
             else:
                 result = '{oid}="{value}"'.format(
                     oid=name.prettyPrint(), value=val.prettyPrint()

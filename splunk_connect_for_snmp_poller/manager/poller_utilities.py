@@ -28,6 +28,7 @@ from splunk_connect_for_snmp_poller.manager.realtime.real_time_data import (
 from splunk_connect_for_snmp_poller.manager.task_utilities import parse_port
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
+    DYNAMIC_PROFILE,
     is_valid_inventory_line_from_dict,
     should_process_inventory_line,
 )
@@ -75,7 +76,9 @@ def parse_inventory_file(inventory_file_path, profiles, fetch_frequency=True):
                     agent["version"],
                     agent["community"],
                     agent["profile"],
-                    get_frequency(agent, profiles, 60) if fetch_frequency else None,
+                    get_frequency(agent, profiles, 60)
+                    if fetch_frequency and agent["profile"] != DYNAMIC_PROFILE
+                    else None,
                 )
 
 
