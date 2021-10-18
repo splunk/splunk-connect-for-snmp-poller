@@ -182,12 +182,12 @@ class WalkedHostsRepository:
 
     # Input is what extract_network_interface_data_from_walk() returns
     def update_mib_static_data_for(self, host, existing_data, additional_data):
-        logger.info("Updating static data")
         if not existing_data and not additional_data:
             return
         static_data_dictionary = self.create_mib_static_data_mongo_structure(
             existing_data, additional_data
         )
+        logger.info(f"Updating static data for {host} with {static_data_dictionary}")
         self._walked_hosts.find_one_and_update(
             {"_id": host},
             {"$set": static_data_dictionary},
