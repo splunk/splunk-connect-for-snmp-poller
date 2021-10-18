@@ -620,11 +620,11 @@ def _sort_walk_data(
     """
     if is_metric:
         merged_result_metric.append(varbind)
-        merged_result.append(eval(varbind))
+        merged_result.append(json.loads(varbind))
     else:
         merged_result_non_metric.append(varbind)
-        result = eval(varbind)
-        merged_result.append(eval(result["metric"]))
+        result = json.loads(varbind)
+        merged_result.append(json.loads(result["metric"]))
 
 
 def _return_mib_enricher_for_walk(
