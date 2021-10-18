@@ -30,18 +30,23 @@ def extract_desc(realtime_collection):
     sys_object_id = multi_key_lookup(
         realtime_collection, (OidConstant.SYS_OBJECT_ID, "value")
     )
-    return sys_descr if sys_descr is not None else sys_object_id
+    return sys_descr, sys_object_id
 
 
 def assign_profiles_to_device(profiles, device_desc):
     result = []
     for profile in profiles:
         if "patterns" in profiles[profile]:
-            for pattern in profiles[profile]["patterns"]:
-                if re.compile(pattern).match(device_desc):
-                    result.append((profile, profiles[profile]["frequency"]))
-                    continue
+            match_profile_with_device(device_desc, profile, profiles, result)
     return result
+
+
+def match_profile_with_device(device_desc, profile, profiles, result):
+    for pattern in profiles[profile]["patterns"]:
+        for desc in device_desc:
+            if desc and re.compile(pattern).match(desc):
+                result.append((profile, profiles[profile]["frequency"]))
+                return
 
 
 def get_profiles(server_config):
