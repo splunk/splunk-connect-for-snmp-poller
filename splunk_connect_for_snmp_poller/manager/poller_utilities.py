@@ -156,28 +156,26 @@ def _extract_sys_uptime_instance(
     }
 
 
-def _walk_info(all_walked_hosts_collection, host, current_sys_up_time):
-    host_already_walked = all_walked_hosts_collection.contains_host(host) != 0
+def _walk_info(mongo_collection, host, current_sys_up_time):
+    host_already_walked = mongo_collection.contains_host(host) != 0
     should_do_walk = not host_already_walked
     if host_already_walked:
-        previous_sys_up_time = all_walked_hosts_collection.real_time_data_for(host)
+        previous_sys_up_time = mongo_collection.real_time_data_for(host)
         should_do_walk = should_redo_walk(previous_sys_up_time, current_sys_up_time)
     return host_already_walked, should_do_walk
 
 
-def _update_mongo(
-    all_walked_hosts_collection, host, host_already_walked, current_sys_up_time
-):
+def _update_mongo(mongo_collection, host, host_already_walked, current_sys_up_time):
     if not host_already_walked:
         logger.info("Adding host: %s into Mongo database", host)
-        all_walked_hosts_collection.add_host(host)
+        mongo_collection.add_host(host)
 
-    prev_content = all_walked_hosts_collection.real_time_data_for(host)
+    prev_content = mongo_collection.real_time_data_for(host)
     if not prev_content:
         prev_content = {}
     prev_content.update(current_sys_up_time)
 
-    all_walked_hosts_collection.update_real_time_data_for(host, prev_content)
+    mongo_collection.update_real_time_data_for(host, prev_content)
 
 
 """
@@ -188,7 +186,7 @@ This is the realtime task responsible for executing an SNMPWALK when
 
 
 def automatic_realtime_job(
-    all_walked_hosts_collection,
+    mongo_collection,
     inventory_file_path,
     splunk_indexes,
     server_config,
@@ -199,7 +197,7 @@ def automatic_realtime_job(
     job_thread = threading.Thread(
         target=automatic_realtime_task,
         args=[
-            all_walked_hosts_collection,
+            mongo_collection,
             inventory_file_path,
             splunk_indexes,
             server_config,
@@ -212,7 +210,7 @@ def automatic_realtime_job(
 
 
 def automatic_onetime_task(
-    all_walked_hosts_collection,
+    mongo_collection,
     splunk_indexes,
     server_config,
 ):
@@ -221,14 +219,14 @@ def automatic_onetime_task(
         args=[
             server_config,
             splunk_indexes,
-            all_walked_hosts_collection,
+            mongo_collection,
         ],
     )
     job_thread.start()
 
 
 def automatic_realtime_task(
-    all_walked_hosts_collection,
+    mongo_collection,
     inventory_file_path,
     splunk_indexes,
     server_config,
@@ -249,7 +247,7 @@ def automatic_realtime_task(
                 server_config,
             )
             host_already_walked, should_do_walk = _walk_info(
-                all_walked_hosts_collection, db_host_id, sys_up_time
+                mongo_collection, db_host_id, sys_up_time
             )
             if should_do_walk:
                 logger.info("Scheduling WALK of full tree")
@@ -266,7 +264,7 @@ def automatic_realtime_task(
                         refresh_inventory, force_inventory_refresh
                     )
             _update_mongo(
-                all_walked_hosts_collection,
+                mongo_collection,
                 db_host_id,
                 host_already_walked,
                 sys_up_time,
