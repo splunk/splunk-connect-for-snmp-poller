@@ -46,6 +46,7 @@ from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities imp
     extract_network_interface_data_from_walk,
 )
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
+from splunk_connect_for_snmp_poller.utilities import OnetimeFlag
 
 logger = get_task_logger(__name__)
 
@@ -459,7 +460,7 @@ async def walk_handler(
     e.g. 1.3.6.1.2.1.1.9.*,
     which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
     """
-
+    error_in_one_time_walk = False
     for (errorIndication, errorStatus, errorIndex, var_binds) in nextCmd(
         snmp_engine,
         auth_data,
@@ -483,6 +484,8 @@ async def walk_handler(
             additional_metric_fields,
             var_binds,
         ):
+            if one_time_flag:
+                error_in_one_time_walk = True
             break
         else:
             result, is_metric = await get_translated_string(mib_server_url, var_binds)
@@ -496,6 +499,14 @@ async def walk_handler(
                 additional_metric_fields,
                 one_time_flag,
             )
+    if one_time_flag:
+        process_one_time_flag(
+            one_time_flag,
+            error_in_one_time_walk,
+            mongo_connection,
+            f"{host}:{port}",
+            ir,
+        )
 
 
 def extract_data_to_mongo(host, port, mongo_connection, var_binds):
@@ -513,6 +524,18 @@ def extract_data_to_mongo(host, port, mongo_connection, var_binds):
         }
 
         mongo_connection.update_real_time_data_for(host_id, prev_content)
+
+
+def process_one_time_flag(
+    one_time_flag, error_in_one_time_walk, mongo_connection, host, ir
+):
+    if one_time_flag == json.dumps(OnetimeFlag.FIRST_WALK) and error_in_one_time_walk:
+        mongo_connection.add_onetime_walk_result(host, ir.version, ir.community)
+    if (
+        one_time_flag == json.dumps(OnetimeFlag.AFTER_FAIL)
+        and not error_in_one_time_walk
+    ):
+        mongo_connection.delete_onetime_walk_result(host)
 
 
 async def walk_handler_with_enricher(
@@ -536,6 +559,7 @@ async def walk_handler_with_enricher(
     e.g. 1.3.6.1.2.1.1.9.*,
     which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
     """
+    error_in_one_time_walk = False
     merged_result = []
     merged_result_metric = []
     merged_result_non_metric = []
@@ -562,6 +586,8 @@ async def walk_handler_with_enricher(
             additional_metric_fields,
             var_binds,
         ):
+            if one_time_flag:
+                error_in_one_time_walk = True
             break
         else:
             result, is_metric = await get_translated_string(
@@ -584,6 +610,14 @@ async def walk_handler_with_enricher(
                 additional_metric_fields,
                 one_time_flag,
             )
+    if one_time_flag:
+        process_one_time_flag(
+            one_time_flag,
+            error_in_one_time_walk,
+            mongo_connection,
+            f"{host}:{port}",
+            ir,
+        )
 
     logger.info(f"Walk finished for {host} profile={ir.profile}")
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)

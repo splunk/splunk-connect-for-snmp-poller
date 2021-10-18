@@ -23,6 +23,7 @@ from pysnmp.hlapi import SnmpEngine
 
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.poller_utilities import (
+    automatic_onetime_task,
     automatic_realtime_job,
     create_poller_scheduler_entry_key,
     parse_inventory_file,
@@ -146,6 +147,7 @@ class Poller:
                 db_host_id = return_database_id(entry_key)
                 logger.debug("Removing _id %s from mongo database", db_host_id)
                 self._mongo_walked_hosts_coll.delete_host(db_host_id)
+                self._mongo_walked_hosts_coll.delete_onetime_walk_result(db_host_id)
                 del self._jobs_map[entry_key]
 
     def update_schedule_for_changed_conf(self, entry_key, ir, profiles):
@@ -227,6 +229,14 @@ class Poller:
             self.force_inventory_refresh,
             True,
         )
+        logger.info("After automatic_realtime_job single")
+        schedule.every(self._args.onetime_task_frequency).minutes.do(
+            automatic_onetime_task,
+            self._mongo_walked_hosts_coll,
+            self.__get_splunk_indexes(),
+            self._server_config,
+        )
+        logger.info("After automatic_onetime_task")
 
     def add_device_for_profile_matching(self, device: InventoryRecord):
         self._lock.acquire()

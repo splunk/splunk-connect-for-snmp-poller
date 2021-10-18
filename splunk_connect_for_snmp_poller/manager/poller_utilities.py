@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 import csv
+import json
 import logging.config
 import threading
 
@@ -32,7 +33,7 @@ from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import
     is_valid_inventory_line_from_dict,
     should_process_inventory_line,
 )
-from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
+from splunk_connect_for_snmp_poller.utilities import OnetimeFlag, multi_key_lookup
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,35 @@ def _should_process_current_line(inventory_record: dict):
     )
 
 
-def onetime_task(inventory_record: InventoryRecord, server_config, splunk_indexes):
+def iterate_through_unwalked_hosts_scheduler(
+    server_config, splunk_indexes, mongo_connection
+):
+    logger.debug("Executing iterate_through_unwalked_hosts_scheduler")
+    profile = OidConstant.UNIVERSAL_BASE_OID
+    unwalked_hosts = mongo_connection.get_all_unwalked_hosts()
+    for unwalked_host in unwalked_hosts:
+        inventory_record = InventoryRecord(
+            unwalked_host["host"],
+            unwalked_host["version"],
+            unwalked_host["community"],
+            profile,
+            "60",
+        )
+        schedule.every().second.do(
+            onetime_task,
+            inventory_record,
+            server_config,
+            splunk_indexes,
+            json.dumps(OnetimeFlag.AFTER_FAIL),
+        )
+
+
+def onetime_task(
+    inventory_record: InventoryRecord,
+    server_config,
+    splunk_indexes,
+    one_time_flag=json.dumps(OnetimeFlag.FIRST_WALK),
+):
     logger.debug("Executing onetime_task for %s", inventory_record.__repr__())
 
     snmp_polling.delay(
@@ -57,8 +86,9 @@ def onetime_task(inventory_record: InventoryRecord, server_config, splunk_indexe
         server_config,
         splunk_indexes,
         None,
-        one_time_flag=True,
+        one_time_flag=one_time_flag,
     )
+    logger.debug("Cancelling onetime_task for %s", inventory_record.__repr__())
     return schedule.CancelJob
 
 
@@ -176,6 +206,22 @@ def automatic_realtime_job(
             local_snmp_engine,
             force_inventory_refresh,
             initial_walk,
+        ],
+    )
+    job_thread.start()
+
+
+def automatic_onetime_task(
+    all_walked_hosts_collection,
+    splunk_indexes,
+    server_config,
+):
+    job_thread = threading.Thread(
+        target=iterate_through_unwalked_hosts_scheduler,
+        args=[
+            server_config,
+            splunk_indexes,
+            all_walked_hosts_collection,
         ],
     )
     job_thread.start()
