@@ -19,7 +19,9 @@ import re
 import yaml
 
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_mib_profiles
-from splunk_connect_for_snmp_poller.manager.poller_utilities import DEFAULT_POLLING_FREQUENCY
+from splunk_connect_for_snmp_poller.manager.poller_utilities import (
+    DEFAULT_POLLING_FREQUENCY,
+)
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
@@ -51,8 +53,10 @@ def match_profile_with_device(device_desc, profile, profiles, result, host):
                     frequency = profiles[profile]["frequency"]
                 else:
                     frequency = DEFAULT_POLLING_FREQUENCY
-                    logger.debug(f'Default frequency={DEFAULT_POLLING_FREQUENCY} was assigned for agent={host}, '
-                                 f'profile={profile}')
+                    logger.debug(
+                        f"Default frequency={DEFAULT_POLLING_FREQUENCY} was assigned for agent={host}, "
+                        f"profile={profile}"
+                    )
                 result.append((profile, frequency))
                 return
 

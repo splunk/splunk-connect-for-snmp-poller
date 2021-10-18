@@ -85,13 +85,13 @@ def parse_inventory_file(inventory_file_path, profiles, fetch_frequency=True):
 
 
 def get_frequency(agent, profiles, default_frequency):
-    frequency = multi_key_lookup(
-        profiles, ("profiles", agent["profile"], "frequency")
-    )
+    frequency = multi_key_lookup(profiles, ("profiles", agent["profile"], "frequency"))
     if frequency:
         return frequency
-    logger.debug(f'Default frequency={DEFAULT_POLLING_FREQUENCY} was assigned for agent={agent.get("host")}, '
-                 f'profile={agent["profile"]}')
+    logger.debug(
+        f'Default frequency={DEFAULT_POLLING_FREQUENCY} was assigned for agent={agent.get("host")}, '
+        f'profile={agent["profile"]}'
+    )
     return default_frequency
 
 
