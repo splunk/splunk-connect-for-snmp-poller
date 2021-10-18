@@ -147,7 +147,7 @@ class Poller:
                 schedule.cancel_job(self._jobs_map.get(entry_key))
                 db_host_id = return_database_id(entry_key)
                 if db_host_id not in inventory_hosts:
-                    logger.debug(
+                    logger.info(
                         "Removing _id %s from mongo database, it is not in used hosts %s",
                         db_host_id,
                         str(inventory_hosts),
