@@ -78,7 +78,7 @@ class Poller:
         while True:
             if counter == 0:
                 self.__check_inventory()
-                counter = int(self._args.refresh_interval)
+                counter = self._args.refresh_interval
 
             schedule.run_pending()
             time.sleep(1)
@@ -229,14 +229,12 @@ class Poller:
             self.force_inventory_refresh,
             True,
         )
-        logger.info("After automatic_realtime_job single")
         schedule.every(self._args.onetime_task_frequency).minutes.do(
             automatic_onetime_task,
             self._mongo_walked_hosts_coll,
             self.__get_splunk_indexes(),
             self._server_config,
         )
-        logger.info("After automatic_onetime_task")
 
     def add_device_for_profile_matching(self, device: InventoryRecord):
         self._lock.acquire()

@@ -85,7 +85,11 @@ def parse_command_line_arguments():
         "-i", "--inventory", default="inventory.csv", help="Inventory Config File"
     )
     parser.add_argument(
-        "-r", "--refresh_interval", default="1", help="Refresh Interval of Inventory"
+        "-r",
+        "--refresh_interval",
+        type=int,
+        default=1,
+        help="Refresh Interval of Inventory",
     )
     parser.add_argument(
         "--event_index", default="##EVENTS_INDEX##", help="Event index for polling data"
