@@ -102,11 +102,13 @@ class Poller:
                 f"force_refresh = {self._force_refresh}"
             )
 
+            # TODO should rethink logic with changed to profiles and oids
+            inventory_entry_keys = set()
             inventory_hosts = set()
             profiles = get_profiles(self._server_config)
             for ir in parse_inventory_file(self._args.inventory, profiles):
                 entry_key = create_poller_scheduler_entry_key(ir.host, ir.profile)
-                if entry_key in inventory_hosts:
+                if entry_key in inventory_entry_keys:
                     logger.error(
                         "%s has duplicated hostname %s and %s in the inventory, cannot use the same profile twice for "
                         "the same device",
@@ -115,7 +117,8 @@ class Poller:
                         ir.profile,
                     )
                     continue
-                inventory_hosts.add(entry_key)
+                inventory_entry_keys.add(entry_key)
+                inventory_hosts.add(return_database_id(ir.host))
                 if ir.profile == DYNAMIC_PROFILE:
                     self.delete_all_entries_per_host(ir.host)
                     self.add_device_for_profile_matching(ir)
@@ -129,7 +132,7 @@ class Poller:
                     else:
                         self.update_schedule_for_changed_conf(entry_key, ir, profiles)
 
-            self.clean_job_inventory(inventory_hosts)
+            self.clean_job_inventory(inventory_entry_keys, inventory_hosts)
 
     def delete_all_entries_per_host(self, host):
         for entry_key in list(self._jobs_map.keys()):
@@ -137,15 +140,20 @@ class Poller:
                 schedule.cancel_job(self._jobs_map.get(entry_key))
                 del self._jobs_map[entry_key]
 
-    def clean_job_inventory(self, inventory_hosts):
+    def clean_job_inventory(self, inventory_entry_keys: set, inventory_hosts: set):
         for entry_key in list(self._jobs_map):
-            if entry_key not in inventory_hosts:
+            if entry_key not in inventory_entry_keys:
                 logger.debug("Removing job for %s", entry_key)
                 schedule.cancel_job(self._jobs_map.get(entry_key))
                 db_host_id = return_database_id(entry_key)
-                logger.debug("Removing _id %s from mongo database", db_host_id)
-                self._mongo.delete_host(db_host_id)
-                self._mongo.delete_onetime_walk_result(db_host_id)
+                if db_host_id not in inventory_hosts:
+                    logger.debug(
+                        "Removing _id %s from mongo database, it is not in used hosts %s",
+                        db_host_id,
+                        str(inventory_hosts),
+                    )
+                    self._mongo.delete_host(db_host_id)
+                    self._mongo.delete_onetime_walk_result(db_host_id)
                 del self._jobs_map[entry_key]
 
     def update_schedule_for_changed_conf(self, entry_key, ir, profiles):
