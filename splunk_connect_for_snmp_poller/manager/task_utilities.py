@@ -131,17 +131,21 @@ async def result_without_translation(var_binds):
             }
             result = json.dumps(result)
         else:
-            metric_content_dict = {name.prettyPrint(): val.prettyPrint(),
-                                   InterfaceMib.METRIC_NAME_KEY: name.prettyPrint()}
+            metric_content_dict = {
+                name.prettyPrint(): val.prettyPrint(),
+                InterfaceMib.METRIC_NAME_KEY: name.prettyPrint(),
+            }
 
             metric_content = json.dumps(metric_content_dict)
 
-            non_metric_content = '{oid}="{value}"'.format(oid=name.prettyPrint(), value=val.prettyPrint())
+            non_metric_content = '{oid}="{value}"'.format(
+                oid = name.prettyPrint(), value = val.prettyPrint()
+            )
 
             result_dict = {
                 "metric": metric_content,
                 "non_metric": non_metric_content,
-                "metric_name": name.prettyPrint()
+                "metric_name": name.prettyPrint(),
             }
 
             result = json.dumps(result_dict)
