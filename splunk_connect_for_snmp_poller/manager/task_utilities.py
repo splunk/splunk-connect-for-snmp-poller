@@ -139,7 +139,7 @@ async def result_without_translation(var_binds):
             metric_content = json.dumps(metric_content_dict)
 
             non_metric_content = '{oid}="{value}"'.format(
-                oid = name.prettyPrint(), value = val.prettyPrint()
+                oid=name.prettyPrint(), value=val.prettyPrint()
             )
 
             result_dict = {
