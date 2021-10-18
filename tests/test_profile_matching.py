@@ -71,7 +71,9 @@ class TestProfileMatching(TestCase):
             "linux": {"patterns": [".*linux.*"], "frequency": 30},
         }
 
-        result = assign_profiles_to_device(profiles, ("My zeus device, linux 2.3.4", None))
+        result = assign_profiles_to_device(
+            profiles, ("My zeus device, linux 2.3.4", None)
+        )
 
         self.assertEqual(len(result), 2)
         profile, frequency = result[0]
