@@ -254,7 +254,7 @@ class Poller:
                     if realtime_collection:
                         descr = extract_desc(realtime_collection)
 
-                        if descr:
+                        if any(descr):
                             assigned_profiles = assign_profiles_to_device(
                                 profiles["profiles"], descr
                             )
