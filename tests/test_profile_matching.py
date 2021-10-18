@@ -58,7 +58,7 @@ class TestProfileMatching(TestCase):
     def test_assign_profile_to_device(self):
         profiles = {"zeus": {"patterns": [".*zeus.*"], "frequency": 20}}
 
-        result = assign_profiles_to_device(profiles, ("My zeus device", None))
+        result = assign_profiles_to_device(profiles, ("My zeus device", None), "localhost")
 
         self.assertEqual(len(result), 1)
         profile, frequency = next(iter(result))
@@ -72,7 +72,7 @@ class TestProfileMatching(TestCase):
         }
 
         result = assign_profiles_to_device(
-            profiles, ("My zeus device, linux 2.3.4", None)
+            profiles, ("My zeus device, linux 2.3.4", None), "localhost"
         )
 
         self.assertEqual(len(result), 2)
@@ -90,7 +90,7 @@ class TestProfileMatching(TestCase):
             "linux": {"patterns": [".*linux.*"], "frequency": 30},
         }
 
-        result = assign_profiles_to_device(profiles, ("My zeus device", "linux 2.3.4"))
+        result = assign_profiles_to_device(profiles, ("My zeus device", "linux 2.3.4"), "localhost")
 
         self.assertEqual(len(result), 2)
         profile, frequency = result[0]
@@ -104,6 +104,6 @@ class TestProfileMatching(TestCase):
     def test_no_assignment_when_patterns_are_missing(self):
         profiles = {"zeus": {"frequency": 20}}
 
-        result = assign_profiles_to_device(profiles, ("My zeus device", None))
+        result = assign_profiles_to_device(profiles, ("My zeus device", None), "localhost")
 
         self.assertEqual(len(result), 0)

@@ -36,6 +36,8 @@ from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_POLLING_FREQUENCY = 60
+
 
 def _should_process_current_line(inventory_record: dict):
     return should_process_inventory_line(
@@ -76,20 +78,19 @@ def parse_inventory_file(inventory_file_path, profiles, fetch_frequency=True):
                     agent["version"],
                     agent["community"],
                     agent["profile"],
-                    get_frequency(agent, profiles, 60)
+                    get_frequency(agent, profiles, DEFAULT_POLLING_FREQUENCY)
                     if fetch_frequency and agent["profile"] != DYNAMIC_PROFILE
                     else None,
                 )
 
 
 def get_frequency(agent, profiles, default_frequency):
-    if "profile" in agent:
-        frequency = multi_key_lookup(
-            profiles, ("profiles", agent["profile"], "frequency")
-        )
-        if frequency:
-            return frequency
-    logger.debug(f'Default frequency was assigned for agent = {agent.get("host")}')
+    frequency = multi_key_lookup(
+        profiles, ("profiles", agent["profile"], "frequency")
+    )
+    if frequency:
+        return frequency
+    logger.debug(f'Default frequency was assigned for agent = {agent.get("host")}, profile = {agent["profile"]}')
     return default_frequency
 
 

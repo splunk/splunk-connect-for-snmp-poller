@@ -19,6 +19,7 @@ import re
 import yaml
 
 from splunk_connect_for_snmp_poller.manager.mib_server_client import get_mib_profiles
+from splunk_connect_for_snmp_poller.manager.poller_utilities import DEFAULT_POLLING_FREQUENCY
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
@@ -33,20 +34,25 @@ def extract_desc(realtime_collection):
     return sys_descr, sys_object_id
 
 
-def assign_profiles_to_device(profiles, device_desc):
+def assign_profiles_to_device(profiles, device_desc, host):
     result = []
     for profile in profiles:
         if "patterns" in profiles[profile]:
-            match_profile_with_device(device_desc, profile, profiles, result)
+            match_profile_with_device(device_desc, profile, profiles, result, host)
     return result
 
 
-def match_profile_with_device(device_desc, profile, profiles, result):
+def match_profile_with_device(device_desc, profile, profiles, result, host):
     for pattern in profiles[profile]["patterns"]:
         compiled = re.compile(pattern)
         for desc in device_desc:
             if desc and compiled.match(desc):
-                result.append((profile, profiles[profile]["frequency"]))
+                if "frequency" in profiles[profile]:
+                    frequency = profiles[profile]["frequency"]
+                else:
+                    frequency = DEFAULT_POLLING_FREQUENCY
+                    logger.debug(f'Default frequency was assigned for agent = {host}, profile = {profile}')
+                result.append((profile, frequency))
                 return
 
 
