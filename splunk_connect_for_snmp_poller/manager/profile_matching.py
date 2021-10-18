@@ -43,8 +43,9 @@ def assign_profiles_to_device(profiles, device_desc):
 
 def match_profile_with_device(device_desc, profile, profiles, result):
     for pattern in profiles[profile]["patterns"]:
+        compiled = re.compile(pattern)
         for desc in device_desc:
-            if desc and re.compile(pattern).match(desc):
+            if desc and compiled.match(desc):
                 result.append((profile, profiles[profile]["frequency"]))
                 return
 
