@@ -37,7 +37,7 @@ def extract_desc(realtime_collection):
 def assign_profiles_to_device(profiles, device_desc, host):
     result = []
     for profile in profiles:
-        if "patterns" in profiles[profile]:
+        if profiles[profile].get("patterns"):
             match_profile_with_device(device_desc, profile, profiles, result, host)
     return result
 
@@ -51,7 +51,8 @@ def match_profile_with_device(device_desc, profile, profiles, result, host):
                     frequency = profiles[profile]["frequency"]
                 else:
                     frequency = DEFAULT_POLLING_FREQUENCY
-                    logger.debug(f'Default frequency was assigned for agent = {host}, profile = {profile}')
+                    logger.debug(f'Default frequency={DEFAULT_POLLING_FREQUENCY} was assigned for agent={host}, '
+                                 f'profile={profile}')
                 result.append((profile, frequency))
                 return
 

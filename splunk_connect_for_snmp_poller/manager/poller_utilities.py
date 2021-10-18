@@ -90,7 +90,8 @@ def get_frequency(agent, profiles, default_frequency):
     )
     if frequency:
         return frequency
-    logger.debug(f'Default frequency was assigned for agent = {agent.get("host")}, profile = {agent["profile"]}')
+    logger.debug(f'Default frequency={DEFAULT_POLLING_FREQUENCY} was assigned for agent={agent.get("host")}, '
+                 f'profile={agent["profile"]}')
     return default_frequency
 
 
