@@ -99,6 +99,7 @@ class Poller:
                 )
                 profiles = get_profiles(self._server_config)
                 for ir in parse_inventory_file(self._args.inventory, profiles):
+                    logger.info(ir.__repr__())
                     snmp_polling.delay(
                         ir.to_json(),
                         self._server_config,
