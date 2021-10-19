@@ -98,7 +98,7 @@ class Poller:
             if new_enricher != self._old_enricher:
                 profiles = get_profiles(self._server_config)
                 for ir in parse_inventory_file(self._args.inventory, profiles):
-                    snmp_polling(
+                    snmp_polling.delay(
                         ir.to_json(),
                         self._server_config,
                         self.__get_splunk_indexes(),
