@@ -231,14 +231,16 @@ def automatic_realtime_task(
 
 
 def update_enricher_config(profiles, inventory, server_config, splunk_indexes):
+    logger.info("Start update_enricher_config")
     for ir in parse_inventory_file(inventory, profiles):
-        logger.info(ir.__repr__())
+        logger.info(ir.to_json())
         snmp_polling.delay(
             ir.to_json(),
             server_config,
             splunk_indexes,
             OidConstant.IF_MIB,
         )
+    logger.info("End update_enricher_config")
 
 
 def create_poller_scheduler_entry_key(host, profile):
