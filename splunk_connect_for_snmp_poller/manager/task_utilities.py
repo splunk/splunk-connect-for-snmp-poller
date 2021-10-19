@@ -42,7 +42,6 @@ from splunk_connect_for_snmp_poller.manager.mib_server_client import get_transla
 from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
-    extract_network_interface_data_from_additional_config,
     extract_network_interface_data_from_walk,
 )
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
@@ -587,11 +586,8 @@ async def walk_handler_with_enricher(
 
     logger.info(f"Walk finished for {host} profile={ir.profile}")
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
-    additional_enricher_varbinds = (
-        extract_network_interface_data_from_additional_config(enricher)
-    )
     mongo_connection.update_mib_static_data_for(
-        f"{host}:{port}", processed_result, additional_enricher_varbinds
+        f"{host}:{port}", processed_result, None
     )
 
 

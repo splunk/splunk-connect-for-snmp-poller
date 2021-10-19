@@ -195,3 +195,12 @@ class WalkedHostsRepository:
             return_document=ReturnDocument.AFTER,
         )
         return static_data_dictionary[WalkedHostsRepository.MIB_STATIC_DATA]
+
+    def update_static_data_for_one(self, host, static_data_dictionary):
+        logger.info(f"Updating static data for {host} with {static_data_dictionary}")
+        self._walked_hosts.find_one_and_update(
+            {"_id": host},
+            {"$set": static_data_dictionary},
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
