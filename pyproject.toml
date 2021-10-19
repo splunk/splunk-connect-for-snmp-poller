@@ -24,13 +24,13 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.8"
 pysnmp = "^4.4.12"
-pyyaml = "^5.4"
+pyyaml = "^6.0"
 lxml = "^4.6"
 requests = "^2.26.0"
 schedule = "^1.0.0"
 celery = "^5.1.2"
 pymongo = "^3.12.0"
-coverage = "^5.5"
+coverage = "^6.0"
 
 [tool.poetry.dev-dependencies]
 #pytest-splunk-addon = "^1.4.0"
