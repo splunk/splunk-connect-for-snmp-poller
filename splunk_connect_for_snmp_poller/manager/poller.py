@@ -23,6 +23,7 @@ from pysnmp.hlapi import SnmpEngine
 
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.poller_utilities import (
+    automatic_onetime_task,
     automatic_realtime_job,
     create_poller_scheduler_entry_key,
     parse_inventory_file,
@@ -54,9 +55,7 @@ class Poller:
         self._inventory_mod_time = 0
         self._config_mod_time = 0
         self._jobs_map = {}
-        self._mongo_walked_hosts_coll = WalkedHostsRepository(
-            self._server_config["mongo"]
-        )
+        self._mongo = WalkedHostsRepository(self._server_config["mongo"])
         self._local_snmp_engine = SnmpEngine()
         self._unmatched_devices = {}
         self._lock = threading.Lock()
@@ -79,7 +78,7 @@ class Poller:
         while True:
             if counter == 0:
                 self.__check_inventory()
-                counter = int(self._args.refresh_interval)
+                counter = self._args.refresh_interval
 
             schedule.run_pending()
             time.sleep(1)
@@ -163,12 +162,13 @@ class Poller:
                 schedule.cancel_job(self._jobs_map.get(entry_key))
                 db_host_id = return_database_id(entry_key)
                 if db_host_id not in inventory_hosts:
-                    logger.debug(
+                    logger.info(
                         "Removing _id %s from mongo database, it is not in used hosts %s",
                         db_host_id,
                         str(inventory_hosts),
                     )
-                    self._mongo_walked_hosts_coll.delete_host(db_host_id)
+                    self._mongo.delete_host(db_host_id)
+                    self._mongo.delete_onetime_walk_result(db_host_id)
                 del self._jobs_map[entry_key]
 
     def update_schedule_for_changed_conf(self, entry_key, ir, profiles):
@@ -234,7 +234,7 @@ class Poller:
         # For debugging purposes better change it to "one second"
         schedule.every(self._args.realtime_task_frequency).seconds.do(
             automatic_realtime_job,
-            self._mongo_walked_hosts_coll,
+            self._mongo,
             self._args.inventory,
             self.__get_splunk_indexes(),
             self._server_config,
@@ -249,13 +249,19 @@ class Poller:
         )
 
         automatic_realtime_job(
-            self._mongo_walked_hosts_coll,
+            self._mongo,
             self._args.inventory,
             self.__get_splunk_indexes(),
             self._server_config,
             self._local_snmp_engine,
             self.force_inventory_refresh,
             True,
+        )
+        schedule.every(self._args.onetime_task_frequency).minutes.do(
+            automatic_onetime_task,
+            self._mongo,
+            self.__get_splunk_indexes(),
+            self._server_config,
         )
 
     def add_device_for_profile_matching(self, device: InventoryRecord):
@@ -276,10 +282,8 @@ class Poller:
                 self._lock.acquire()
                 processed_devices = set()
                 for host, device in self._unmatched_devices.items():
-                    realtime_collection = (
-                        self._mongo_walked_hosts_coll.real_time_data_for(
-                            return_database_id(host)
-                        )
+                    realtime_collection = self._mongo.real_time_data_for(
+                        return_database_id(host)
                     )
                     if realtime_collection:
                         descr = extract_desc(realtime_collection)

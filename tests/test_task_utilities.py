@@ -13,14 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import json
 from unittest import TestCase
+from unittest.mock import MagicMock
 
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     _sort_walk_data,
     is_metric_data,
     is_oid,
     parse_port,
+    process_one_time_flag,
 )
+from splunk_connect_for_snmp_poller.utilities import OnetimeFlag
 
 
 class ObjectTypeMock:
@@ -175,3 +179,47 @@ class TestTaskUtilities(TestCase):
     def test_is_oid_profile_with_dot(self):
         oid = "router.12"
         self.assertFalse(is_oid(oid))
+
+    def test_process_one_time_flag_first_walk_error(self):
+        mongo = MagicMock()
+        ir = MagicMock()
+        mongo.add_onetime_walk_result.return_value = "add_onetime"
+        mongo.delete_onetime_walk_result.return_value = "delete_onetime"
+        process_one_time_flag(
+            json.dumps(OnetimeFlag.FIRST_WALK), True, mongo, "127.0.0.1:161", ir
+        )
+        self.assertTrue(mongo.add_onetime_walk_result.called)
+        self.assertFalse(mongo.delete_onetime_walk_result.called)
+
+    def test_process_one_time_first_walk_success(self):
+        mongo = MagicMock()
+        ir = MagicMock()
+        mongo.add_onetime_walk_result.return_value = "add_onetime"
+        mongo.delete_onetime_walk_result.return_value = "delete_onetime"
+        process_one_time_flag(
+            json.dumps(OnetimeFlag.FIRST_WALK), False, mongo, "127.0.0.1:161", ir
+        )
+        self.assertFalse(mongo.add_onetime_walk_result.called)
+        self.assertFalse(mongo.delete_onetime_walk_result.called)
+
+    def test_process_one_time_flag_after_failure_walk_error(self):
+        mongo = MagicMock()
+        ir = MagicMock()
+        mongo.add_onetime_walk_result.return_value = "add_onetime"
+        mongo.delete_onetime_walk_result.return_value = "delete_onetime"
+        process_one_time_flag(
+            json.dumps(OnetimeFlag.AFTER_FAIL), True, mongo, "127.0.0.1:161", ir
+        )
+        self.assertFalse(mongo.delete_onetime_walk_result.called)
+        self.assertFalse(mongo.add_onetime_walk_result.called)
+
+    def test_process_one_time_flag_after_failure_walk_success(self):
+        mongo = MagicMock()
+        ir = MagicMock()
+        mongo.add_onetime_walk_result.return_value = "add_onetime"
+        mongo.delete_onetime_walk_result.return_value = "delete_onetime"
+        process_one_time_flag(
+            json.dumps(OnetimeFlag.AFTER_FAIL), False, mongo, "127.0.0.1:161", ir
+        )
+        self.assertTrue(mongo.delete_onetime_walk_result.called)
+        self.assertFalse(mongo.add_onetime_walk_result.called)

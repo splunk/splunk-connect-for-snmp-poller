@@ -92,7 +92,10 @@ class WalkedHostsRepository:
             )
 
         self._walked_hosts = self._client[mongo_config["database"]][
-            mongo_config["collection"]
+            mongo_config["walked_collection"]
+        ]
+        self._unwalked_hosts = self._client[mongo_config["database"]][
+            mongo_config["unwalked_collection"]
         ]
 
     def is_connected(self):
@@ -107,6 +110,24 @@ class WalkedHostsRepository:
 
     def add_host(self, host):
         self._walked_hosts.insert_one({"_id": host})
+
+    def get_all_unwalked_hosts(self):
+        return list(self._unwalked_hosts.find({}))
+
+    def add_onetime_walk_result(self, host, version, community):
+        logger.debug("Add host %s to unwalked_host collection", host)
+        self._unwalked_hosts.insert_one(
+            {
+                "_id": host,
+                "host": host,
+                "version": version,
+                "community": community,
+            }
+        )
+
+    def delete_onetime_walk_result(self, host):
+        logger.debug("Delete host %s from unwalked_host collection", host)
+        self._unwalked_hosts.delete_one({"_id": host})
 
     def delete_host(self, host):
         logger.debug("Delete host %s from walked_host collection", host)

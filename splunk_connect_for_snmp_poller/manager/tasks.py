@@ -164,7 +164,6 @@ async def snmp_polling_async(
         additional_metric_fields,
     ]
     get_bulk_specific_parameters = [mongo_connection, enricher_presence]
-
     try:
         # Perform SNNP Polling for string profile in inventory.csv
         if not is_oid(ir.profile):
