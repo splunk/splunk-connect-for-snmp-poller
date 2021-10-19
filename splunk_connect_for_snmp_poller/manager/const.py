@@ -36,3 +36,5 @@ PrivProtocolMap = {
     "AES256BLMT": config.usmAesBlumenthalCfb256Protocol,
     "NONE": config.usmNoPrivProtocol,
 }
+
+DEFAULT_POLLING_FREQUENCY = 60

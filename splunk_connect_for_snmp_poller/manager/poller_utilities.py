@@ -20,6 +20,7 @@ import threading
 import schedule
 from pysnmp.hlapi import ObjectIdentity, ObjectType, UdpTransportTarget, getCmd
 
+from splunk_connect_for_snmp_poller.manager.const import DEFAULT_POLLING_FREQUENCY
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.realtime.real_time_data import (
@@ -35,8 +36,6 @@ from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_POLLING_FREQUENCY = 60
 
 
 def _should_process_current_line(inventory_record: dict):
