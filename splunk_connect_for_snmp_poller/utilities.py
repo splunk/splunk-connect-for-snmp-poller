@@ -37,6 +37,7 @@ import logging
 import os
 import signal
 import sys
+from enum import Enum
 
 import yaml
 
@@ -84,7 +85,11 @@ def parse_command_line_arguments():
         "-i", "--inventory", default="inventory.csv", help="Inventory Config File"
     )
     parser.add_argument(
-        "-r", "--refresh_interval", default="1", help="Refresh Interval of Inventory"
+        "-r",
+        "--refresh_interval",
+        type=int,
+        default=1,
+        help="Refresh Interval of Inventory",
     )
     parser.add_argument(
         "--event_index", default="##EVENTS_INDEX##", help="Event index for polling data"
@@ -109,7 +114,12 @@ def parse_command_line_arguments():
         default=10,
         help="Frequency in seconds for matching task",
     )
-
+    parser.add_argument(
+        "--onetime_task_frequency",
+        type=int,
+        default=120,
+        help="Frequency in seconds for onetime task",
+    )
     return parser.parse_args()
 
 
@@ -141,3 +151,8 @@ def multi_key_lookup(dictionary, tuple_of_keys):
         return reduce(dict.get, tuple_of_keys, dictionary)
     except TypeError:
         return None
+
+
+class OnetimeFlag(str, Enum):
+    FIRST_WALK = "first_time"
+    AFTER_FAIL = "after_fail"
