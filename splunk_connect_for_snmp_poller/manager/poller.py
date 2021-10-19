@@ -292,7 +292,7 @@ class Poller:
 
                         if any(descr):
                             assigned_profiles = assign_profiles_to_device(
-                                profiles["profiles"], descr
+                                profiles["profiles"], descr, host
                             )
                             processed_devices.add(host)
 

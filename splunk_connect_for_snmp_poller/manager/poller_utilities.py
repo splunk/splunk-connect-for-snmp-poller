@@ -20,6 +20,7 @@ import threading
 import schedule
 from pysnmp.hlapi import ObjectIdentity, ObjectType, UdpTransportTarget, getCmd
 
+from splunk_connect_for_snmp_poller.manager.const import DEFAULT_POLLING_FREQUENCY
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.realtime.real_time_data import (
@@ -76,20 +77,20 @@ def parse_inventory_file(inventory_file_path, profiles, fetch_frequency=True):
                     agent["version"],
                     agent["community"],
                     agent["profile"],
-                    get_frequency(agent, profiles, 60)
+                    get_frequency(agent, profiles, DEFAULT_POLLING_FREQUENCY)
                     if fetch_frequency and agent["profile"] != DYNAMIC_PROFILE
                     else None,
                 )
 
 
 def get_frequency(agent, profiles, default_frequency):
-    if "profile" in agent:
-        frequency = multi_key_lookup(
-            profiles, ("profiles", agent["profile"], "frequency")
-        )
-        if frequency:
-            return frequency
-    logger.debug(f'Default frequency was assigned for agent = {agent.get("host")}')
+    frequency = multi_key_lookup(profiles, ("profiles", agent["profile"], "frequency"))
+    if frequency:
+        return frequency
+    logger.debug(
+        f'Default frequency={DEFAULT_POLLING_FREQUENCY} was assigned for agent={agent.get("host")}, '
+        f'profile={agent["profile"]}'
+    )
     return default_frequency
 
 
