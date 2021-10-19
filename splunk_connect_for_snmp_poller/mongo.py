@@ -112,11 +112,10 @@ class WalkedHostsRepository:
         self._walked_hosts.insert_one({"_id": host})
 
     def get_all_unwalked_hosts(self):
-        return self._unwalked_hosts.find({})
+        return list(self._unwalked_hosts.find({}))
 
     def add_onetime_walk_result(self, host, version, community):
-        logger.info("add_onetime_walk_result")
-        logger.info(host)
+        logger.debug("Add host %s to unwalked_host collection", host)
         self._unwalked_hosts.insert_one(
             {
                 "_id": host,
@@ -127,8 +126,7 @@ class WalkedHostsRepository:
         )
 
     def delete_onetime_walk_result(self, host):
-        logger.info("delete_onetime_walk_result")
-        logger.info(host)
+        logger.debug("Delete host %s from unwalked_host collection", host)
         self._unwalked_hosts.delete_one({"_id": host})
 
     def delete_host(self, host):
