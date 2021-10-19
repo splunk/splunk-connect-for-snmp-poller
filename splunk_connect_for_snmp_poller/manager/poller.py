@@ -173,6 +173,10 @@ class Poller:
         )
 
     def process_new_job(self, entry_key, ir, profiles):
+        if ir.profile not in profiles.get("profiles"):
+            logger.warning(f"Specified profile {ir.profile} for device {ir.host} does not exist")
+            return
+
         logger.debug("Adding configuration for job %s", entry_key)
         job_reference = schedule.every(int(ir.frequency_str)).seconds.do(
             scheduled_task,
