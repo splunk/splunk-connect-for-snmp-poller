@@ -34,9 +34,6 @@ from splunk_connect_for_snmp_poller.manager.profile_matching import (
     get_profiles,
 )
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
-from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
-    extract_network_interface_data_from_additional_config,
-)
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     DYNAMIC_PROFILE,
@@ -97,6 +94,9 @@ class Poller:
             new_enricher = self._server_config.get("enricher", {})
             logger.info(new_enricher)
             if new_enricher != self._old_enricher:
+                logger.info(
+                    f"new_enricher: {new_enricher}, self._old_enricher: {self._old_enricher}"
+                )
                 profiles = get_profiles(self._server_config)
                 for ir in parse_inventory_file(self._args.inventory, profiles):
                     snmp_polling.delay(
@@ -105,19 +105,6 @@ class Poller:
                         self.__get_splunk_indexes(),
                         OidConstant.IF_MIB,
                     )
-                    additional_enricher_varbinds = (
-                        extract_network_interface_data_from_additional_config(
-                            self._server_config
-                        )
-                    )
-                    additional_structure = self._mongo_walked_hosts_coll.create_mib_static_data_mongo_structure(
-                        None, additional_enricher_varbinds
-                    )
-                    if additional_structure:
-                        host_id = return_database_id(ir.host)
-                        self._mongo_walked_hosts_coll.update_static_data_for_one(
-                            host_id, additional_structure
-                        )
                 self._old_enricher = new_enricher
         inventory_config_modified, self._inventory_mod_time = file_was_modified(
             self._args.inventory, self._inventory_mod_time
