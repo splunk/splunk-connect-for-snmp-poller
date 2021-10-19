@@ -173,7 +173,8 @@ class Poller:
         )
 
     def process_new_job(self, entry_key, ir, profiles):
-        if ir.profile not in profiles.get("profiles"):
+        acquired_profiles = profiles.get("profiles")
+        if acquired_profiles is not None and ir.profile not in acquired_profiles:
             logger.warning(
                 f"Specified profile {ir.profile} for device {ir.host} does not exist"
             )
