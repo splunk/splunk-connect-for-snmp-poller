@@ -230,6 +230,17 @@ def automatic_realtime_task(
         logger.exception("Error during automatic_realtime_task")
 
 
+def update_enricher_config(profiles, inventory, server_config, splunk_indexes):
+    for ir in parse_inventory_file(inventory, profiles):
+        logger.info(ir.__repr__())
+        snmp_polling.delay(
+            ir.to_json(),
+            server_config,
+            splunk_indexes,
+            OidConstant.IF_MIB,
+        )
+
+
 def create_poller_scheduler_entry_key(host, profile):
     return host + "#" + profile
 

@@ -27,13 +27,13 @@ from splunk_connect_for_snmp_poller.manager.poller_utilities import (
     create_poller_scheduler_entry_key,
     parse_inventory_file,
     return_database_id,
+    update_enricher_config,
 )
 from splunk_connect_for_snmp_poller.manager.profile_matching import (
     assign_profiles_to_device,
     extract_desc,
     get_profiles,
 )
-from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     DYNAMIC_PROFILE,
@@ -98,14 +98,12 @@ class Poller:
                     f"new_enricher: {new_enricher}, self._old_enricher: {self._old_enricher}"
                 )
                 profiles = get_profiles(self._server_config)
-                for ir in parse_inventory_file(self._args.inventory, profiles):
-                    logger.info(ir.__repr__())
-                    snmp_polling.delay(
-                        ir.to_json(),
-                        self._server_config,
-                        self.__get_splunk_indexes(),
-                        OidConstant.IF_MIB,
-                    )
+                update_enricher_config(
+                    profiles,
+                    self._args.inventory,
+                    self._server_config,
+                    self.__get_splunk_indexes(),
+                )
                 self._old_enricher = new_enricher
         inventory_config_modified, self._inventory_mod_time = file_was_modified(
             self._args.inventory, self._inventory_mod_time
