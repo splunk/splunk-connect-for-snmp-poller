@@ -18,8 +18,8 @@ import re
 
 import yaml
 
-from splunk_connect_for_snmp_poller.manager.mib_server_client import get_mib_profiles
 from splunk_connect_for_snmp_poller.manager.const import DEFAULT_POLLING_FREQUENCY
+from splunk_connect_for_snmp_poller.manager.mib_server_client import get_mib_profiles
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
