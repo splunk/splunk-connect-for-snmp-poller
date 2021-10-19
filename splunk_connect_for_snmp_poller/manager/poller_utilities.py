@@ -234,11 +234,12 @@ def update_enricher_config(profiles, inventory, server_config, splunk_indexes):
     logger.info("Start update_enricher_config")
     for ir in parse_inventory_file(inventory, profiles):
         logger.info(ir.to_json())
+        ir.profile = OidConstant.IF_MIB
         snmp_polling.delay(
             ir.to_json(),
             server_config,
             splunk_indexes,
-            OidConstant.IF_MIB,
+            profiles,
         )
     logger.info("End update_enricher_config")
 
