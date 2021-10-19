@@ -88,7 +88,6 @@ class Poller:
         )
         if server_config_modified:
             self._server_config = parse_config_file(self._args.config)
-
         inventory_config_modified, self._inventory_mod_time = file_was_modified(
             self._args.inventory, self._inventory_mod_time
         )
@@ -174,6 +173,13 @@ class Poller:
         )
 
     def process_new_job(self, entry_key, ir, profiles):
+        acquired_profiles = profiles.get("profiles")
+        if acquired_profiles is not None and ir.profile not in acquired_profiles:
+            logger.warning(
+                f"Specified profile {ir.profile} for device {ir.host} does not exist"
+            )
+            return
+
         logger.debug("Adding configuration for job %s", entry_key)
         job_reference = schedule.every(int(ir.frequency_str)).seconds.do(
             scheduled_task,
@@ -268,7 +274,7 @@ class Poller:
 
                         if any(descr):
                             assigned_profiles = assign_profiles_to_device(
-                                profiles["profiles"], descr
+                                profiles["profiles"], descr, host
                             )
                             processed_devices.add(host)
 
