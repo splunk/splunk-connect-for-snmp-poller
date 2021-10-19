@@ -620,13 +620,13 @@ def _sort_walk_data(
     if is_metric:
         merged_result_metric.append(varbind)
         result_to_send_to_hec = varbind
-        merged_result.append(eval(varbind))
+        merged_result.append(json.loads(varbind))
     else:
         merged_result_non_metric.append(varbind)
-        result_dict = eval(varbind)
+        result_dict = json.loads(varbind)
         metric_part = result_dict["metric"]
         if isinstance(metric_part, str):
-            metric_part = eval(metric_part)
+            metric_part = json.loads(metric_part)
         merged_result.append(metric_part)
         result_to_send_to_hec = result_dict["non_metric"]
     return result_to_send_to_hec

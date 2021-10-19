@@ -189,6 +189,13 @@ class Poller:
         )
 
     def process_new_job(self, entry_key, ir, profiles):
+        acquired_profiles = profiles.get("profiles")
+        if acquired_profiles is not None and ir.profile not in acquired_profiles:
+            logger.warning(
+                f"Specified profile {ir.profile} for device {ir.host} does not exist"
+            )
+            return
+
         logger.debug("Adding configuration for job %s", entry_key)
         job_reference = schedule.every(int(ir.frequency_str)).seconds.do(
             scheduled_task,
