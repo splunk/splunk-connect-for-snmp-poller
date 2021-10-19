@@ -95,6 +95,7 @@ class Poller:
         if server_config_modified:
             self._server_config = parse_config_file(self._args.config)
             new_enricher = self._server_config.get("enricher", {})
+            logger.info(new_enricher)
             if new_enricher != self._old_enricher:
                 profiles = get_profiles(self._server_config)
                 for ir in parse_inventory_file(self._args.inventory, profiles):
@@ -106,7 +107,7 @@ class Poller:
                     )
                     additional_enricher_varbinds = (
                         extract_network_interface_data_from_additional_config(
-                            new_enricher
+                            self._server_config
                         )
                     )
                     additional_structure = self._mongo_walked_hosts_coll.create_mib_static_data_mongo_structure(
