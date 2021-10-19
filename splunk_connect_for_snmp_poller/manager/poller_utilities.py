@@ -27,6 +27,9 @@ from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidCons
 from splunk_connect_for_snmp_poller.manager.realtime.real_time_data import (
     should_redo_walk,
 )
+from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
+    extract_network_interface_data_from_additional_config,
+)
 from splunk_connect_for_snmp_poller.manager.task_utilities import parse_port
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
@@ -274,18 +277,45 @@ def automatic_realtime_task(
         logger.exception("Error during automatic_realtime_task")
 
 
-def update_enricher_config(profiles, inventory, server_config, splunk_indexes):
+def update_enricher_config(
+    old_enricher,
+    new_enricher,
+    mongo,
+    profiles,
+    inventory,
+    server_config,
+    splunk_indexes,
+):
     logger.info("Start update_enricher_config")
+    run_ifmib_walk = compare_enrichers(old_enricher, new_enricher)
+
     for ir in parse_inventory_file(inventory, profiles):
-        logger.info(ir.to_json())
-        ir.profile = OidConstant.IF_MIB
-        snmp_polling.delay(
-            ir.to_json(),
-            server_config,
-            splunk_indexes,
-            profiles,
-        )
+        if run_ifmib_walk:
+            logger.info(ir.to_json())
+            ir.profile = OidConstant.IF_MIB
+            snmp_polling.delay(
+                ir.to_json(),
+                server_config,
+                splunk_indexes,
+                profiles,
+            )
+        else:
+            additional_enricher_varbinds = (
+                extract_network_interface_data_from_additional_config(server_config)
+            )
+            host_id = return_database_id(ir.host)
+            mongo.update_static_data_for_one(host_id, additional_enricher_varbinds)
     logger.info("End update_enricher_config")
+
+
+def compare_enrichers(old_enricher, new_enricher):
+    new_if_mib = multi_key_lookup(
+        new_enricher, ("oidFamily", "IF-MIB", "existingVarBinds")
+    )
+    old_if_mib = multi_key_lookup(
+        old_enricher, ("oidFamily", "IF-MIB", "existingVarBinds")
+    )
+    return bool(new_if_mib == old_if_mib)
 
 
 def create_poller_scheduler_entry_key(host, profile):

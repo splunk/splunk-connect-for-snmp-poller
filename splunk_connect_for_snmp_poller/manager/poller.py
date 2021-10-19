@@ -98,6 +98,9 @@ class Poller:
                 )
                 profiles = get_profiles(self._server_config)
                 update_enricher_config(
+                    self._old_enricher,
+                    new_enricher,
+                    self._mongo,
                     profiles,
                     self._args.inventory,
                     self._server_config,
