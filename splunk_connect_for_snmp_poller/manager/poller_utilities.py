@@ -295,7 +295,7 @@ def update_enricher_config(
             ir.profile = OidConstant.IF_MIB
             schedule.every().second.do(
                 onetime_task,
-                ir.to_json(),
+                ir,
                 server_config,
                 splunk_indexes,
                 profiles,
