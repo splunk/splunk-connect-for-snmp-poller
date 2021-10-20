@@ -293,7 +293,8 @@ def update_enricher_config(
         if run_ifmib_walk:
             logger.info(ir.to_json())
             ir.profile = OidConstant.IF_MIB
-            snmp_polling.delay(
+            schedule.every().second.do(
+                onetime_task,
                 ir.to_json(),
                 server_config,
                 splunk_indexes,
