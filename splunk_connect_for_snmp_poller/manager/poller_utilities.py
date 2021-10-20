@@ -300,24 +300,29 @@ def update_enricher_config(
                 profiles,
             )
         else:
+            host_id = return_database_id(ir.host)
+            logger.info(f"host_id: {host_id}")
+            families_to_delete = deleted_oid_families(old_enricher, new_enricher)
+            logger.info(f"families_to_delete: {families_to_delete}")
+            mongo.delete_oidfamilies_from_static_data(host_id, families_to_delete)
             additional_enricher_varbinds = (
                 extract_network_interface_data_from_additional_config(server_config)
             )
             logger.info(f"Additional: {additional_enricher_varbinds}")
-            host_id = return_database_id(ir.host)
-            logger.info(f"host_id: {host_id}")
             mongo.update_static_data_for_one(host_id, additional_enricher_varbinds)
     logger.info("End update_enricher_config")
 
 
 def compare_enrichers(old_enricher, new_enricher):
-    new_if_mib = multi_key_lookup(
-        new_enricher, ("oidFamily", "IF-MIB", "existingVarBinds")
-    )
-    old_if_mib = multi_key_lookup(
-        old_enricher, ("oidFamily", "IF-MIB", "existingVarBinds")
-    )
-    return bool(new_if_mib == old_if_mib)
+    new_if_mib = multi_key_lookup(new_enricher, ("oidFamily", "IF-MIB"))
+    old_if_mib = multi_key_lookup(old_enricher, ("oidFamily", "IF-MIB"))
+    return bool(new_if_mib != old_if_mib)
+
+
+def deleted_oid_families(old_enricher, new_enricher):
+    old_families = old_enricher.get("oidFamily", {})
+    new_families = new_enricher.get("oidFamily", {})
+    return set(old_families) - set(new_families)
 
 
 def create_poller_scheduler_entry_key(host, profile):

@@ -220,19 +220,28 @@ class WalkedHostsRepository:
     def update_static_data_for_one(self, host, static_data_dictionary):
         logger.info(f"Updating static data for {host} with {static_data_dictionary}")
         for oid_family in static_data_dictionary.keys():
+            if oid_family == "IF-MIB":
+                continue
             logger.info(f"OID family {oid_family}")
             index_dict = static_data_dictionary[oid_family]
             logger.info(f"index_dict {index_dict}")
             if index_dict:
-                self._walked_hosts.find_one_and_update(
+                self._walked_hosts.update(
                     {"_id": host},
                     {
                         "$set": {
-                            "MIB-STATIC-DATA": {
-                                oid_family: {"additionalVarBinds": index_dict}
-                            }
+                            f"MIB-STATIC-DATA.{oid_family}.additionalVarBinds": index_dict
                         }
                     },
                     upsert=True,
-                    return_document=ReturnDocument.AFTER,
                 )
+
+    def delete_oidfamilies_from_static_data(self, host, oid_families):
+        logger.info(f"Deleting oidfamilies {oid_families} from {host}")
+        for oid_family in oid_families:
+            if oid_family == "IF-MIB":
+                continue
+            self._walked_hosts.find_one_and_update(
+                {"_id": host},
+                {"$unset": {f"MIB-STATIC-DATA.{oid_family}": ""}},
+            )
