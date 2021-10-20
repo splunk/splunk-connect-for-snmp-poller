@@ -288,7 +288,7 @@ def update_enricher_config(
 ):
     logger.info("Start update_enricher_config")
     run_ifmib_walk = compare_enrichers(old_enricher, new_enricher)
-
+    logger.info(f"run_ifmib_walk: {run_ifmib_walk}")
     for ir in parse_inventory_file(inventory, profiles):
         if run_ifmib_walk:
             logger.info(ir.to_json())
