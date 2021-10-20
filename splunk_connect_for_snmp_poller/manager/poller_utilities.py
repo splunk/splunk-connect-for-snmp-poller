@@ -303,7 +303,9 @@ def update_enricher_config(
             additional_enricher_varbinds = (
                 extract_network_interface_data_from_additional_config(server_config)
             )
+            logger.info(f"Additional: {additional_enricher_varbinds}")
             host_id = return_database_id(ir.host)
+            logger.info(f"host_id: {host_id}")
             mongo.update_static_data_for_one(host_id, additional_enricher_varbinds)
     logger.info("End update_enricher_config")
 
