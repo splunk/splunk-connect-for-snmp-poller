@@ -88,25 +88,6 @@ class Poller:
         server_config_modified, self._config_mod_time = file_was_modified(
             self._args.config, self._config_mod_time
         )
-        if server_config_modified:
-            self._server_config = parse_config_file(self._args.config)
-            new_enricher = self._server_config.get("enricher", {})
-            logger.info(new_enricher)
-            if new_enricher != self._old_enricher:
-                logger.info(
-                    f"new_enricher: {new_enricher}, self._old_enricher: {self._old_enricher}"
-                )
-                profiles = get_profiles(self._server_config)
-                update_enricher_config(
-                    self._old_enricher,
-                    new_enricher,
-                    self._mongo,
-                    profiles,
-                    self._args.inventory,
-                    self._server_config,
-                    self.__get_splunk_indexes(),
-                )
-                self._old_enricher = new_enricher
         inventory_config_modified, self._inventory_mod_time = file_was_modified(
             self._args.inventory, self._inventory_mod_time
         )
@@ -124,6 +105,24 @@ class Poller:
             inventory_entry_keys = set()
             inventory_hosts = set()
             profiles = get_profiles(self._server_config)
+            if server_config_modified:
+                self._server_config = parse_config_file(self._args.config)
+                new_enricher = self._server_config.get("enricher", {})
+                logger.info(new_enricher)
+                if new_enricher != self._old_enricher:
+                    logger.info(
+                        f"new_enricher: {new_enricher}, self._old_enricher: {self._old_enricher}"
+                    )
+                    update_enricher_config(
+                        self._old_enricher,
+                        new_enricher,
+                        self._mongo,
+                        profiles,
+                        self._args.inventory,
+                        self._server_config,
+                        self.__get_splunk_indexes(),
+                    )
+                    self._old_enricher = new_enricher
             for ir in parse_inventory_file(self._args.inventory, profiles):
                 entry_key = create_poller_scheduler_entry_key(ir.host, ir.profile)
                 if entry_key in inventory_entry_keys:
