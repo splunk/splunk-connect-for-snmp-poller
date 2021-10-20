@@ -219,7 +219,7 @@ class WalkedHostsRepository:
 
     def update_static_data_for_one(self, host, static_data_dictionary):
         logger.info(f"Updating static data for {host} with {static_data_dictionary}")
-        for oid_family in static_data_dictionary.items():
+        for oid_family in static_data_dictionary.keys():
             logger.info(f"OID family {oid_family}")
             index_dict = static_data_dictionary[oid_family]
             logger.info(f"index_dict {index_dict}")
