@@ -135,8 +135,6 @@ class Poller:
 
             if server_config_modified:
                 new_enricher = self._server_config.get("enricher", {})
-                logger.info(f"old: {self._old_enricher} \n new: {new_enricher}")
-                logger.info(new_enricher)
                 if new_enricher != self._old_enricher:
                     self.run_enricher_check(new_enricher, profiles, inventory_hosts)
             self.clean_job_inventory(inventory_entry_keys, inventory_hosts)

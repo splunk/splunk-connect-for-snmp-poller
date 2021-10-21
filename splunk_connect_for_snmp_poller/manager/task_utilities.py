@@ -460,7 +460,6 @@ async def walk_handler(
     e.g. 1.3.6.1.2.1.1.9.*,
     which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
     """
-    logger.info("walk_handler")
     error_in_one_time_walk = False
     for (errorIndication, errorStatus, errorIndex, var_binds) in nextCmd(
         snmp_engine,
@@ -560,7 +559,6 @@ async def walk_handler_with_enricher(
     e.g. 1.3.6.1.2.1.1.9.*,
     which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
     """
-    logger.info("walk_handler_with_enricher start")
     error_in_one_time_walk = False
     merged_result = []
     merged_result_metric = []
