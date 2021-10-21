@@ -297,7 +297,7 @@ def update_enricher_config(
         )
     else:
         _update_enricher_config_for_additional_varbinds(
-            old_enricher, new_enricher, mongo, inventory_host, server_config
+            old_enricher, new_enricher, mongo, inventory_host.host, server_config
         )
 
 
@@ -307,16 +307,10 @@ def _update_enricher_config_with_ifmib(
     server_config,
     splunk_indexes,
 ):
-    ir = InventoryRecord(
-        host=inventory_host,
-        version="2c",
-        community="public",
-        profile=OidConstant.IF_MIB,
-        frequency_str="10",
-    )
+    inventory_host.profile = OidConstant.IF_MIB
     schedule.every().second.do(
         onetime_task,
-        ir,
+        inventory_host,
         server_config,
         splunk_indexes,
         profiles,
