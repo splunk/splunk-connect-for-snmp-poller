@@ -343,10 +343,10 @@ def is_ifmib_different(old_enricher, new_enricher):
 
 def delete_ifmib(func):
     def function(*args, **kwargs):
-        s = func(*args, **kwargs)
-        if "IF-MIB" in s:
-            s.remove("IF-MIB")
-        return s
+        set_of_oid_families_to_modify = func(*args, **kwargs)
+        if "IF-MIB" in set_of_oid_families_to_modify:
+            set_of_oid_families_to_modify.remove("IF-MIB")
+        return set_of_oid_families_to_modify
 
     return function
 
