@@ -339,7 +339,7 @@ def _update_enricher_config_for_additional_varbinds(
 def is_ifmib_different(old_enricher, new_enricher):
     new_if_mib = multi_key_lookup(new_enricher, (enricher_oid_family, enricher_if_mib))
     old_if_mib = multi_key_lookup(old_enricher, (enricher_oid_family, enricher_if_mib))
-    return bool(new_if_mib != old_if_mib)
+    return new_if_mib != old_if_mib
 
 
 def delete_ifmib(func):
