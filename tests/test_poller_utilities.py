@@ -20,7 +20,9 @@ from unittest.mock import Mock
 sys.modules["splunk_connect_for_snmp_poller.manager.celery_client"] = Mock()
 from splunk_connect_for_snmp_poller.manager.poller_utilities import (  # noqa: E402
     create_poller_scheduler_entry_key,
+    deleted_oid_families,
     get_frequency,
+    is_ifmib_different,
     return_database_id,
 )
 
@@ -83,3 +85,224 @@ class TestPollerUtilities(TestCase):
         profiles = {"profiles": {}}
         result = get_frequency(agent, profiles, 60)
         self.assertEqual(result, 60)
+
+    def test_compare_enrichers_different_additional(self):
+        new_enricher = {
+            "oidFamily": {
+                "IF-MIB": {
+                    "existingVarBinds": [
+                        {"ifIndex": "interface_index"},
+                        {"ifDescr": "interface_desc"},
+                        {"ifPhysAddress": "MAC_address"},
+                    ],
+                    "additionalVarBinds": [{"indexNum": "index_number"}],
+                },
+                "SNMPv2-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_snmp_2"}]
+                },
+                "TCP-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_tcp_33"}]
+                },
+            }
+        }
+        old_enricher = {
+            "oidFamily": {
+                "IF-MIB": {
+                    "existingVarBinds": [
+                        {"ifIndex": "interface_index"},
+                        {"ifDescr": "interface_desc"},
+                        {"ifPhysAddress": "MAC_address"},
+                    ],
+                    "additionalVarBinds": [{"indexNum": "index_number"}],
+                },
+                "TCP-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_tcp_33"}]
+                },
+            }
+        }
+        result = is_ifmib_different(old_enricher, new_enricher)
+        self.assertFalse(result)
+
+    def test_compare_enrichers_different_ifmib(self):
+        new_enricher = {
+            "oidFamily": {
+                "IF-MIB": {
+                    "existingVarBinds": [
+                        {"ifIndex": "interface_index"},
+                        {"ifDescr": "interface_desc"},
+                        {"ifPhysAddress": "MAC_address"},
+                    ],
+                    "additionalVarBinds": [{"indexNum": "index_number"}],
+                },
+                "SNMPv2-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_snmp_2"}]
+                },
+                "TCP-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_tcp_33"}]
+                },
+            }
+        }
+        old_enricher = {
+            "oidFamily": {
+                "IF-MIB": {
+                    "existingVarBinds": [
+                        {"ifIndex": "interface_index"},
+                        {"ifPhysAddress": "MAC_address"},
+                    ],
+                    "additionalVarBinds": [{"indexNum": "index_number"}],
+                },
+                "TCP-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_tcp_33"}]
+                },
+            }
+        }
+        result = is_ifmib_different(old_enricher, new_enricher)
+        self.assertTrue(result)
+
+    def test_compare_enrichers_different_without_additional(self):
+        new_enricher = {
+            "oidFamily": {
+                "IF-MIB": {
+                    "existingVarBinds": [
+                        {"ifIndex": "interface_index"},
+                        {"ifDescr": "interface_desc"},
+                        {"ifPhysAddress": "MAC_address"},
+                    ],
+                    "additionalVarBinds": [{"indexNum": "index_number"}],
+                }
+            }
+        }
+        old_enricher = {
+            "oidFamily": {
+                "IF-MIB": {
+                    "existingVarBinds": [
+                        {"ifIndex": "interface_index"},
+                        {"ifPhysAddress": "MAC_address"},
+                    ],
+                    "additionalVarBinds": [{"indexNum": "index_number"}],
+                }
+            }
+        }
+        result = is_ifmib_different(old_enricher, new_enricher)
+        self.assertTrue(result)
+
+    def test_compare_enrichers_empty(self):
+        new_enricher = {}
+        old_enricher = {}
+        result = is_ifmib_different(old_enricher, new_enricher)
+        self.assertFalse(result)
+
+    def test_compare_enrichers_one_empty(self):
+        new_enricher = {}
+        old_enricher = {
+            "oidFamily": {
+                "IF-MIB": {
+                    "existingVarBinds": [
+                        {"ifIndex": "interface_index"},
+                        {"ifDescr": "interface_desc"},
+                        {"ifPhysAddress": "MAC_address"},
+                    ],
+                    "additionalVarBinds": [{"indexNum": "index_number"}],
+                }
+            }
+        }
+        result = is_ifmib_different(old_enricher, new_enricher)
+        self.assertTrue(result)
+
+    def test_deleted_oid_families(self):
+        old_enricher = {
+            "oidFamily": {
+                "IF-MIB": {
+                    "existingVarBinds": [
+                        {"ifIndex": "interface_index"},
+                        {"ifDescr": "interface_desc"},
+                        {"ifPhysAddress": "MAC_address"},
+                    ],
+                    "additionalVarBinds": [{"indexNum": "index_number"}],
+                },
+                "SNMPv2-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_snmp_2"}]
+                },
+                "TCP-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_tcp_33"}]
+                },
+            }
+        }
+        new_enricher = {
+            "oidFamily": {
+                "IF-MIB": {
+                    "existingVarBinds": [
+                        {"ifIndex": "interface_index"},
+                        {"ifPhysAddress": "MAC_address"},
+                    ],
+                    "additionalVarBinds": [{"indexNum": "index_number"}],
+                }
+            }
+        }
+        result = deleted_oid_families(old_enricher, new_enricher)
+        self.assertEqual(result, {"SNMPv2-MIB", "TCP-MIB"})
+
+    def test_deleted_oid_families_no_change(self):
+        new_enricher = {
+            "oidFamily": {
+                "IF-MIB": {
+                    "existingVarBinds": [
+                        {"ifIndex": "interface_index"},
+                        {"ifDescr": "interface_desc"},
+                        {"ifPhysAddress": "MAC_address"},
+                    ],
+                    "additionalVarBinds": [{"indexNum": "index_number"}],
+                },
+                "SNMPv2-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_snmp_2"}]
+                },
+                "TCP-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_tcp_33"}]
+                },
+            }
+        }
+        old_enricher = {
+            "oidFamily": {
+                "IF-MIB": {
+                    "existingVarBinds": [
+                        {"ifIndex": "interface_index"},
+                        {"ifPhysAddress": "MAC_address"},
+                    ],
+                    "additionalVarBinds": [{"indexNum": "index_number"}],
+                }
+            }
+        }
+        result = deleted_oid_families(old_enricher, new_enricher)
+        self.assertEqual(result, set())
+
+    def test_deleted_oid_families_with_ifmib(self):
+        new_enricher = {
+            "oidFamily": {
+                "SNMPv2-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_snmp_2"}]
+                },
+                "TCP-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_tcp_33"}]
+                },
+            }
+        }
+        old_enricher = {
+            "oidFamily": {
+                "IF-MIB": {
+                    "existingVarBinds": [
+                        {"ifIndex": "interface_index"},
+                        {"ifDescr": "interface_desc"},
+                        {"ifPhysAddress": "MAC_address"},
+                    ],
+                    "additionalVarBinds": [{"indexNum": "index_number"}],
+                },
+                "SNMPv2-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_snmp_2"}]
+                },
+                "TCP-MIB": {
+                    "additionalVarBinds": [{"indexNum": "index_number_tcp_33"}]
+                },
+            }
+        }
+        result = deleted_oid_families(old_enricher, new_enricher)
+        self.assertEqual(result, set())

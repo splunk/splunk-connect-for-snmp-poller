@@ -282,48 +282,80 @@ def update_enricher_config(
     new_enricher,
     mongo,
     profiles,
-    inventory,
+    inventory_host,
     server_config,
     splunk_indexes,
 ):
-    logger.info("Start update_enricher_config")
-    run_ifmib_walk = compare_enrichers(old_enricher, new_enricher)
-    logger.info(f"run_ifmib_walk: {run_ifmib_walk}")
-    for ir in parse_inventory_file(inventory, profiles):
-        if run_ifmib_walk:
-            logger.info(ir.to_json())
-            ir.profile = OidConstant.IF_MIB
-            schedule.every().second.do(
-                onetime_task,
-                ir,
-                server_config,
-                splunk_indexes,
-                profiles,
-            )
-        else:
-            host_id = return_database_id(ir.host)
-            logger.info(f"host_id: {host_id}")
-            families_to_delete = deleted_oid_families(old_enricher, new_enricher)
-            logger.info(f"families_to_delete: {families_to_delete}")
-            mongo.delete_oidfamilies_from_static_data(host_id, families_to_delete)
-            additional_enricher_varbinds = (
-                extract_network_interface_data_from_additional_config(server_config)
-            )
-            logger.info(f"Additional: {additional_enricher_varbinds}")
-            mongo.update_static_data_for_one(host_id, additional_enricher_varbinds)
-    logger.info("End update_enricher_config")
+    run_ifmib_walk = is_ifmib_different(old_enricher, new_enricher)
+    if run_ifmib_walk:
+        _update_enricher_config_with_ifmib(
+            profiles, inventory_host, server_config, splunk_indexes
+        )
+    else:
+        _update_enricher_config_for_additional_varbinds(
+            old_enricher, new_enricher, mongo, inventory_host, server_config
+        )
 
 
-def compare_enrichers(old_enricher, new_enricher):
+def _update_enricher_config_with_ifmib(
+    profiles,
+    inventory_host,
+    server_config,
+    splunk_indexes,
+):
+    ir = InventoryRecord(
+        host=inventory_host,
+        version="2c",
+        community="public",
+        profile=OidConstant.IF_MIB,
+        frequency_str="10",
+    )
+    ir.profile = OidConstant.IF_MIB
+    schedule.every().second.do(
+        onetime_task,
+        ir,
+        server_config,
+        splunk_indexes,
+        profiles,
+    )
+
+
+def _update_enricher_config_for_additional_varbinds(
+    old_enricher,
+    new_enricher,
+    mongo,
+    inventory_host,
+    server_config,
+):
+    families_to_delete = deleted_oid_families(old_enricher, new_enricher)
+    mongo.delete_oidfamilies_from_static_data(inventory_host, families_to_delete)
+    additional_enricher_varbinds = (
+        extract_network_interface_data_from_additional_config(server_config)
+    )
+    mongo.update_static_data_for_one(inventory_host, additional_enricher_varbinds)
+
+
+def is_ifmib_different(old_enricher, new_enricher):
     new_if_mib = multi_key_lookup(new_enricher, ("oidFamily", "IF-MIB"))
     old_if_mib = multi_key_lookup(old_enricher, ("oidFamily", "IF-MIB"))
     return bool(new_if_mib != old_if_mib)
 
 
+def delete_ifmib(func):
+    def function(*args, **kwargs):
+        s = func(*args, **kwargs)
+        if "IF-MIB" in s:
+            s.remove("IF-MIB")
+        return s
+
+    return function
+
+
+@delete_ifmib
 def deleted_oid_families(old_enricher, new_enricher):
     old_families = old_enricher.get("oidFamily", {})
     new_families = new_enricher.get("oidFamily", {})
-    return set(old_families) - set(new_families)
+    return set(old_families.keys()) - set(new_families.keys())
 
 
 def create_poller_scheduler_entry_key(host, profile):
