@@ -37,6 +37,10 @@ from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import
     is_valid_inventory_line_from_dict,
     should_process_inventory_line,
 )
+from splunk_connect_for_snmp_poller.manager.variables import (
+    enricher_if_mib,
+    enricher_oid_family,
+)
 from splunk_connect_for_snmp_poller.utilities import OnetimeFlag, multi_key_lookup
 
 logger = logging.getLogger(__name__)
@@ -310,7 +314,6 @@ def _update_enricher_config_with_ifmib(
         profile=OidConstant.IF_MIB,
         frequency_str="10",
     )
-    ir.profile = OidConstant.IF_MIB
     schedule.every().second.do(
         onetime_task,
         ir,
@@ -329,15 +332,13 @@ def _update_enricher_config_for_additional_varbinds(
 ):
     families_to_delete = deleted_oid_families(old_enricher, new_enricher)
     mongo.delete_oidfamilies_from_static_data(inventory_host, families_to_delete)
-    additional_enricher_varbinds = (
-        extract_network_interface_data_from_additional_config(server_config)
-    )
+    additional_enricher_varbinds = modified_oid_families(server_config)
     mongo.update_static_data_for_one(inventory_host, additional_enricher_varbinds)
 
 
 def is_ifmib_different(old_enricher, new_enricher):
-    new_if_mib = multi_key_lookup(new_enricher, ("oidFamily", "IF-MIB"))
-    old_if_mib = multi_key_lookup(old_enricher, ("oidFamily", "IF-MIB"))
+    new_if_mib = multi_key_lookup(new_enricher, (enricher_oid_family, enricher_if_mib))
+    old_if_mib = multi_key_lookup(old_enricher, (enricher_oid_family, enricher_if_mib))
     return bool(new_if_mib != old_if_mib)
 
 
@@ -345,7 +346,10 @@ def delete_ifmib(func):
     def function(*args, **kwargs):
         set_of_oid_families_to_modify = func(*args, **kwargs)
         if "IF-MIB" in set_of_oid_families_to_modify:
-            set_of_oid_families_to_modify.remove("IF-MIB")
+            if isinstance(set_of_oid_families_to_modify, set):
+                set_of_oid_families_to_modify.remove("IF-MIB")
+            if isinstance(set_of_oid_families_to_modify, dict):
+                set_of_oid_families_to_modify.pop("IF-MIB")
         return set_of_oid_families_to_modify
 
     return function
@@ -356,6 +360,14 @@ def deleted_oid_families(old_enricher, new_enricher):
     old_families = old_enricher.get("oidFamily", {})
     new_families = new_enricher.get("oidFamily", {})
     return set(old_families.keys()) - set(new_families.keys())
+
+
+@delete_ifmib
+def modified_oid_families(server_config):
+    additional_enricher_varbinds = (
+        extract_network_interface_data_from_additional_config(server_config)
+    )
+    return additional_enricher_varbinds
 
 
 def create_poller_scheduler_entry_key(host, profile):

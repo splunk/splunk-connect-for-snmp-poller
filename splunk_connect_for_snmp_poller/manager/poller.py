@@ -140,7 +140,7 @@ class Poller:
             self.clean_job_inventory(inventory_entry_keys, inventory_hosts)
 
     def run_enricher_check(self, new_enricher, profiles, inventory_hosts):
-        logger.debug(
+        logger.info(
             f"Previous enricher: {self._old_enricher} \n New enricher: {new_enricher}"
         )
         if new_enricher == {}:
