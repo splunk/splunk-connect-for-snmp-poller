@@ -308,9 +308,8 @@ def _update_enricher_config_with_ifmib(
     splunk_indexes,
 ):
     inventory_host.profile = OidConstant.IF_MIB
-    schedule.every().second.do(
-        onetime_task,
-        inventory_host,
+    snmp_polling.delay(
+        inventory_host.to_json(),
         server_config,
         splunk_indexes,
         profiles,

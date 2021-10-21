@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import copy
 import functools
 import logging.config
 import threading
@@ -122,7 +123,7 @@ class Poller:
                 inventory_entry_keys.add(entry_key)
                 ir_host = return_database_id(ir.host)
                 inventory_hosts.add(return_database_id(ir_host))
-                inventory_hosts_with_snmp_data[ir_host] = ir
+                inventory_hosts_with_snmp_data[ir_host] = copy.deepcopy(ir)
                 if ir.profile == DYNAMIC_PROFILE:
                     self.delete_all_entries_per_host(ir.host)
                     self.add_device_for_profile_matching(ir)
