@@ -216,3 +216,32 @@ class WalkedHostsRepository:
             return_document=ReturnDocument.AFTER,
         )
         return static_data_dictionary[WalkedHostsRepository.MIB_STATIC_DATA]
+
+    def update_static_data_for_one(self, host, static_data_dictionary):
+        logger.info(f"Updating static data for {host} with {static_data_dictionary}")
+        for oid_family in static_data_dictionary.keys():
+            index_dict = static_data_dictionary[oid_family]
+            if index_dict:
+                self._walked_hosts.update(
+                    {"_id": host},
+                    {
+                        "$set": {
+                            f"MIB-STATIC-DATA.{oid_family}.additionalVarBinds": index_dict
+                        }
+                    },
+                    upsert=True,
+                )
+
+    def delete_oidfamilies_from_static_data(self, host, oid_families):
+        logger.info(f"Deleting oidfamilies {oid_families} from {host}")
+        for oid_family in oid_families:
+            self._walked_hosts.find_one_and_update(
+                {"_id": host},
+                {"$unset": {f"MIB-STATIC-DATA.{oid_family}": ""}},
+            )
+
+    def delete_all_static_data(self):
+        self._walked_hosts.update_many(
+            {},
+            {"$unset": {"MIB-STATIC-DATA": ""}},
+        )

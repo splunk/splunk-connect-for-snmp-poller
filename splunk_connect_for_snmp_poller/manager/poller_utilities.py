@@ -27,12 +27,19 @@ from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidCons
 from splunk_connect_for_snmp_poller.manager.realtime.real_time_data import (
     should_redo_walk,
 )
+from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities import (
+    extract_network_interface_data_from_additional_config,
+)
 from splunk_connect_for_snmp_poller.manager.task_utilities import parse_port
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     DYNAMIC_PROFILE,
     is_valid_inventory_line_from_dict,
     should_process_inventory_line,
+)
+from splunk_connect_for_snmp_poller.manager.variables import (
+    enricher_if_mib,
+    enricher_oid_family,
 )
 from splunk_connect_for_snmp_poller.utilities import OnetimeFlag, multi_key_lookup
 
@@ -272,6 +279,88 @@ def automatic_realtime_task(
             )
     except Exception:
         logger.exception("Error during automatic_realtime_task")
+
+
+def update_enricher_config(
+    old_enricher,
+    new_enricher,
+    mongo,
+    profiles,
+    inventory_host,
+    server_config,
+    splunk_indexes,
+):
+    run_ifmib_walk = is_ifmib_different(old_enricher, new_enricher)
+    if run_ifmib_walk:
+        _update_enricher_config_with_ifmib(
+            profiles, inventory_host, server_config, splunk_indexes
+        )
+    else:
+        _update_enricher_config_for_additional_varbinds(
+            old_enricher, new_enricher, mongo, inventory_host.host, server_config
+        )
+
+
+def _update_enricher_config_with_ifmib(
+    profiles,
+    inventory_host,
+    server_config,
+    splunk_indexes,
+):
+    inventory_host.profile = OidConstant.IF_MIB
+    snmp_polling.delay(
+        inventory_host.to_json(),
+        server_config,
+        splunk_indexes,
+        profiles,
+    )
+
+
+def _update_enricher_config_for_additional_varbinds(
+    old_enricher,
+    new_enricher,
+    mongo,
+    inventory_host,
+    server_config,
+):
+    families_to_delete = deleted_oid_families(old_enricher, new_enricher)
+    mongo.delete_oidfamilies_from_static_data(inventory_host, families_to_delete)
+    additional_enricher_varbinds = modified_oid_families(server_config)
+    mongo.update_static_data_for_one(inventory_host, additional_enricher_varbinds)
+
+
+def is_ifmib_different(old_enricher, new_enricher):
+    new_if_mib = multi_key_lookup(new_enricher, (enricher_oid_family, enricher_if_mib))
+    old_if_mib = multi_key_lookup(old_enricher, (enricher_oid_family, enricher_if_mib))
+    return new_if_mib != old_if_mib
+
+
+def delete_ifmib(func):
+    def function(*args, **kwargs):
+        set_of_oid_families_to_modify = func(*args, **kwargs)
+        if "IF-MIB" in set_of_oid_families_to_modify:
+            if isinstance(set_of_oid_families_to_modify, set):
+                set_of_oid_families_to_modify.remove("IF-MIB")
+            if isinstance(set_of_oid_families_to_modify, dict):
+                set_of_oid_families_to_modify.pop("IF-MIB")
+        return set_of_oid_families_to_modify
+
+    return function
+
+
+@delete_ifmib
+def deleted_oid_families(old_enricher, new_enricher):
+    old_families = old_enricher.get("oidFamily", {})
+    new_families = new_enricher.get("oidFamily", {})
+    return set(old_families.keys()) - set(new_families.keys())
+
+
+@delete_ifmib
+def modified_oid_families(server_config):
+    additional_enricher_varbinds = (
+        extract_network_interface_data_from_additional_config(server_config)
+    )
+    return additional_enricher_varbinds
 
 
 def create_poller_scheduler_entry_key(host, profile):

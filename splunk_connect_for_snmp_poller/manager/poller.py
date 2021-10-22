@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import copy
 import functools
 import logging.config
 import threading
@@ -28,6 +29,7 @@ from splunk_connect_for_snmp_poller.manager.poller_utilities import (
     create_poller_scheduler_entry_key,
     parse_inventory_file,
     return_database_id,
+    update_enricher_config,
 )
 from splunk_connect_for_snmp_poller.manager.profile_matching import (
     assign_profiles_to_device,
@@ -59,6 +61,7 @@ class Poller:
         self._unmatched_devices = {}
         self._lock = threading.Lock()
         self._force_refresh = False
+        self._old_enricher = {}
 
     def force_inventory_refresh(self):
         self._force_refresh = True
@@ -104,6 +107,7 @@ class Poller:
             # TODO should rethink logic with changed to profiles and oids
             inventory_entry_keys = set()
             inventory_hosts = set()
+            inventory_hosts_with_snmp_data = {}
             profiles = get_profiles(self._server_config)
             for ir in parse_inventory_file(self._args.inventory, profiles):
                 entry_key = create_poller_scheduler_entry_key(ir.host, ir.profile)
@@ -117,7 +121,9 @@ class Poller:
                     )
                     continue
                 inventory_entry_keys.add(entry_key)
-                inventory_hosts.add(return_database_id(ir.host))
+                ir_host = return_database_id(ir.host)
+                inventory_hosts.add(return_database_id(ir_host))
+                inventory_hosts_with_snmp_data[ir_host] = copy.deepcopy(ir)
                 if ir.profile == DYNAMIC_PROFILE:
                     self.delete_all_entries_per_host(ir.host)
                     self.add_device_for_profile_matching(ir)
@@ -131,7 +137,36 @@ class Poller:
                     else:
                         self.update_schedule_for_changed_conf(entry_key, ir, profiles)
 
+            if server_config_modified:
+                new_enricher = self._server_config.get("enricher", {})
+                if new_enricher != self._old_enricher:
+                    self.run_enricher_check(
+                        new_enricher, profiles, inventory_hosts_with_snmp_data
+                    )
             self.clean_job_inventory(inventory_entry_keys, inventory_hosts)
+
+    def run_enricher_check(
+        self, new_enricher, profiles, inventory_hosts_with_snmp_data
+    ):
+        logger.info(
+            f"Previous enricher: {self._old_enricher} \n New enricher: {new_enricher}"
+        )
+        if new_enricher == {}:
+            logger.debug("Enricher is being deleted from MongoDB")
+            self._mongo.delete_all_static_data()
+            self._old_enricher = {}
+            return
+        for inventory_host in inventory_hosts_with_snmp_data.keys():
+            update_enricher_config(
+                self._old_enricher,
+                new_enricher,
+                self._mongo,
+                profiles,
+                inventory_hosts_with_snmp_data[inventory_host],
+                self._server_config,
+                self.__get_splunk_indexes(),
+            )
+        self._old_enricher = new_enricher
 
     def delete_all_entries_per_host(self, host):
         for entry_key in list(self._jobs_map.keys()):
