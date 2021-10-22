@@ -180,6 +180,7 @@ def build_metric_data(
     fields = {
         "metric_name:" + metric_name: metric_value,
         EventField.FREQUENCY.value: ir.frequency_str,
+        EventField.TIME.value: time.time(),
     }
     if mib_enricher:
         _enrich_metric_data(mib_enricher, json_val, fields)
