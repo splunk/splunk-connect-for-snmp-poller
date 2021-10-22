@@ -136,6 +136,7 @@ class Poller:
     def delete_all_entries_per_host(self, host):
         for entry_key in list(self._jobs_map.keys()):
             if entry_key.split("#")[0] == host:
+                logger.debug("Removing job for %s", entry_key)
                 schedule.cancel_job(self._jobs_map.get(entry_key))
                 del self._jobs_map[entry_key]
 
@@ -229,7 +230,7 @@ class Poller:
 
         schedule.every(self._args.matching_task_frequency).seconds.do(
             self.process_unmatched_devices_job,
-            self._server_config,
+            self._args.config,
         )
 
         automatic_realtime_job(
@@ -253,15 +254,16 @@ class Poller:
         self._unmatched_devices[device.host] = device
         self._lock.release()
 
-    def process_unmatched_devices_job(self, server_config):
+    def process_unmatched_devices_job(self, config_location):
         job_thread = threading.Thread(
-            target=self.process_unmatched_devices, args=[server_config]
+            target=self.process_unmatched_devices, args=[config_location]
         )
         job_thread.start()
 
-    def process_unmatched_devices(self, server_config):
+    def process_unmatched_devices(self, config_location):
         if self._unmatched_devices:
             try:
+                server_config = parse_config_file(config_location)
                 profiles = get_profiles(server_config)
                 self._lock.acquire()
                 processed_devices = set()
