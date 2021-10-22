@@ -23,6 +23,7 @@ from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.hec_sender import HecSender
+from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     VarbindCollection,
     build_authData,
@@ -197,7 +198,7 @@ async def snmp_polling_async(
             # Perform SNNP WALK for oid end with *
             if ir.profile[-1] == "*":
                 logger.info("Executing SNMP WALK for %s profile=%s", host, ir.profile)
-                if enricher_presence:
+                if ir.profile == OidConstant.IF_MIB:
                     await walk_handler_with_enricher(
                         ir.profile, server_config, mongo_connection, *static_parameters
                     )

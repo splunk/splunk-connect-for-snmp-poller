@@ -87,7 +87,7 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
     """
     logger.debug(f"Getting translation for the following var_binds: {var_binds}")
     is_metric, result = await result_without_translation(var_binds, return_multimetric)
-
+    original_varbinds = is_metric, result
     # Override the var_binds string with translated var_binds string
     try:
         data_format = _get_data_format(is_metric, return_multimetric)
@@ -107,6 +107,7 @@ async def get_translated_string(mib_server_url, var_binds, return_multimetric=Fa
                 result = await get_translation(var_binds, mib_server_url, data_format)
     except Exception:
         logger.exception("Could not perform translation. Returning original var_binds")
+        return original_varbinds
     logger.debug(f"final result -- metric: {is_metric}\n{result}")
     return result, is_metric
 
@@ -572,7 +573,6 @@ async def walk_handler_with_enricher(
         lexicographicMode=False,
     ):
         is_metric = False
-        extract_data_to_mongo(host, port, mongo_connection, var_binds)
         if _any_walk_failure_happened(
             hec_sender,
             errorIndication,

@@ -108,6 +108,7 @@ class Poller:
             inventory_entry_keys = set()
             inventory_hosts = set()
             inventory_hosts_with_snmp_data = {}
+            new_enricher = self._server_config.get("enricher", {})
             profiles = get_profiles(self._server_config)
             for ir in parse_inventory_file(self._args.inventory, profiles):
                 entry_key = create_poller_scheduler_entry_key(ir.host, ir.profile)
@@ -122,6 +123,10 @@ class Poller:
                     continue
                 inventory_entry_keys.add(entry_key)
                 ir_host = return_database_id(ir.host)
+                if ir_host not in inventory_hosts:
+                    self.add_enricher_to_a_host(
+                        new_enricher, profiles, copy.deepcopy(ir), True
+                    )
                 inventory_hosts.add(return_database_id(ir_host))
                 inventory_hosts_with_snmp_data[ir_host] = copy.deepcopy(ir)
                 if ir.profile == DYNAMIC_PROFILE:
@@ -138,7 +143,6 @@ class Poller:
                         self.update_schedule_for_changed_conf(entry_key, ir, profiles)
 
             if server_config_modified:
-                new_enricher = self._server_config.get("enricher", {})
                 if new_enricher != self._old_enricher:
                     self.run_enricher_check(
                         new_enricher, profiles, inventory_hosts_with_snmp_data
@@ -157,16 +161,23 @@ class Poller:
             self._old_enricher = {}
             return
         for inventory_host in inventory_hosts_with_snmp_data.keys():
+            self.add_enricher_to_a_host(
+                new_enricher, profiles, inventory_hosts_with_snmp_data[inventory_host]
+            )
+        self._old_enricher = new_enricher
+
+    def add_enricher_to_a_host(self, current_enricher, profiles, ir, new_host=False):
+        old_enricher = {} if new_host else self._old_enricher
+        if current_enricher != {}:
             update_enricher_config(
-                self._old_enricher,
-                new_enricher,
+                old_enricher,
+                current_enricher,
                 self._mongo,
                 profiles,
-                inventory_hosts_with_snmp_data[inventory_host],
+                ir,
                 self._server_config,
                 self.__get_splunk_indexes(),
             )
-        self._old_enricher = new_enricher
 
     def delete_all_entries_per_host(self, host):
         for entry_key in list(self._jobs_map.keys()):
