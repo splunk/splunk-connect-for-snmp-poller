@@ -297,7 +297,11 @@ def update_enricher_config(
         )
     else:
         _update_enricher_config_for_additional_varbinds(
-            old_enricher, new_enricher, mongo, inventory_host.host, server_config
+            old_enricher,
+            new_enricher,
+            mongo,
+            return_database_id(inventory_host.host),
+            server_config,
         )
 
 
