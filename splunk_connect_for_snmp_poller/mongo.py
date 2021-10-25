@@ -108,8 +108,14 @@ class WalkedHostsRepository:
     def contains_host(self, host):
         return self._walked_hosts.find({"_id": host}).count()
 
+    def first_time_walked_was_initiated(self, host):
+        return self._walked_hosts.find({"_id": host, "walked_first_time": True}).count()
+
     def add_host(self, host):
-        self._walked_hosts.insert_one({"_id": host})
+        try:
+            self._walked_hosts.insert_one({"_id": host})
+        except:  # noqa: E722
+            logger.info(f"Id {host} already exists in MongoDB")
 
     def get_all_unwalked_hosts(self):
         return list(self._unwalked_hosts.find({}))
@@ -135,6 +141,14 @@ class WalkedHostsRepository:
 
     def clear(self):
         self._walked_hosts.remove()
+
+    def update_walked_host(self, host, element):
+        self._walked_hosts.find_one_and_update(
+            {"_id": host},
+            {"$set": element},
+            return_document=ReturnDocument.AFTER,
+            upsert=True,
+        )
 
     def real_time_data_for(self, host):
         full_collection = self._walked_hosts.find_one({"_id": host})
