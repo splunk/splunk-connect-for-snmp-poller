@@ -176,6 +176,10 @@ async def snmp_polling_async(
             mib_profile = profiles["profiles"].get(ir.profile, None)
             if mib_profile:
                 var_binds = mib_profile.get("varBinds", None)
+                if not var_binds:
+                    logger.warning(f"No varBinds specified for profile {ir.profile}")
+                    return
+
                 # Divide varBinds for WALK/BULK actions
                 varbind_collection = sort_varbinds(var_binds)
                 logger.debug(f"Varbind collection: {varbind_collection}")
