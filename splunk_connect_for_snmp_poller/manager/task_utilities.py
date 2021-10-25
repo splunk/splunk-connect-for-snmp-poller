@@ -259,8 +259,8 @@ async def snmp_get_handler(
                 index,
                 ir,
                 additional_metric_fields,
-                one_time_flag,
-                mib_enricher,
+                one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
+                mib_enricher=mib_enricher,
             )
     else:
         is_error, result = prepare_error_message(
@@ -275,7 +275,7 @@ async def snmp_get_handler(
                 index,
                 ir,
                 additional_metric_fields,
-                one_time_flag,
+                one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
                 is_error=is_error,
             )
 
@@ -344,7 +344,7 @@ def _any_walk_failure_happened(
             index,
             ir,
             additional_metric_fields,
-            one_time_flag,
+            one_time_flag=one_time_flag,
             is_error=is_error,
         )
 
@@ -419,8 +419,8 @@ async def snmp_bulk_handler(
                     index,
                     ir,
                     additional_metric_fields,
-                    one_time_flag,
-                    mib_enricher,
+                    one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
+                    mib_enricher=mib_enricher,
                 )
         else:
             is_error, result = prepare_error_message(
@@ -435,7 +435,7 @@ async def snmp_bulk_handler(
                     index,
                     ir,
                     additional_metric_fields,
-                    one_time_flag,
+                    one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
                     is_error=is_error,
                 )
             break
@@ -479,7 +479,7 @@ async def walk_handler(
             errorIndex,
             host,
             index,
-            one_time_flag,
+            OnetimeFlag.is_a_walk(one_time_flag),
             is_metric,
             ir,
             additional_metric_fields,
@@ -498,9 +498,9 @@ async def walk_handler(
                 index,
                 ir,
                 additional_metric_fields,
-                one_time_flag,
+                one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
             )
-    if one_time_flag:
+    if OnetimeFlag.is_a_walk(one_time_flag):
         process_one_time_flag(
             one_time_flag,
             error_in_one_time_walk,
@@ -530,12 +530,9 @@ def extract_data_to_mongo(host, port, mongo_connection, var_binds):
 def process_one_time_flag(
     one_time_flag, error_in_one_time_walk, mongo_connection, host, ir
 ):
-    if one_time_flag == json.dumps(OnetimeFlag.FIRST_WALK) and error_in_one_time_walk:
+    if one_time_flag == OnetimeFlag.FIRST_WALK.value and error_in_one_time_walk:
         mongo_connection.add_onetime_walk_result(host, ir.version, ir.community)
-    if (
-        one_time_flag == json.dumps(OnetimeFlag.AFTER_FAIL)
-        and not error_in_one_time_walk
-    ):
+    if one_time_flag == OnetimeFlag.AFTER_FAIL.value and not error_in_one_time_walk:
         mongo_connection.delete_onetime_walk_result(host)
 
 
@@ -580,13 +577,13 @@ async def walk_handler_with_enricher(
             errorIndex,
             host,
             index,
-            one_time_flag,
+            OnetimeFlag.is_a_walk(one_time_flag),
             is_metric,
             ir,
             additional_metric_fields,
             var_binds,
         ):
-            if one_time_flag:
+            if OnetimeFlag.is_a_walk(one_time_flag):
                 error_in_one_time_walk = True
             break
         else:
@@ -608,9 +605,9 @@ async def walk_handler_with_enricher(
                 index,
                 ir,
                 additional_metric_fields,
-                one_time_flag,
+                one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
             )
-    if one_time_flag:
+    if OnetimeFlag.is_a_walk(one_time_flag):
         process_one_time_flag(
             one_time_flag,
             error_in_one_time_walk,

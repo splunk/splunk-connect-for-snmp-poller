@@ -93,8 +93,8 @@ def post_data_to_splunk_hec(
             host,
             variables_binds,
             index,
-            one_time_flag,
-            mib_enricher,
+            one_time_flag=one_time_flag,
+            mib_enricher=mib_enricher,
         )
     hec_sender.send_hec_request(is_metric, data)
 

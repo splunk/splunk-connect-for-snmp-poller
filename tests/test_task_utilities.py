@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import json
 from unittest import TestCase
 from unittest.mock import MagicMock
 
@@ -186,7 +185,7 @@ class TestTaskUtilities(TestCase):
         mongo.add_onetime_walk_result.return_value = "add_onetime"
         mongo.delete_onetime_walk_result.return_value = "delete_onetime"
         process_one_time_flag(
-            json.dumps(OnetimeFlag.FIRST_WALK), True, mongo, "127.0.0.1:161", ir
+            OnetimeFlag.FIRST_WALK.value, True, mongo, "127.0.0.1:161", ir
         )
         self.assertTrue(mongo.add_onetime_walk_result.called)
         self.assertFalse(mongo.delete_onetime_walk_result.called)
@@ -197,7 +196,7 @@ class TestTaskUtilities(TestCase):
         mongo.add_onetime_walk_result.return_value = "add_onetime"
         mongo.delete_onetime_walk_result.return_value = "delete_onetime"
         process_one_time_flag(
-            json.dumps(OnetimeFlag.FIRST_WALK), False, mongo, "127.0.0.1:161", ir
+            OnetimeFlag.FIRST_WALK.value, False, mongo, "127.0.0.1:161", ir
         )
         self.assertFalse(mongo.add_onetime_walk_result.called)
         self.assertFalse(mongo.delete_onetime_walk_result.called)
@@ -208,7 +207,7 @@ class TestTaskUtilities(TestCase):
         mongo.add_onetime_walk_result.return_value = "add_onetime"
         mongo.delete_onetime_walk_result.return_value = "delete_onetime"
         process_one_time_flag(
-            json.dumps(OnetimeFlag.AFTER_FAIL), True, mongo, "127.0.0.1:161", ir
+            OnetimeFlag.AFTER_FAIL.value, True, mongo, "127.0.0.1:161", ir
         )
         self.assertFalse(mongo.delete_onetime_walk_result.called)
         self.assertFalse(mongo.add_onetime_walk_result.called)
@@ -219,7 +218,7 @@ class TestTaskUtilities(TestCase):
         mongo.add_onetime_walk_result.return_value = "add_onetime"
         mongo.delete_onetime_walk_result.return_value = "delete_onetime"
         process_one_time_flag(
-            json.dumps(OnetimeFlag.AFTER_FAIL), False, mongo, "127.0.0.1:161", ir
+            OnetimeFlag.AFTER_FAIL.value, False, mongo, "127.0.0.1:161", ir
         )
         self.assertTrue(mongo.delete_onetime_walk_result.called)
         self.assertFalse(mongo.add_onetime_walk_result.called)
