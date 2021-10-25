@@ -128,30 +128,34 @@ class Poller:
                 if ir.profile == DYNAMIC_PROFILE:
                     self.delete_all_entries_per_host(ir.host)
                     self.add_device_for_profile_matching(ir)
+                    self.check_if_new_host_was_added(entry_key, ir, new_enricher)
                 else:
                     logger.debug(
                         "[-] server_config['profiles']: %s",
                         self._server_config["profiles"],
                     )
                     if entry_key not in self._jobs_map:
-                        ir_host = return_database_id(entry_key)
-                        if self._old_enricher != {}:
-                            logger.info(f"New host: {ir_host}")
-                            self.add_enricher_to_a_host(
-                                new_enricher, copy.deepcopy(ir), True
-                            )
+                        self.check_if_new_host_was_added(entry_key, ir, new_enricher)
                         self.process_new_job(entry_key, ir, profiles)
                     else:
                         self.update_schedule_for_changed_conf(entry_key, ir, profiles)
 
             if server_config_modified:
                 if new_enricher != self._old_enricher:
-                    self.run_enricher_check(
+                    self.run_enricher_changed_check(
                         new_enricher, inventory_hosts_with_snmp_data
                     )
             self.clean_job_inventory(inventory_entry_keys, inventory_hosts)
 
-    def run_enricher_check(self, new_enricher, inventory_hosts_with_snmp_data):
+    def check_if_new_host_was_added(self, host_key, inventory_record, new_enricher):
+        ir_host = return_database_id(host_key)
+        if self._old_enricher != {}:
+            logger.info(f"New host: {ir_host}")
+            self.__add_enricher_to_a_host(
+                new_enricher, copy.deepcopy(inventory_record), True
+            )
+
+    def run_enricher_changed_check(self, new_enricher, inventory_hosts_with_snmp_data):
         logger.info(
             f"Previous enricher: {self._old_enricher} \n New enricher: {new_enricher}"
         )
@@ -161,12 +165,12 @@ class Poller:
             self._old_enricher = {}
             return
         for inventory_host in inventory_hosts_with_snmp_data.keys():
-            self.add_enricher_to_a_host(
+            self.__add_enricher_to_a_host(
                 new_enricher, inventory_hosts_with_snmp_data[inventory_host]
             )
         self._old_enricher = new_enricher
 
-    def add_enricher_to_a_host(self, current_enricher, ir, new_host=False):
+    def __add_enricher_to_a_host(self, current_enricher, ir, new_host=False):
         logger.info("Add enricher to a host")
         old_enricher = {} if new_host else self._old_enricher
         if current_enricher != {}:
