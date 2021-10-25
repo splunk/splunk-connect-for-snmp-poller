@@ -42,5 +42,5 @@ class TestPollerUtilities(TestCase):
             with patch(
                 "splunk_connect_for_snmp_poller.mongo.WalkedHostsRepository.delete_all_static_data"
             ):
-                obj.run_enricher_check({}, [], {"127.0.0.1:161": MagicMock()})
+                obj.run_enricher_check({}, {"127.0.0.1:161": MagicMock()})
             self.assertEqual(obj._old_enricher, {})
