@@ -163,7 +163,8 @@ def _extract_sys_uptime_instance(
 
 
 def _walk_info(mongo_collection, host, current_sys_up_time):
-    host_already_walked = mongo_collection.contains_host(host) != 0
+    host_already_walked = mongo_collection.first_time_walked_was_initiated(host) != 0
+    logger.info(f"host_already_walked: {host_already_walked}")
     should_do_walk = not host_already_walked
     if host_already_walked:
         previous_sys_up_time = mongo_collection.real_time_data_for(host)
@@ -275,6 +276,10 @@ def automatic_realtime_task(
                 host_already_walked,
                 sys_up_time,
             )
+            if should_do_walk:
+                mongo_collection.update_walked_host(
+                    db_host_id, {"walked_first_time": True}
+                )
     except Exception:
         logger.exception("Error during automatic_realtime_task")
 
@@ -283,7 +288,6 @@ def update_enricher_config(
     old_enricher,
     new_enricher,
     mongo,
-    profiles,
     inventory_host,
     server_config,
     splunk_indexes,
@@ -291,7 +295,7 @@ def update_enricher_config(
     run_ifmib_walk = is_ifmib_different(old_enricher, new_enricher)
     if run_ifmib_walk:
         _update_enricher_config_with_ifmib(
-            profiles, inventory_host, server_config, splunk_indexes
+            inventory_host, server_config, splunk_indexes
         )
     else:
         _update_enricher_config_for_additional_varbinds(
@@ -304,17 +308,17 @@ def update_enricher_config(
 
 
 def _update_enricher_config_with_ifmib(
-    profiles,
     inventory_host,
     server_config,
     splunk_indexes,
 ):
     inventory_host.profile = OidConstant.IF_MIB
-    snmp_polling.delay(
-        inventory_host.to_json(),
+    schedule.every().second.do(
+        onetime_task,
+        inventory_host,
         server_config,
         splunk_indexes,
-        profiles,
+        None,
     )
 
 
