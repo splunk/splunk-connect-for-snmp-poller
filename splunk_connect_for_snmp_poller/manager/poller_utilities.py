@@ -39,6 +39,7 @@ from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import
 from splunk_connect_for_snmp_poller.manager.variables import (
     enricher_if_mib,
     enricher_oid_family,
+    onetime_walk,
 )
 from splunk_connect_for_snmp_poller.utilities import OnetimeFlag, multi_key_lookup
 
@@ -163,7 +164,9 @@ def _extract_sys_uptime_instance(
 
 
 def _walk_info(mongo_collection, host, current_sys_up_time):
-    host_already_walked = mongo_collection.first_time_walked_was_initiated(host) != 0
+    host_already_walked = (
+        mongo_collection.first_time_walk_was_initiated(host, "walked_first_time") != 0
+    )
     logger.info(f"host_already_walked: {host_already_walked}")
     should_do_walk = not host_already_walked
     if host_already_walked:
@@ -277,9 +280,7 @@ def automatic_realtime_task(
                 sys_up_time,
             )
             if should_do_walk:
-                mongo_collection.update_walked_host(
-                    db_host_id, {"walked_first_time": True}
-                )
+                mongo_collection.update_walked_host(db_host_id, {onetime_walk: True})
     except Exception:
         logger.exception("Error during automatic_realtime_task")
 
@@ -292,6 +293,7 @@ def update_enricher_config(
     server_config,
     splunk_indexes,
 ):
+    logger.info("In update_enricher_config")
     run_ifmib_walk = is_ifmib_different(old_enricher, new_enricher)
     if run_ifmib_walk:
         _update_enricher_config_with_ifmib(

@@ -40,6 +40,7 @@ from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     DYNAMIC_PROFILE,
 )
+from splunk_connect_for_snmp_poller.manager.variables import onetime_if_walk
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 from splunk_connect_for_snmp_poller.utilities import (
     file_was_modified,
@@ -86,6 +87,7 @@ class Poller:
             counter -= 1
 
     def __check_inventory(self):
+        logger.info("In check_inventory")
         server_config_modified, self._config_mod_time = file_was_modified(
             self._args.config, self._config_mod_time
         )
@@ -150,6 +152,11 @@ class Poller:
     def check_if_new_host_was_added(self, host_key, inventory_record, new_enricher):
         ir_host = return_database_id(host_key)
         if self._old_enricher != {}:
+            walk_already_ran = self._mongo.first_time_walk_was_initiated(
+                ir_host, onetime_if_walk
+            )
+            if walk_already_ran:
+                return
             logger.info(f"New host: {ir_host}")
             self.__add_enricher_to_a_host(
                 new_enricher, copy.deepcopy(inventory_record), True

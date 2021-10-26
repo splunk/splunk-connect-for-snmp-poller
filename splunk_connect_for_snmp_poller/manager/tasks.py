@@ -209,12 +209,17 @@ async def snmp_polling_async(
             # Perform SNNP WALK for oid end with *
             if ir.profile[-1] == "*":
                 logger.info("Executing SNMP WALK for %s profile=%s", host, ir.profile)
-                if ir.profile == OidConstant.IF_MIB:
-                    await walk_handler_with_enricher(
-                        ir.profile, server_config, mongo_connection, *static_parameters
-                    )
-                else:
+                if ir.profile == OidConstant.UNIVERSAL_BASE_OID:
                     await walk_handler(ir.profile, mongo_connection, *static_parameters)
+                elif ir.profile == OidConstant.IF_MIB or (
+                    enricher_presence and one_time_flag == OnetimeFlag.AFTER_FAIL.value
+                ):
+                    await walk_handler_with_enricher(
+                        OidConstant.IF_MIB,
+                        server_config,
+                        mongo_connection,
+                        *static_parameters,
+                    )
             # Perform SNNP GET for an oid
             else:
                 logger.info("Executing SNMP GET for %s profile=%s", host, ir.profile)

@@ -108,8 +108,8 @@ class WalkedHostsRepository:
     def contains_host(self, host):
         return self._walked_hosts.find({"_id": host}).count()
 
-    def first_time_walked_was_initiated(self, host):
-        return self._walked_hosts.find({"_id": host, "walked_first_time": True}).count()
+    def first_time_walk_was_initiated(self, host, flag_name):
+        return self._walked_hosts.find({"_id": host, flag_name: True}).count()
 
     def add_host(self, host):
         try:
