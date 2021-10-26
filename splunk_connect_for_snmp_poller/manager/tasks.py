@@ -204,6 +204,8 @@ async def snmp_polling_async(
                     *get_bulk_specific_parameters,
                     *static_parameters,
                 )
+            else:
+                logger.warning(f"No profile {ir.profile} found")
         # Perform SNNP Polling for oid profile in inventory.csv
         else:
             # Perform SNNP WALK for oid end with *
