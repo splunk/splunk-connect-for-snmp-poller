@@ -87,7 +87,6 @@ class Poller:
             counter -= 1
 
     def __check_inventory(self):
-        logger.info("In check_inventory")
         server_config_modified, self._config_mod_time = file_was_modified(
             self._args.config, self._config_mod_time
         )

@@ -320,7 +320,7 @@ def _update_enricher_config_with_ifmib(
         inventory_host,
         server_config,
         splunk_indexes,
-        None,
+        OnetimeFlag.FIRST_WALK.value,
     )
 
 
