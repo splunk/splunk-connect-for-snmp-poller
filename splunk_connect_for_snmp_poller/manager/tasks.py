@@ -25,6 +25,7 @@ from splunk_connect_for_snmp_poller.manager.data.inventory_record import Invento
 from splunk_connect_for_snmp_poller.manager.hec_sender import HecSender
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
+    OnetimeFlag,
     VarbindCollection,
     build_authData,
     build_contextData,
@@ -117,10 +118,16 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
     return casted_multikey_elements
 
 
-# TODO remove the debugging statement later
 @app.task(ignore_result=True)
-def snmp_polling(ir_json: str, server_config, index, profiles, one_time_flag=False):
+def snmp_polling(
+    ir_json: str,
+    server_config,
+    index,
+    profiles,
+    one_time_flag=OnetimeFlag.NOT_A_WALK.value,
+):
     ir = InventoryRecord.from_json(ir_json)
+    logger.info(f"Got one_time_flag - {one_time_flag} with Ir - {ir.__repr__()}")
 
     async_to_sync(snmp_polling_async)(ir, server_config, index, profiles, one_time_flag)
 
@@ -128,7 +135,7 @@ def snmp_polling(ir_json: str, server_config, index, profiles, one_time_flag=Fal
 
 
 async def snmp_polling_async(
-    ir: InventoryRecord, server_config, index, profiles, one_time_flag=False
+    ir: InventoryRecord, server_config, index, profiles, one_time_flag: str
 ):
     hec_sender = HecSender(
         os.environ["OTEL_SERVER_METRICS_URL"], os.environ["OTEL_SERVER_LOGS_URL"]
