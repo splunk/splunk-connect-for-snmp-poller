@@ -486,7 +486,7 @@ async def walk_handler(
             additional_metric_fields,
             var_binds,
         ):
-            if one_time_flag:
+            if OnetimeFlag.is_a_walk(one_time_flag):
                 error_in_one_time_walk = True
             break
         else:
@@ -509,6 +509,7 @@ async def walk_handler(
             f"{host}:{port}",
             ir,
         )
+    logger.info(f"Walk finished for {host} profile={profile}")
 
 
 def extract_data_to_mongo(host, port, mongo_connection, var_binds):
@@ -609,7 +610,7 @@ async def walk_handler_with_enricher(
                 one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
             )
 
-    logger.info(f"Walk finished for {host} profile={ir.profile}")
+    logger.info(f"Walk finished for {host} profile={profile}")
     if merged_result:
         mongo_connection.update_walked_host(f"{host}:{port}", {onetime_if_walk: "true"})
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)

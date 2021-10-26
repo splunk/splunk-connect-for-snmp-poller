@@ -213,7 +213,7 @@ async def snmp_polling_async(
                     enricher_presence and one_time_flag == OnetimeFlag.AFTER_FAIL.value
                 ):
                     logger.info(
-                        "Executing SNMP WALK for %s profile=%s",
+                        "Executing SNMP small WALK for %s profile=%s",
                         host,
                         OidConstant.IF_MIB,
                     )
@@ -223,7 +223,12 @@ async def snmp_polling_async(
                         mongo_connection,
                         *static_parameters,
                     )
-                elif ir.profile == OidConstant.UNIVERSAL_BASE_OID:
+                if ir.profile == OidConstant.UNIVERSAL_BASE_OID:
+                    logger.info(
+                        "Executing SNMP big WALK for %s profile=%s",
+                        host,
+                        ir.profile,
+                    )
                     await walk_handler(ir.profile, mongo_connection, *static_parameters)
             # Perform SNNP GET for an oid
             else:
