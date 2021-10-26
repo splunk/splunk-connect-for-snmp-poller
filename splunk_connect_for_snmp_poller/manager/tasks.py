@@ -214,6 +214,11 @@ async def snmp_polling_async(
                 elif ir.profile == OidConstant.IF_MIB or (
                     enricher_presence and one_time_flag == OnetimeFlag.AFTER_FAIL.value
                 ):
+                    logger.info(
+                        "Executing SNMP WALK for %s profile=%s",
+                        host,
+                        OidConstant.IF_MIB,
+                    )
                     await walk_handler_with_enricher(
                         OidConstant.IF_MIB,
                         server_config,

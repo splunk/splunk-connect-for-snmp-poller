@@ -143,6 +143,7 @@ class WalkedHostsRepository:
         self._walked_hosts.remove()
 
     def update_walked_host(self, host, element):
+        logger.info(f"Updating walked_hosts for host {host} with = {element}")
         self._walked_hosts.find_one_and_update(
             {"_id": host},
             {"$set": element},
