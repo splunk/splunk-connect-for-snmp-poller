@@ -301,7 +301,7 @@ class Poller:
             automatic_onetime_task,
             self._mongo,
             self.__get_splunk_indexes(),
-            self._server_config,
+            self._args.config,
         )
 
     def add_device_for_profile_matching(self, device: InventoryRecord):

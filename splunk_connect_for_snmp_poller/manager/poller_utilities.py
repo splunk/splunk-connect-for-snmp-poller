@@ -41,7 +41,11 @@ from splunk_connect_for_snmp_poller.manager.variables import (
     enricher_oid_family,
     onetime_walk,
 )
-from splunk_connect_for_snmp_poller.utilities import OnetimeFlag, multi_key_lookup
+from splunk_connect_for_snmp_poller.utilities import (
+    OnetimeFlag,
+    multi_key_lookup,
+    parse_config_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,11 +63,12 @@ def _should_process_current_line(inventory_record: dict):
 
 
 def iterate_through_unwalked_hosts_scheduler(
-    server_config, splunk_indexes, mongo_connection
+    config_location, splunk_indexes, mongo_connection
 ):
     logger.debug("Executing iterate_through_unwalked_hosts_scheduler")
     profile = OidConstant.UNIVERSAL_BASE_OID
     unwalked_hosts = mongo_connection.get_all_unwalked_hosts()
+    server_config = parse_config_file(config_location)
     for unwalked_host in unwalked_hosts:
         inventory_record = InventoryRecord(
             unwalked_host["host"],
@@ -222,12 +227,12 @@ def automatic_realtime_job(
 def automatic_onetime_task(
     mongo_collection,
     splunk_indexes,
-    server_config,
+    config_location,
 ):
     job_thread = threading.Thread(
         target=iterate_through_unwalked_hosts_scheduler,
         args=[
-            server_config,
+            config_location,
             splunk_indexes,
             mongo_collection,
         ],
