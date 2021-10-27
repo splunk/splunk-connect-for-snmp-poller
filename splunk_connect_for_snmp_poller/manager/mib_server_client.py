@@ -22,9 +22,6 @@ import aiohttp
 import backoff as backoff
 import requests as requests
 from aiohttp import ClientSession
-from requests.adapters import HTTPAdapter
-from urllib3.exceptions import MaxRetryError
-from urllib3.util.retry import Retry
 
 logger = logging.getLogger(__name__)
 
