@@ -154,12 +154,11 @@ class Poller:
             walk_already_ran = self._mongo.first_time_walk_was_initiated(
                 ir_host, onetime_if_walk
             )
-            if walk_already_ran:
-                return
-            logger.info(f"New host: {ir_host}")
-            self.__add_enricher_to_a_host(
-                new_enricher, copy.deepcopy(inventory_record), True
-            )
+            if walk_already_ran == 0:
+                logger.info(f"New host: {ir_host}")
+                self.__add_enricher_to_a_host(
+                    new_enricher, copy.deepcopy(inventory_record), True
+                )
 
     def run_enricher_changed_check(self, new_enricher, inventory_hosts_with_snmp_data):
         logger.info(
