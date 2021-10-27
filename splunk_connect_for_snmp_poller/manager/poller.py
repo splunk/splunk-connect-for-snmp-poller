@@ -155,7 +155,7 @@ class Poller:
                 ir_host, onetime_if_walk
             )
             if walk_already_ran == 0:
-                logger.info(f"New host: {ir_host}")
+                logger.debug(f"New host added: {ir_host}")
                 self.__add_enricher_to_a_host(
                     new_enricher, copy.deepcopy(inventory_record), True
                 )

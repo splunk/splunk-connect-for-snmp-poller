@@ -293,7 +293,6 @@ def update_enricher_config(
     server_config,
     splunk_indexes,
 ):
-    logger.info("In update_enricher_config")
     run_ifmib_walk = is_ifmib_different(old_enricher, new_enricher)
     if run_ifmib_walk:
         _update_enricher_config_with_ifmib(
