@@ -165,7 +165,7 @@ def _extract_sys_uptime_instance(
 
 def _walk_info(mongo_collection, host, current_sys_up_time):
     host_already_walked = (
-        mongo_collection.first_time_walk_was_initiated(host, "walked_first_time") != 0
+        mongo_collection.first_time_walk_was_initiated(host, onetime_walk) != 0
     )
     logger.info(f"host_already_walked: {host_already_walked}")
     should_do_walk = not host_already_walked

@@ -612,7 +612,7 @@ async def walk_handler_with_enricher(
 
     logger.info(f"Walk finished for {host} profile={profile}")
     if merged_result:
-        mongo_connection.update_walked_host(f"{host}:{port}", {onetime_if_walk: "true"})
+        mongo_connection.update_walked_host(f"{host}:{port}", {onetime_if_walk: True})
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
     additional_enricher_varbinds = (
         extract_network_interface_data_from_additional_config(enricher)
