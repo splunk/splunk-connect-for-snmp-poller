@@ -136,8 +136,8 @@ class Poller:
                         self._server_config["profiles"],
                     )
                     if entry_key not in self._jobs_map:
-                        self.check_if_new_host_was_added(entry_key, ir, new_enricher)
                         self.process_new_job(entry_key, ir, profiles)
+                        self.check_if_new_host_was_added(entry_key, ir, new_enricher)
                     else:
                         self.update_schedule_for_changed_conf(entry_key, ir, profiles)
 
