@@ -151,10 +151,7 @@ class Poller:
     def check_if_new_host_was_added(self, host_key, inventory_record, new_enricher):
         ir_host = return_database_id(host_key)
         if self._old_enricher != {}:
-            walk_already_ran = self._mongo.first_time_walk_was_initiated(
-                ir_host, onetime_if_walk
-            )
-            if walk_already_ran == 0:
+            if not self._mongo.first_time_walk_was_initiated(ir_host, onetime_if_walk):
                 logger.debug(f"New host added: {ir_host}")
                 self.__add_enricher_to_a_host(
                     new_enricher, copy.deepcopy(inventory_record), True
