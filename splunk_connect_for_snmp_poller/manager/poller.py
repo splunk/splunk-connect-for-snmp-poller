@@ -40,6 +40,7 @@ from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     DYNAMIC_PROFILE,
 )
+from splunk_connect_for_snmp_poller.manager.variables import onetime_if_walk
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 from splunk_connect_for_snmp_poller.utilities import (
     file_was_modified,
@@ -135,8 +136,8 @@ class Poller:
                         self._server_config["profiles"],
                     )
                     if entry_key not in self._jobs_map:
-                        self.check_if_new_host_was_added(entry_key, ir, new_enricher)
                         self.process_new_job(entry_key, ir, profiles)
+                        self.check_if_new_host_was_added(entry_key, ir, new_enricher)
                     else:
                         self.update_schedule_for_changed_conf(entry_key, ir, profiles)
 
@@ -150,10 +151,11 @@ class Poller:
     def check_if_new_host_was_added(self, host_key, inventory_record, new_enricher):
         ir_host = return_database_id(host_key)
         if self._old_enricher != {}:
-            logger.info(f"New host: {ir_host}")
-            self.__add_enricher_to_a_host(
-                new_enricher, copy.deepcopy(inventory_record), True
-            )
+            if not self._mongo.first_time_walk_was_initiated(ir_host, onetime_if_walk):
+                logger.debug(f"New host added: {ir_host}")
+                self.__add_enricher_to_a_host(
+                    new_enricher, copy.deepcopy(inventory_record), True
+                )
 
     def run_enricher_changed_check(self, new_enricher, inventory_hosts_with_snmp_data):
         logger.info(
@@ -296,7 +298,7 @@ class Poller:
             automatic_onetime_task,
             self._mongo,
             self.__get_splunk_indexes(),
-            self._server_config,
+            self._args.config,
         )
 
     def add_device_for_profile_matching(self, device: InventoryRecord):

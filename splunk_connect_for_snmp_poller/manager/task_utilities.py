@@ -46,6 +46,7 @@ from splunk_connect_for_snmp_poller.manager.static.interface_mib_utililities imp
     extract_network_interface_data_from_walk,
 )
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
+from splunk_connect_for_snmp_poller.manager.variables import onetime_if_walk
 from splunk_connect_for_snmp_poller.utilities import OnetimeFlag
 
 logger = get_task_logger(__name__)
@@ -485,7 +486,7 @@ async def walk_handler(
             additional_metric_fields,
             var_binds,
         ):
-            if one_time_flag:
+            if OnetimeFlag.is_a_walk(one_time_flag):
                 error_in_one_time_walk = True
             break
         else:
@@ -508,6 +509,7 @@ async def walk_handler(
             f"{host}:{port}",
             ir,
         )
+    logger.info(f"Walk finished for {host} profile={profile}")
 
 
 def extract_data_to_mongo(host, port, mongo_connection, var_binds):
@@ -530,6 +532,9 @@ def extract_data_to_mongo(host, port, mongo_connection, var_binds):
 def process_one_time_flag(
     one_time_flag, error_in_one_time_walk, mongo_connection, host, ir
 ):
+    logger.info(
+        f"process_one_time_flag {one_time_flag} {error_in_one_time_walk} {host}"
+    )
     if one_time_flag == OnetimeFlag.FIRST_WALK.value and error_in_one_time_walk:
         mongo_connection.add_onetime_walk_result(host, ir.version, ir.community)
     if one_time_flag == OnetimeFlag.AFTER_FAIL.value and not error_in_one_time_walk:
@@ -557,7 +562,6 @@ async def walk_handler_with_enricher(
     e.g. 1.3.6.1.2.1.1.9.*,
     which queries the infos correlated to all the oids that underneath the prefix before the *, e.g. 1.3.6.1.2.1.1.9
     """
-    error_in_one_time_walk = False
     merged_result = []
     merged_result_metric = []
     merged_result_non_metric = []
@@ -583,8 +587,6 @@ async def walk_handler_with_enricher(
             additional_metric_fields,
             var_binds,
         ):
-            if OnetimeFlag.is_a_walk(one_time_flag):
-                error_in_one_time_walk = True
             break
         else:
             result, is_metric = await get_translated_string(
@@ -607,16 +609,10 @@ async def walk_handler_with_enricher(
                 additional_metric_fields,
                 one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
             )
-    if OnetimeFlag.is_a_walk(one_time_flag):
-        process_one_time_flag(
-            one_time_flag,
-            error_in_one_time_walk,
-            mongo_connection,
-            f"{host}:{port}",
-            ir,
-        )
 
-    logger.info(f"Walk finished for {host} profile={ir.profile}")
+    logger.info(f"Walk finished for {host} profile={profile}")
+    if merged_result:
+        mongo_connection.update_walked_host(f"{host}:{port}", {onetime_if_walk: True})
     processed_result = extract_network_interface_data_from_walk(enricher, merged_result)
     additional_enricher_varbinds = (
         extract_network_interface_data_from_additional_config(enricher)
