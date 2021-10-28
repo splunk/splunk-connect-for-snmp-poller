@@ -26,6 +26,7 @@ from splunk_connect_for_snmp_poller.manager.data.event_builder import (
 )
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
+from splunk_connect_for_snmp_poller.manager.variables import enricher_name, enricher_oid_family
 
 logger = get_logger(__name__)
 
@@ -70,6 +71,7 @@ def post_data_to_splunk_hec(
     index,
     ir: InventoryRecord,
     additional_metric_fields,
+    server_config,
     one_time_flag=False,
     mib_enricher=None,
     is_error=False,
@@ -85,6 +87,7 @@ def post_data_to_splunk_hec(
             index["metric_index"],
             ir,
             additional_metric_fields,
+            server_config,
             mib_enricher,
         )
     else:
@@ -162,7 +165,8 @@ def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
     logger.debug(additional_dimensions)
     for field_name in additional_dimensions:
         if field_name in metric_result:
-            non_metric_result += f'{field_name}="{metric_result[field_name]}" '
+            if metric_result[field_name]:
+                non_metric_result += f'{field_name}="{metric_result[field_name]}" '
     return non_metric_result
 
 
@@ -172,6 +176,7 @@ def build_metric_data(
     index,
     ir: InventoryRecord,
     additional_metric_fields,
+    server_config,
     mib_enricher=None,
 ):
     json_val = json.loads(variables_binds)
@@ -189,9 +194,19 @@ def build_metric_data(
 
     builder = init_builder_with_common_data(time.time(), host, index)
     builder.add(EventField.EVENT, EventType.METRIC.value)
-    builder.add_fields(fields)
 
+    strip_trailing_index_number(fields, metric_name, metric_value, server_config)
+
+    builder.add_fields(fields)
     return builder.build()
+
+
+def strip_trailing_index_number(fields, metric_name, metric_value, server_config):
+    oid_families = server_config[enricher_name][enricher_oid_family].keys()
+    if any(metric_name.startswith("sc4snmp." + x) for x in oid_families):
+        stripped = metric_name[:metric_name.rindex('_')]
+        del fields["metric_name:" + metric_name]
+        fields["metric_name:" + stripped] = metric_value
 
 
 def build_error_data(
@@ -213,4 +228,5 @@ def _enrich_metric_data(
     )
     for field_name in additional_if_mib_dimensions:
         if field_name in variables_binds:
-            fields[field_name] = variables_binds[field_name]
+            if variables_binds[field_name]:
+                fields[field_name] = variables_binds[field_name]
