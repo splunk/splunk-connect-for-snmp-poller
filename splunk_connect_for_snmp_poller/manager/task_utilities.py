@@ -492,6 +492,7 @@ async def walk_handler(
             is_metric,
             ir,
             additional_metric_fields,
+            server_config,
             var_binds,
         ):
             if OnetimeFlag.is_a_walk(one_time_flag):
@@ -595,6 +596,7 @@ async def walk_handler_with_enricher(
             is_metric,
             ir,
             additional_metric_fields,
+            server_config,
             var_binds,
         ):
             break
