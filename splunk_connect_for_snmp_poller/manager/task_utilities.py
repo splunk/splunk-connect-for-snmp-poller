@@ -333,6 +333,7 @@ def _any_walk_failure_happened(
     is_metric,
     ir,
     additional_metric_fields,
+    server_config,
     var_binds,
 ):
     is_error, result = prepare_error_message(
