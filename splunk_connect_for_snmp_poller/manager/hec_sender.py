@@ -26,7 +26,10 @@ from splunk_connect_for_snmp_poller.manager.data.event_builder import (
 )
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
-from splunk_connect_for_snmp_poller.manager.variables import enricher_name, enricher_oid_family
+from splunk_connect_for_snmp_poller.manager.variables import (
+    enricher_name,
+    enricher_oid_family,
+)
 
 logger = get_logger(__name__)
 
@@ -204,7 +207,7 @@ def build_metric_data(
 def strip_trailing_index_number(fields, metric_name, metric_value, server_config):
     oid_families = server_config[enricher_name][enricher_oid_family].keys()
     if any(metric_name.startswith("sc4snmp." + x) for x in oid_families):
-        stripped = metric_name[:metric_name.rindex('_')]
+        stripped = metric_name[: metric_name.rindex("_")]
         del fields["metric_name:" + metric_name]
         fields["metric_name:" + stripped] = metric_value
 

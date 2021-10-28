@@ -260,6 +260,7 @@ class TestHecSender(TestCase):
             test_index,
             mocked_ir,
             None,
+            None,
             is_error=True,
         )
 
@@ -296,6 +297,7 @@ class TestHecSender(TestCase):
             False,
             test_index,
             mocked_ir,
+            None,
             None,
             is_error=True,
         )
