@@ -16,14 +16,12 @@
 import json
 import logging
 import os
+import time
 
 import aiohttp
 import backoff as backoff
 import requests as requests
 from aiohttp import ClientSession
-from requests.adapters import HTTPAdapter
-from urllib3.exceptions import MaxRetryError
-from urllib3.util.retry import Retry
 
 logger = logging.getLogger(__name__)
 
@@ -108,40 +106,21 @@ def format_value_for_mib_server(value, value_type):
         return str(value)
 
 
-def requests_retry_session(
-    retries=6,
-    backoff_factor=10,
-    session=None,
-):
-    session = session or requests.Session()
-    retry = Retry(
-        total=retries,
-        read=retries,
-        connect=retries,
-        backoff_factor=backoff_factor,
-    )
-    adapter = HTTPAdapter(max_retries=retry)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-    return session
-
-
 def retry_getting_mib_profile(profiles_url: str):
+    result, response = try_getting_mib_profile(profiles_url)
+    while not result:
+        time.sleep(10)
+        result, response = try_getting_mib_profile(profiles_url)
+    return response.text
+
+
+def try_getting_mib_profile(profiles_url: str):
+    logger.debug("Trying MIB connection")
     try:
-        return requests_retry_session().get(profiles_url, timeout=3).text
-    except ConnectionRefusedError:
-        logger.exception(f"Connection to MIB refused for {profiles_url}")
-        raise
-    except MaxRetryError:
-        logger.exception(
-            f"Failed to connect to MIB - {profiles_url} after exponential retries"
-        )
-        raise
+        response = requests.get(profiles_url, timeout=3)
+        return True, response
     except Exception:
-        logger.exception(
-            f"Encountered unexpected exception while connecting to MIB - {profiles_url}"
-        )
-        raise
+        return False, None
 
 
 def get_mib_profiles():
