@@ -67,7 +67,8 @@ def get_profiles(server_config):
     merged_profiles = {}
     if "profiles" in mib_profiles:
         merged_profiles.update(mib_profiles["profiles"])
-    merged_profiles.update(server_config["profiles"])
+    if "profiles" in server_config:
+        merged_profiles.update(server_config["profiles"])
 
     result["profiles"] = merged_profiles
     return result
