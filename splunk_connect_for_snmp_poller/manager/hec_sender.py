@@ -206,9 +206,7 @@ def build_metric_data(
 
 
 def strip_trailing_index_number(fields, metric_name, metric_value, server_config):
-    result = multi_key_lookup(
-        server_config, (enricher_name, enricher_oid_family)
-    )
+    result = multi_key_lookup(server_config, (enricher_name, enricher_oid_family))
     oid_families = result if result else []
 
     if any(metric_name.startswith("sc4snmp." + x) for x in oid_families):
