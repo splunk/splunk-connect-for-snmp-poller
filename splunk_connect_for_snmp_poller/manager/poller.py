@@ -131,10 +131,6 @@ class Poller:
                     self.add_device_for_profile_matching(ir)
                     self.check_if_new_host_was_added(entry_key, ir, new_enricher)
                 else:
-                    logger.debug(
-                        "[-] server_config['profiles']: %s",
-                        self._server_config["profiles"],
-                    )
                     if entry_key not in self._jobs_map:
                         self.process_new_job(entry_key, ir, profiles)
                         self.check_if_new_host_was_added(entry_key, ir, new_enricher)
