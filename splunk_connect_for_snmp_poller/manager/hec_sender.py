@@ -233,6 +233,9 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
                         # TODO delete blow debug statement
                         fields["old_metric_name:" + metric_name] = metric_value
                         continue
+                else:
+                    del fields["metric_name:" + metric_name]
+                    fields["metric_name:" + stripped] = metric_value
 
 
 def build_error_data(
