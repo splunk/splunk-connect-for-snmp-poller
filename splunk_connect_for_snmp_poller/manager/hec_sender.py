@@ -14,6 +14,7 @@
 #    limitations under the License.
 #   ########################################################################
 import json
+import re
 import time
 
 import requests
@@ -28,7 +29,7 @@ from splunk_connect_for_snmp_poller.manager.data.inventory_record import Invento
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 from splunk_connect_for_snmp_poller.manager.variables import (
     enricher_name,
-    enricher_oid_family,
+    enricher_oid_family, enricher_additional_varbinds,
 )
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
@@ -189,7 +190,6 @@ def build_metric_data(
     fields = {
         "metric_name:" + metric_name: metric_value,
         EventField.FREQUENCY.value: ir.frequency_str,
-        EventField.TIME.value: time.time(),
     }
     if mib_enricher:
         _enrich_metric_data(mib_enricher, json_val, fields)
@@ -200,20 +200,37 @@ def build_metric_data(
     builder = init_builder_with_common_data(time.time(), host, index)
     builder.add(EventField.EVENT, EventType.METRIC.value)
 
-    strip_trailing_index_number(fields, metric_name, metric_value, server_config)
+    extract_additional_properties(fields, metric_name, metric_value, server_config)
 
     builder.add_fields(fields)
     return builder.build()
 
 
-def strip_trailing_index_number(fields, metric_name, metric_value, server_config):
+def extract_additional_properties(fields, metric_name, metric_value, server_config):
     result = multi_key_lookup(server_config, (enricher_name, enricher_oid_family))
     oid_families = result if result else []
 
-    if any(metric_name.startswith("sc4snmp." + x) for x in oid_families):
-        stripped = metric_name[: metric_name.rindex("_")]
-        del fields["metric_name:" + metric_name]
-        fields["metric_name:" + stripped] = metric_value
+    for family in oid_families.keys():
+        if metric_name.startswith("sc4snmp." + family):
+            stripped = metric_name[:metric_name.index("_")]
+
+            input_text = metric_name[metric_name.index("_")+1:]
+
+            entries = oid_families[family][enricher_additional_varbinds]
+            for entry in entries:
+                if 'regex' in entry and 'names' in entry:
+                    regex = entry['regex']
+                    names = entry['names']
+                    names_list = names.split('/')
+
+                    result = re.match(regex, input_text)
+                    if result:
+                        for index, item in enumerate(names_list):
+                            fields[item] = result.group(index + 1)
+                        del fields["metric_name:" + metric_name]
+                        fields["metric_name:" + stripped] = metric_value
+                        fields["old_metric_name:" + metric_name] = metric_value
+                        continue
 
 
 def build_error_data(
