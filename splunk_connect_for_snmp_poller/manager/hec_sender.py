@@ -214,7 +214,6 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
     for family in oid_families.keys():
         if metric_name.startswith("sc4snmp." + family):
             stripped = metric_name[: metric_name.index("_")]
-
             input_text = metric_name[metric_name.index("_") + 1 :]  # noqa: E203
 
             entries = oid_families[family][enricher_additional_varbinds]
@@ -226,6 +225,7 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
 
                     result = re.match(regex, input_text)
                     if result:
+                        any_regex_matched = True
                         for index, item in enumerate(names_list):
                             fields[item] = result.group(index + 1)
                         del fields["metric_name:" + metric_name]
@@ -233,9 +233,11 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
                         # TODO delete blow debug statement
                         fields["old_metric_name:" + metric_name] = metric_value
                         continue
-                else:
-                    del fields["metric_name:" + metric_name]
-                    fields["metric_name:" + stripped] = metric_value
+
+            if not any_regex_matched:
+                fields["index_number"] = input_text
+                del fields["metric_name:" + metric_name]
+                fields["metric_name:" + stripped] = metric_value
 
 
 def build_error_data(
