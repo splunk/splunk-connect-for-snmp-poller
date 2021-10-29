@@ -27,8 +27,8 @@ class TestAdditionalDataExtraction(TestCase):
                     "TCP-MIB": {
                         "additionalVarBinds": [
                             {
-                                "regex": '([0-9]+_[0-9]+_[0-9]+_[0-9]+)_([0-9]+)_([0-9]+_[0-9]+_[0-9]+_[0-9]+)_([0-9]+)',
-                                "names": 'IP_one/port/IP_two/index_number'
+                                "regex": "([0-9]+_[0-9]+_[0-9]+_[0-9]+)_([0-9]+)_([0-9]+_[0-9]+_[0-9]+_[0-9]+)_([0-9]+)",
+                                "names": "IP_one/port/IP_two/index_number",
                             }
                         ]
                     },
@@ -70,8 +70,12 @@ class TestAdditionalDataExtraction(TestCase):
             fields2, "sc4snmp.IF-MIB.ifInErrors_2", "173127", server_config
         )
 
-        extract_additional_properties(fields3, 'sc4snmp.UDP-MIB.udpEndpointProcess_ipv4_"0_0_0_0"_111_ipv4_"0_0_0_0"_0_13348', '123',
-                                      server_config)
+        extract_additional_properties(
+            fields3,
+            'sc4snmp.UDP-MIB.udpEndpointProcess_ipv4_"0_0_0_0"_111_ipv4_"0_0_0_0"_0_13348',
+            "123",
+            server_config,
+        )
 
         self.assertEqual(fields['IP_one'], '192_168_0_1')
         self.assertEqual(fields['port'], '161')
