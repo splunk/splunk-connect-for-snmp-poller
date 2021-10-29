@@ -28,8 +28,9 @@ from splunk_connect_for_snmp_poller.manager.data.event_builder import (
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 from splunk_connect_for_snmp_poller.manager.variables import (
+    enricher_additional_varbinds,
     enricher_name,
-    enricher_oid_family, enricher_additional_varbinds,
+    enricher_oid_family,
 )
 from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
@@ -212,16 +213,16 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
 
     for family in oid_families.keys():
         if metric_name.startswith("sc4snmp." + family):
-            stripped = metric_name[:metric_name.index("_")]
+            stripped = metric_name[: metric_name.index("_")]
 
-            input_text = metric_name[metric_name.index("_")+1:]
+            input_text = metric_name[metric_name.index("_") + 1 :]
 
             entries = oid_families[family][enricher_additional_varbinds]
             for entry in entries:
-                if 'regex' in entry and 'names' in entry:
-                    regex = entry['regex']
-                    names = entry['names']
-                    names_list = names.split('/')
+                if "regex" in entry and "names" in entry:
+                    regex = entry["regex"]
+                    names = entry["names"]
+                    names_list = names.split("/")
 
                     result = re.match(regex, input_text)
                     if result:
@@ -229,6 +230,7 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
                             fields[item] = result.group(index + 1)
                         del fields["metric_name:" + metric_name]
                         fields["metric_name:" + stripped] = metric_value
+                        # TODO delete blow debug statement
                         fields["old_metric_name:" + metric_name] = metric_value
                         continue
 
