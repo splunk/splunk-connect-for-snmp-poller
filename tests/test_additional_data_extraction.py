@@ -27,7 +27,7 @@ class TestAdditionalDataExtraction(TestCase):
                     "TCP-MIB": {
                         "additionalVarBinds": [
                             {
-                                "regex": "([0-9]+_[0-9]+_[0-9]+_[0-9]+)_([0-9]+)_([0-9]+_[0-9]+_[0-9]+_[0-9]+)_([0-9]+)", # noqa: E501
+                                "regex": "([0-9]+_[0-9]+_[0-9]+_[0-9]+)_([0-9]+)_([0-9]+_[0-9]+_[0-9]+_[0-9]+)_([0-9]+)",  # noqa: E501
                                 "names": "IP_one/port/IP_two/index_number",
                             }
                         ]
@@ -42,8 +42,8 @@ class TestAdditionalDataExtraction(TestCase):
                     "UDP-MIB": {
                         "additionalVarBinds": [
                             {
-                                "regex": '(ipv4)_"([0-9]+_[0-9]+_[0-9]+_[0-9]+)"_([0-9]+)_(ipv4)_"([0-9]+_[0-9]+_[0-9]+_[0-9]+)"_([0-9]+)_([0-9]+)', # noqa: E501
-                                "names": "protocol_version_one/IP_one/port_one/protocol_version_two/IP_two/index_number/port_two", # noqa: E501
+                                "regex": '(ipv4)_"([0-9]+_[0-9]+_[0-9]+_[0-9]+)"_([0-9]+)_(ipv4)_"([0-9]+_[0-9]+_[0-9]+_[0-9]+)"_([0-9]+)_([0-9]+)',  # noqa: E501
+                                "names": "protocol_version_one/IP_one/port_one/protocol_version_two/IP_two/index_number/port_two",  # noqa: E501
                             }
                         ]
                     },
