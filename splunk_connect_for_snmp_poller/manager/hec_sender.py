@@ -211,9 +211,11 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
     result = multi_key_lookup(server_config, (enricher_name, enricher_oid_family))
     oid_families = result if result else []
     any_regex_matched = False
+
     for family in oid_families.keys():
         if metric_name.startswith("sc4snmp." + family):
             stripped = metric_name[: metric_name.index("_")]
+
             input_text = metric_name[metric_name.index("_") + 1 :]  # noqa: E203
 
             entries = oid_families[family][enricher_additional_varbinds]
