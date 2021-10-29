@@ -89,4 +89,3 @@ class TestAdditionalDataExtraction(TestCase):
         self.assertEqual(fields3["IP_two"], "0_0_0_0")
         self.assertEqual(fields3["index_number"], "0")
         self.assertEqual(fields3["port_two"], "13348")
-

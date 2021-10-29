@@ -215,7 +215,7 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
         if metric_name.startswith("sc4snmp." + family):
             stripped = metric_name[: metric_name.index("_")]
 
-            input_text = metric_name[metric_name.index("_") + 1:]
+            input_text = metric_name[metric_name.index("_") + 1 :]
 
             entries = oid_families[family][enricher_additional_varbinds]
             for entry in entries:
