@@ -35,7 +35,7 @@ coverage = "^6.0"
 [tool.poetry.dev-dependencies]
 #pytest-splunk-addon = "^1.4.0"
 pytest = "*"
-black = "21.9b0"
+black = "21.10b0"
 pytest-cov = "^3.0.0"
 
 [tool.poetry.scripts]
