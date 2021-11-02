@@ -232,8 +232,8 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
                             fields[key] = value.replace("_", ".")
                         del fields["metric_name:" + metric_name]
                         fields["metric_name:" + stripped] = metric_value
-                        continue
-            continue
+                        break
+            break
 
     if not any_regex_matched:
         stripped = metric_name[: metric_name.rindex("_")]
