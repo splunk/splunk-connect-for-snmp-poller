@@ -215,7 +215,6 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
     for family in oid_families.keys():
         if metric_name.startswith("sc4snmp." + family):
             stripped = metric_name[: metric_name.index("_")]
-
             input_text = metric_name[metric_name.index("_") + 1 :]  # noqa: E203
 
             entries = multi_key_lookup(
@@ -234,9 +233,13 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
                         continue
 
                 if not any_regex_matched:
+                    stripped = metric_name[: metric_name.rindex("_")]
+                    input_text = metric_name[metric_name.rindex("_") + 1:]
+
                     fields["index_number"] = input_text
                     del fields["metric_name:" + metric_name]
                     fields["metric_name:" + stripped] = metric_value
+            continue
 
 
 def build_error_data(
