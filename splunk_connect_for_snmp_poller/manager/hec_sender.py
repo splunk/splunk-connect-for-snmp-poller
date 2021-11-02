@@ -222,17 +222,16 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
                 oid_families, (family, enricher_additional_varbinds)
             )
             if entries:
-                for entry in entries:
-                    if "regex" in entry:
-                        regex = entry["regex"]
-                        result = re.match(regex, input_text)
-                        if result:
-                            any_regex_matched = True
-                            for key, value in result.groupdict().items():
-                                fields[key] = value.replace("_", ".")
-                            del fields["metric_name:" + metric_name]
-                            fields["metric_name:" + stripped] = metric_value
-                            continue
+                regex_entries = [entry['regex'] for entry in entries if 'regex' in entry]
+                for regex in regex_entries:
+                    result = re.match(regex, input_text)
+                    if result:
+                        any_regex_matched = True
+                        for key, value in result.groupdict().items():
+                            fields[key] = value.replace("_", ".")
+                        del fields["metric_name:" + metric_name]
+                        fields["metric_name:" + stripped] = metric_value
+                        continue
 
                 if not any_regex_matched:
                     fields["index_number"] = input_text
