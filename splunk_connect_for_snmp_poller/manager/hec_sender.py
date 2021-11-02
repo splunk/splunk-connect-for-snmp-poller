@@ -218,28 +218,24 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
 
             input_text = metric_name[metric_name.index("_") + 1 :]  # noqa: E203
 
-            entries = oid_families[family][enricher_additional_varbinds]
-            for entry in entries:
-                if "regex" in entry and "names" in entry:
-                    regex = entry["regex"]
-                    names = entry["names"]
-                    names_list = names.split("/")
+            entries = multi_key_lookup(oid_families, (family, enricher_additional_varbinds))
+            if entries:
+                for entry in entries:
+                    if "regex" in entry:
+                        regex = entry["regex"]
+                        result = re.match(regex, input_text)
+                        if result:
+                            any_regex_matched = True
+                            for key, value in result.groupdict().items():
+                                fields[key] = value.replace("_", ".")
+                            del fields["metric_name:" + metric_name]
+                            fields["metric_name:" + stripped] = metric_value
+                            continue
 
-                    result = re.match(regex, input_text)
-                    if result:
-                        any_regex_matched = True
-                        for index, item in enumerate(names_list):
-                            fields[item] = result.group(index + 1)
-                        del fields["metric_name:" + metric_name]
-                        fields["metric_name:" + stripped] = metric_value
-                        # TODO delete blow debug statement
-                        fields["old_metric_name:" + metric_name] = metric_value
-                        continue
-
-            if not any_regex_matched:
-                fields["index_number"] = input_text
-                del fields["metric_name:" + metric_name]
-                fields["metric_name:" + stripped] = metric_value
+                if not any_regex_matched:
+                    fields["index_number"] = input_text
+                    del fields["metric_name:" + metric_name]
+                    fields["metric_name:" + stripped] = metric_value
 
 
 def build_error_data(

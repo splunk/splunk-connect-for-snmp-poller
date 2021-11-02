@@ -28,8 +28,7 @@ class TestAdditionalDataExtraction(TestCase):
                     "TCP-MIB": {
                         "additionalVarBinds": [
                             {
-                                "regex": "([0-9]+_[0-9]+_[0-9]+_[0-9]+)_([0-9]+)_([0-9]+_[0-9]+_[0-9]+_[0-9]+)_([0-9]+)",  # noqa: E501
-                                "names": "IP_one/port/IP_two/index_number",
+                                "regex": "(?P<IP_one>[0-9]+_[0-9]+_[0-9]+_[0-9]+)_(?P<port>[0-9]+)_(?P<IP_two>[0-9]+_[0-9]+_[0-9]+_[0-9]+)_(?P<index_number>[0-9]+)",  # noqa: E501
                             }
                         ]
                     },
@@ -38,13 +37,11 @@ class TestAdditionalDataExtraction(TestCase):
                             {"ifDescr": "interface_desc"},
                             {"ifPhysAddress": "MAC_address"},
                         ],
-                        "additionalVarBinds": [{"indexNum": "index_number"}],
                     },
                     "UDP-MIB": {
                         "additionalVarBinds": [
                             {
-                                "regex": '(ipv4)_"([0-9]+_[0-9]+_[0-9]+_[0-9]+)"_([0-9]+)_(ipv4)_"([0-9]+_[0-9]+_[0-9]+_[0-9]+)"_([0-9]+)_([0-9]+)',  # noqa: E501
-                                "names": "protocol_version_one/IP_one/port_one/protocol_version_two/IP_two/index_number/port_two",  # noqa: E501
+                                "regex": '(?P<protocol_version_one>ipv4)_"(?P<IP_one>[0-9]+_[0-9]+_[0-9]+_[0-9]+)"_(?P<port_one>[0-9]+)_(?P<protocol_version_two>ipv4)_"(?P<IP_two>[0-9]+_[0-9]+_[0-9]+_[0-9]+)"_(?P<index_number>[0-9]+)_(?P<port_two>[0-9]+)',  # noqa: E501
                             }
                         ]
                     },
@@ -78,15 +75,15 @@ class TestAdditionalDataExtraction(TestCase):
             server_config,
         )
 
-        self.assertEqual(fields["IP_one"], "192_168_0_1")
+        self.assertEqual(fields["IP_one"], "192.168.0.1")
         self.assertEqual(fields["port"], "161")
-        self.assertEqual(fields["IP_two"], "127_0_0_1")
+        self.assertEqual(fields["IP_two"], "127.0.0.1")
         self.assertEqual(fields["index_number"], "5")
 
         self.assertEqual(fields3["protocol_version_one"], "ipv4")
-        self.assertEqual(fields3["IP_one"], "0_0_0_0")
+        self.assertEqual(fields3["IP_one"], "0.0.0.0")
         self.assertEqual(fields3["port_one"], "111")
         self.assertEqual(fields3["protocol_version_two"], "ipv4")
-        self.assertEqual(fields3["IP_two"], "0_0_0_0")
+        self.assertEqual(fields3["IP_two"], "0.0.0.0")
         self.assertEqual(fields3["index_number"], "0")
         self.assertEqual(fields3["port_two"], "13348")
