@@ -218,7 +218,9 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
 
             input_text = metric_name[metric_name.index("_") + 1 :]  # noqa: E203
 
-            entries = multi_key_lookup(oid_families, (family, enricher_additional_varbinds))
+            entries = multi_key_lookup(
+                oid_families, (family, enricher_additional_varbinds)
+            )
             if entries:
                 for entry in entries:
                     if "regex" in entry:
