@@ -52,7 +52,7 @@ class TestAdditionalDataExtraction(TestCase):
         fields = {
             "metric_name:sc4snmp.TCP-MIB.tcpConnLocalPort_192_168_0_1_161_127_0_0_1_5": "1111"
         }
-        fields2 = {"metric_name:sc4snmp.IF-MIB.ifInErrors_2": "173127"}
+        fields2 = {"metric_name:sc4snmp.IF-MIB.ifInErrors_2_1_asdad_23": "173127"}
         fields3 = {
             'metric_name:sc4snmp.UDP-MIB.udpEndpointProcess_ipv4_"0_0_0_0"_111_ipv4_"0_0_0_0"_0_13348': "123"
         }
@@ -65,7 +65,7 @@ class TestAdditionalDataExtraction(TestCase):
         )
 
         extract_additional_properties(
-            fields2, "sc4snmp.IF-MIB.ifInErrors_2", "173127", server_config
+            fields2, "sc4snmp.IF-MIB.ifInErrors_2_1_asdad_23", "173127", server_config
         )
 
         extract_additional_properties(
@@ -79,6 +79,8 @@ class TestAdditionalDataExtraction(TestCase):
         self.assertEqual(fields["port"], "161")
         self.assertEqual(fields["IP_two"], "127.0.0.1")
         self.assertEqual(fields["index_number"], "5")
+
+        self.assertEqual(fields2["index_number"], "23")
 
         self.assertEqual(fields3["protocol_version_one"], "ipv4")
         self.assertEqual(fields3["IP_one"], "0.0.0.0")

@@ -231,15 +231,15 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
                         del fields["metric_name:" + metric_name]
                         fields["metric_name:" + stripped] = metric_value
                         continue
-
-                if not any_regex_matched:
-                    stripped = metric_name[: metric_name.rindex("_")]
-                    input_text = metric_name[metric_name.rindex("_") + 1:]
-
-                    fields["index_number"] = input_text
-                    del fields["metric_name:" + metric_name]
-                    fields["metric_name:" + stripped] = metric_value
             continue
+
+    if not any_regex_matched:
+        stripped = metric_name[: metric_name.rindex("_")]
+        input_text = metric_name[metric_name.rindex("_") + 1:]
+
+        fields["index_number"] = input_text
+        del fields["metric_name:" + metric_name]
+        fields["metric_name:" + stripped] = metric_value
 
 
 def build_error_data(
