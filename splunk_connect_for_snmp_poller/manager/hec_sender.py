@@ -210,6 +210,7 @@ def build_metric_data(
 def extract_additional_properties(fields, metric_name, metric_value, server_config):
     result = multi_key_lookup(server_config, (enricher_name, enricher_oid_family))
     oid_families = result if result else []
+    any_regex_matched = False
 
     for family in oid_families.keys():
         if metric_name.startswith("sc4snmp." + family):
@@ -226,6 +227,7 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
 
                     result = re.match(regex, input_text)
                     if result:
+                        any_regex_matched = True
                         for index, item in enumerate(names_list):
                             fields[item] = result.group(index + 1)
                         del fields["metric_name:" + metric_name]
@@ -233,6 +235,11 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
                         # TODO delete blow debug statement
                         fields["old_metric_name:" + metric_name] = metric_value
                         continue
+
+            if not any_regex_matched:
+                fields["index_number"] = input_text
+                del fields["metric_name:" + metric_name]
+                fields["metric_name:" + stripped] = metric_value
 
 
 def build_error_data(
