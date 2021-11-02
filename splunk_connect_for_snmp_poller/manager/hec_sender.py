@@ -221,7 +221,9 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
                 oid_families, (family, enricher_additional_varbinds)
             )
             if entries:
-                regex_entries = [entry['regex'] for entry in entries if 'regex' in entry]
+                regex_entries = [
+                    entry["regex"] for entry in entries if "regex" in entry
+                ]
                 for regex in regex_entries:
                     result = re.match(regex, input_text)
                     if result:
@@ -235,7 +237,7 @@ def extract_additional_properties(fields, metric_name, metric_value, server_conf
 
     if not any_regex_matched:
         stripped = metric_name[: metric_name.rindex("_")]
-        input_text = metric_name[metric_name.rindex("_") + 1:]
+        input_text = metric_name[metric_name.rindex("_") + 1 :]  # noqa: E203
 
         fields["index_number"] = input_text
         del fields["metric_name:" + metric_name]
