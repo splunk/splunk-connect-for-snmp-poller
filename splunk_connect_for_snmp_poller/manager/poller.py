@@ -57,6 +57,7 @@ class Poller:
         self._inventory_mod_time = 0
         self._config_mod_time = 0
         self._jobs_map = {}
+        self._dynamic_jobs = set()
         self._mongo = WalkedHostsRepository(self._server_config["mongo"])
         self._local_snmp_engine = SnmpEngine()
         self._unmatched_devices = {}
@@ -127,7 +128,7 @@ class Poller:
                 inventory_hosts.add(ir_host)
                 inventory_hosts_with_snmp_data[ir_host] = copy.deepcopy(ir)
                 if ir.profile == DYNAMIC_PROFILE:
-                    self.delete_all_entries_per_host(ir.host)
+                    self.delete_all_dynamic_entries_per_host(ir.host)
                     self.add_device_for_profile_matching(ir)
                     self.check_if_new_host_was_added(entry_key, ir, new_enricher)
                 else:
@@ -181,12 +182,13 @@ class Poller:
                 self.__get_splunk_indexes(),
             )
 
-    def delete_all_entries_per_host(self, host):
+    def delete_all_dynamic_entries_per_host(self, host):
         for entry_key in list(self._jobs_map.keys()):
-            if entry_key.split("#")[0] == host:
+            if entry_key.split("#")[0] == host and entry_key in self._dynamic_jobs:
                 logger.debug("Removing job for %s", entry_key)
                 schedule.cancel_job(self._jobs_map.get(entry_key))
                 del self._jobs_map[entry_key]
+                self._dynamic_jobs.remove(entry_key)
 
     def clean_job_inventory(self, inventory_entry_keys: set, inventory_hosts: set):
         for entry_key in list(self._jobs_map):
@@ -340,6 +342,7 @@ class Poller:
                                     frequency,
                                 )
                                 self.process_new_job(entry_key, new_record, profiles)
+                                self._dynamic_jobs.add(entry_key)
                 for d in processed_devices:
                     self._unmatched_devices.pop(d)
             except Exception as e:
