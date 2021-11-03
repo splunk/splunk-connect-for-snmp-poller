@@ -22,8 +22,7 @@
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
       <env name="CELERY_BROKER_URL" value="localhost" />
-      <env name="MONGO_SERVICE_SERVICE_HOST" value="localhost" />
-      <env name="MONGO_SERVICE_SERVICE_PORT" value="27017" />
+      <env name="MONGO_URI" value="mongodb://localhost:27017" />
       <env name="MIBS_SERVER_URL" value="http://localhost:5000" />
     </envs>
     <option name="SDK_HOME" value="" />
