@@ -94,7 +94,8 @@ def post_data_to_splunk_hec(
             ir,
             additional_metric_fields,
             server_config,
-            mib_enricher,
+            one_time_flag=one_time_flag,
+            mib_enricher=mib_enricher,
         )
     else:
         logger.debug("event index - %s", index["event_index"])
@@ -131,6 +132,7 @@ def init_builder_with_common_data(current_time, host, index) -> EventBuilder:
     builder.add(EventField.TIME, current_time)
     builder.add(EventField.HOST, host)
     builder.add(EventField.INDEX, index)
+    builder.add(EventField.SOURCE, "sc4snmp")
     return builder
 
 
@@ -183,13 +185,14 @@ def build_metric_data(
     ir: InventoryRecord,
     additional_metric_fields,
     server_config,
+    one_time_flag=False,
     mib_enricher=None,
 ):
     json_val = json.loads(variables_binds)
     metric_name = json_val["metric_name"]
     metric_value = json_val["_value"]
     fields = {
-        "metric_name:" + metric_name: metric_value,
+        f"metric_name:{metric_name}": metric_value,
         EventField.FREQUENCY.value: ir.frequency_str,
     }
     if mib_enricher:
@@ -200,6 +203,10 @@ def build_metric_data(
 
     builder = init_builder_with_common_data(time.time(), host, index)
     builder.add(EventField.EVENT, EventType.METRIC.value)
+    if one_time_flag:
+        builder.add(EventField.SOURCETYPE, "sc4snmp:metric:walk")
+    else:
+        builder.add(EventField.SOURCETYPE, "sc4snmp:metric")
 
     extract_additional_properties(fields, metric_name, metric_value, server_config)
 
