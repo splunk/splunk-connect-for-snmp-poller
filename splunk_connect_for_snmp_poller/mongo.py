@@ -83,8 +83,7 @@ class WalkedHostsRepository:
 
     def __init__(self, mongo_config):
         self._client = MongoClient(
-            os.environ["MONGO_SERVICE_SERVICE_HOST"],
-            int(os.environ["MONGO_SERVICE_SERVICE_PORT"]),
+            os.environ["MONGO_URI"],
         )
         if os.environ.get("MONGO_USER"):
             self._client.admin.authenticate(

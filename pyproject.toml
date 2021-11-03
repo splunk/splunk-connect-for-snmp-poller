@@ -29,14 +29,14 @@ lxml = "^4.6"
 requests = "^2.25.1"
 schedule = "^1.0.0"
 celery = "^5.1.2"
-pymongo = "^3.11.3"
-coverage = "^5.5"
+pymongo = {version = "^3.11.3", extras = ["srv"]} 
 jsoncomment = "^0.4.2"
 aiohttp = "^3.7.4"
 asgiref = "^3.4.1"
 backoff = "^1.11.1"
 
 [tool.poetry.dev-dependencies]
+coverage = "^5.5"
 pytest = "^6.2.5"
 responses = "^0.14.0"
 pytest-cov = "^2.12.1"
