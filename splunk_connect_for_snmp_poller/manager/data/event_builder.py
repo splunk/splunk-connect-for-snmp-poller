@@ -47,6 +47,7 @@ class EventBuilder:
 class EventField(Enum):
     TIME = "time"
     SOURCETYPE = "sourcetype"
+    SOURCE = "source"
     HOST = "host"
     INDEX = "index"
     EVENT = "event"
