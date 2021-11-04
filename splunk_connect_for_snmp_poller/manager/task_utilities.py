@@ -491,7 +491,7 @@ async def walk_handler(
                 error_in_one_time_walk = True
             break
         else:
-            result = await get_translated_string(mib_server_url, var_binds)
+            result, is_metric = await get_translated_string(mib_server_url, var_binds)
             post_data_to_splunk_hec(
                 hec_sender,
                 host,
