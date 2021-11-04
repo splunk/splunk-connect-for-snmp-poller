@@ -456,7 +456,6 @@ async def walk_handler(
     one_time_flag,
     ir,
     additional_metric_fields,
-    server_config,
 ):
     """
     Perform the SNMP Walk for oid end with *,
