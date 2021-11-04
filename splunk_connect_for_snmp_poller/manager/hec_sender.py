@@ -16,7 +16,6 @@
 import json
 import time
 
-import requests
 from celery.utils.log import get_logger
 
 from splunk_connect_for_snmp_poller.manager.data.event_builder import (
@@ -27,43 +26,12 @@ from splunk_connect_for_snmp_poller.manager.data.event_builder import (
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
+from .celery_client import app
+
 logger = get_logger(__name__)
 
 
-class HecSender:
-    def __init__(self, metrics_endpoint, logs_endpoint):
-        logger.debug(f"[-] logs : {logs_endpoint}, metrics : {metrics_endpoint}")
-        self.metrics_endpoint = metrics_endpoint
-        self.logs_endpoint = logs_endpoint
-
-    def send_hec_request(self, is_metric: bool, data):
-        if is_metric:
-            return self.send_metric_request(data)
-        else:
-            return self.send_event_request(data)
-
-    def send_event_request(self, data):
-        return HecSender.send_request(self.logs_endpoint, data)
-
-    def send_metric_request(self, data):
-        return HecSender.send_request(self.metrics_endpoint, data)
-
-    @staticmethod
-    def send_request(endpoint, data):
-        try:
-            logger.debug("+++++++++endpoint+++++++++\n%s", endpoint)
-            response = requests.post(url=endpoint, json=data, timeout=60)
-            logger.debug("Response code is %s", response.status_code)
-            logger.debug("Response is %s", response.text)
-            return response
-        except requests.ConnectionError as e:
-            logger.error(
-                f"Connection error when sending data to HEC index - {data['index']}: {e}"
-            )
-
-
 def post_data_to_splunk_hec(
-    hec_sender: HecSender,
     host,
     variables_binds,
     is_metric,
@@ -97,7 +65,14 @@ def post_data_to_splunk_hec(
             one_time_flag=one_time_flag,
             mib_enricher=mib_enricher,
         )
-    hec_sender.send_hec_request(is_metric, data)
+    if is_metric:
+        app.send_task(
+            "splunk_connect_for_snmp_poller.manager.tasks.send_hec_metric", data
+        )
+    else:
+        app.send_task(
+            "splunk_connect_for_snmp_poller.manager.tasks.send_hec_event", data
+        )
 
 
 # TODO Discuss the format of event data payload

@@ -33,6 +33,7 @@ pymongo = {version = "^3.11.3", extras = ["srv"]}
 jsoncomment = "^0.4.2"
 aiohttp = "^3.7.4"
 backoff = "^1.11.1"
+urllib3 = "^1.26.7"
 
 [tool.poetry.dev-dependencies]
 coverage = "^5.5"

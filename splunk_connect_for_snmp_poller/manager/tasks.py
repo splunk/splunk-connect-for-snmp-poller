@@ -15,13 +15,13 @@
 #
 import os
 
+import requests
 from celery import Task
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
 
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
-from splunk_connect_for_snmp_poller.manager.hec_sender import HecSender
 from splunk_connect_for_snmp_poller.manager.realtime.oid_constant import OidConstant
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     OnetimeFlag,
@@ -125,9 +125,6 @@ def snmp_polling(
     ir = InventoryRecord.from_json(ir_json)
     logger.info(f"Got one_time_flag - {one_time_flag} with Ir - {ir.__repr__()}")
 
-    hec_sender = HecSender(
-        os.environ["OTEL_SERVER_METRICS_URL"], os.environ["OTEL_SERVER_LOGS_URL"]
-    )
     mib_server_url = os.environ["MIBS_SERVER_URL"]
     host, port = parse_port(ir.host)
     logger.debug("Using the following MIBS server URL: %s", mib_server_url)
@@ -145,7 +142,6 @@ def snmp_polling(
     enricher_presence = "enricher" in server_config
     static_parameters = [
         self.snmp_engine,
-        hec_sender,
         auth_data,
         context_data,
         host,
@@ -231,3 +227,23 @@ def snmp_polling(
         )
 
     return f"Executing SNMP Polling for {ir.host} version={ir.version} profile={ir.profile}"
+
+
+class HECTask(Task):
+    def __init__(self):
+        self.session = requests.Session()
+        self.metrics_endpoint = (os.environ["OTEL_SERVER_METRICS_URL"],)
+        self.events_endpoint = os.environ["OTEL_SERVER_LOGS_URL"]
+
+    def __del__(self):
+        self.session.close()
+
+
+@app.task(base=HECTask, bind=True, max_retries=20, retry_backoff=True)
+def send_hec_metric(self, data):
+    return self.session.post(url=self.metrics_endpoint, json=data, timeout=60)
+
+
+@app.task(base=HECTask, bind=True, max_retries=20, retry_backoff=True)
+def send_hec_event(self, data):
+    return self.session.post(url=self.events_endpoint, json=data, timeout=60)
