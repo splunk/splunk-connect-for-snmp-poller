@@ -14,9 +14,9 @@
 # limitations under the License.
 #
 import os
-import threading
 
 from asgiref.sync import async_to_sync
+from celery import Task
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
 
@@ -39,16 +39,7 @@ from splunk_connect_for_snmp_poller.manager.task_utilities import (
 )
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 
-thread_local = threading.local()
 logger = get_task_logger(__name__)
-
-
-def get_shared_snmp_engine():
-    if not hasattr(thread_local, "local_snmp_engine"):
-        thread_local.local_snmp_engine = SnmpEngine()
-        logger.info("Created a single shared instance of an SnmpEngine() object")
-
-    return thread_local.local_snmp_engine
 
 
 async def get_snmp_data(
@@ -117,9 +108,14 @@ def sort_varbinds(varbind_list: list) -> VarbindCollection:
     casted_multikey_elements += VarbindCollection(get=get_list, bulk=bulk_list)
     return casted_multikey_elements
 
+class SNMPTask(Task):
+    
+    def __init__(self):
+        self.snmp_engine = SnmpEngine()
 
-@app.task(ignore_result=True)
-def snmp_polling(
+
+@app.task(bind=True,ignore_result=True)
+def snmp_polling(self,
     ir_json: str,
     server_config,
     index,
@@ -144,9 +140,6 @@ async def snmp_polling_async(
     host, port = parse_port(ir.host)
     logger.debug("Using the following MIBS server URL: %s", mib_server_url)
 
-    # create one SnmpEngie for snmp_get_handler, walk_handler, mib_string_handler
-    snmp_engine = get_shared_snmp_engine()
-
     # create auth_data depending on SNMP's version
     auth_data = build_authData(ir.version, ir.community, server_config)
     logger.debug("auth_data\n%s", auth_data)
@@ -159,7 +152,7 @@ async def snmp_polling_async(
     additional_metric_fields = server_config.get("additionalMetricField")
     enricher_presence = "enricher" in server_config
     static_parameters = [
-        snmp_engine,
+        self.snmp_engine,
         hec_sender,
         auth_data,
         context_data,
