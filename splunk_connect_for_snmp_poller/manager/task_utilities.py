@@ -229,7 +229,6 @@ async def snmp_get_handler(
     ir,
     additional_metric_fields,
     var_binds,
-    server_config,
 ):
     """
     Perform the SNMP Get for an oid,
@@ -261,7 +260,6 @@ async def snmp_get_handler(
                 index,
                 ir,
                 additional_metric_fields,
-                server_config,
                 one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
                 mib_enricher=mib_enricher,
             )
@@ -278,7 +276,6 @@ async def snmp_get_handler(
                 index,
                 ir,
                 additional_metric_fields,
-                server_config,
                 one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
                 is_error=is_error,
             )
@@ -333,7 +330,6 @@ def _any_walk_failure_happened(
     is_metric,
     ir,
     additional_metric_fields,
-    server_config,
     var_binds,
 ):
     is_error, result = prepare_error_message(
@@ -349,7 +345,6 @@ def _any_walk_failure_happened(
             index,
             ir,
             additional_metric_fields,
-            server_config,
             one_time_flag=one_time_flag,
             is_error=is_error,
         )
@@ -390,7 +385,6 @@ async def snmp_bulk_handler(
     ir,
     additional_metric_fields,
     var_binds,
-    server_config,
 ):
     """
     Perform the SNMP Bulk for an array of oids
@@ -426,7 +420,6 @@ async def snmp_bulk_handler(
                     index,
                     ir,
                     additional_metric_fields,
-                    server_config,
                     one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
                     mib_enricher=mib_enricher,
                 )
@@ -443,7 +436,6 @@ async def snmp_bulk_handler(
                     index,
                     ir,
                     additional_metric_fields,
-                    server_config,
                     one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
                     is_error=is_error,
                 )
@@ -464,7 +456,6 @@ async def walk_handler(
     one_time_flag,
     ir,
     additional_metric_fields,
-    server_config,
 ):
     """
     Perform the SNMP Walk for oid end with *,
@@ -493,7 +484,6 @@ async def walk_handler(
             is_metric,
             ir,
             additional_metric_fields,
-            server_config,
             var_binds,
         ):
             if OnetimeFlag.is_a_walk(one_time_flag):
@@ -509,7 +499,6 @@ async def walk_handler(
                 index,
                 ir,
                 additional_metric_fields,
-                server_config,
                 one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
             )
     if OnetimeFlag.is_a_walk(one_time_flag):
@@ -567,7 +556,6 @@ async def walk_handler_with_enricher(
     one_time_flag,
     ir,
     additional_metric_fields,
-    server_config,
 ):
     """
     Perform the SNMP Walk for oid end with *,
@@ -597,7 +585,6 @@ async def walk_handler_with_enricher(
             is_metric,
             ir,
             additional_metric_fields,
-            server_config,
             var_binds,
         ):
             break
@@ -620,7 +607,6 @@ async def walk_handler_with_enricher(
                 index,
                 ir,
                 additional_metric_fields,
-                server_config,
                 one_time_flag=OnetimeFlag.is_a_walk(one_time_flag),
             )
 
