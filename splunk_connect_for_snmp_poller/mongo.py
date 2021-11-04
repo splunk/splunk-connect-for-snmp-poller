@@ -208,7 +208,12 @@ class WalkedHostsRepository:
         if existing_data:
             static_data_dictionary_mib[InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER][
                 enricher_existing_varbinds
-            ] = existing_data
+            ] = defaultdict(dict)
+        for el in existing_data:
+            key = list(el.keys())[0]
+            static_data_dictionary_mib[InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER][
+                enricher_existing_varbinds
+            ][key] = el[key]
         for el in additional_data.keys():
             static_data_dictionary_mib[el][
                 enricher_additional_varbinds

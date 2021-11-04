@@ -379,6 +379,10 @@ def create_poller_scheduler_entry_key(host, profile):
     return host + "#" + profile
 
 
+def create_poller_enricher_entry_key(host, ifmib_attribute):
+    return host + "#" + ifmib_attribute
+
+
 def return_database_id(host):
     if "#" in host:
         host = host.split("#")[0]
