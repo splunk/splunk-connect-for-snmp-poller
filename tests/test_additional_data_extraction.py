@@ -32,7 +32,6 @@ class TestAdditionalDataExtraction(TestCase):
             "test2": "value2",
         }
 
-
         extract_additional_properties(
             fields,
             "sc4snmp.TCP-MIB.tcpConnLocalPort_192_168_0_1_161_127_0_0_1_5",
@@ -42,4 +41,3 @@ class TestAdditionalDataExtraction(TestCase):
 
         self.assertEqual(fields["test1"], "value1")
         self.assertEqual(fields["test2"], "value2")
-

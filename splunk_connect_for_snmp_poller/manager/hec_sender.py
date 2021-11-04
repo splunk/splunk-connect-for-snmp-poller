@@ -14,7 +14,6 @@
 #    limitations under the License.
 #   ########################################################################
 import json
-import re
 import time
 
 import requests
@@ -27,12 +26,7 @@ from splunk_connect_for_snmp_poller.manager.data.event_builder import (
 )
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
-from splunk_connect_for_snmp_poller.manager.variables import (
-    enricher_additional_varbinds,
-    enricher_name,
-    enricher_oid_family,
-)
-from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
+
 
 logger = get_logger(__name__)
 
