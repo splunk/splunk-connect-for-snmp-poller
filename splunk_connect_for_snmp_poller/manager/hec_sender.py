@@ -27,7 +27,6 @@ from splunk_connect_for_snmp_poller.manager.data.event_builder import (
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
 
-
 logger = get_logger(__name__)
 
 
