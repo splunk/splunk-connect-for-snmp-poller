@@ -218,6 +218,9 @@ async def snmp_polling_async(
                         profile = ir.profile
                     else:
                         profile = OidConstant.IF_MIB
+                    logger.info(
+                        "Executing SNMP WALK for IF-MIB %s profile=%s", host, ir.profile
+                    )
                     logger.debug(
                         "Executing SNMP small WALK for %s profile=%s",
                         host,

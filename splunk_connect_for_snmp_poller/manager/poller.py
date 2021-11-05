@@ -254,6 +254,7 @@ class Poller:
             logger.debug("Adding configuration for enricher job %s", entry_key)
             ir = copy.deepcopy(ir)
             ir.profile = f"{oid}.*"
+            ir.frequency_str = ttl
             job_reference = schedule.every(int(ttl)).seconds.do(
                 scheduled_task,
                 ir,
