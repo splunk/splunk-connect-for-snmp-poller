@@ -159,8 +159,9 @@ def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
     interface_index="1" interface_desc="lo" '
     """
     metric_result = json.loads(variables_binds["metric"])
+    parsed_index = metric_result.get("parsed_index")
     non_metric_result = variables_binds["non_metric"]
-    additional_dimensions = mib_enricher.append_additional_dimensions(metric_result)
+    additional_dimensions = mib_enricher.append_additional_dimensions(metric_result, parsed_index)
     logger.debug(additional_dimensions)
     for field_name in additional_dimensions:
         if field_name in metric_result:
@@ -187,7 +188,7 @@ def build_metric_data(
         EventField.FREQUENCY.value: ir.frequency_str,
     }
     if mib_enricher:
-        _enrich_metric_data(mib_enricher, json_val, fields)
+        _enrich_metric_data(mib_enricher, json_val, fields, parsed_index)
 
     if additional_metric_fields:
         fields = ir.extend_dict_with_provided_data(fields, additional_metric_fields)
@@ -199,17 +200,13 @@ def build_metric_data(
     else:
         builder.add(EventField.SOURCETYPE, "sc4snmp:metric")
 
-    extract_additional_properties(fields, metric_name, metric_value, parsed_index)
+    extract_additional_properties(fields, parsed_index)
 
     builder.add_fields(fields)
     return builder.build()
 
 
-def extract_additional_properties(fields, metric_name, metric_value, parsed_index):
-    stripped = metric_name[: metric_name.index("_")]
-    del fields["metric_name:" + metric_name]
-    fields["metric_name:" + stripped] = metric_value
-
+def extract_additional_properties(fields, parsed_index):
     if parsed_index:
         for key, value in parsed_index.items():
             fields[key] = value
@@ -227,10 +224,10 @@ def build_error_data(
 
 
 def _enrich_metric_data(
-    mib_enricher: MibEnricher, variables_binds: dict, fields: dict
+    mib_enricher: MibEnricher, variables_binds: dict, fields: dict, parsed_index
 ) -> None:
     additional_if_mib_dimensions = mib_enricher.append_additional_dimensions(
-        variables_binds
+        variables_binds, parsed_index
     )
     for field_name in additional_if_mib_dimensions:
         if field_name in variables_binds:
