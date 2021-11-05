@@ -18,25 +18,24 @@ import logging
 import os
 import time
 
-import aiohttp
-import backoff as backoff
 import requests as requests
-from aiohttp import ClientSession
+from requests.adapters import HTTPAdapter
+from urllib3 import Retry
 
 logger = logging.getLogger(__name__)
 
 
-async def get_translation(var_binds, mib_server_url, data_format):
+def get_translation(var_binds, mib_server_url, data_format):
     """
     @param var_binds: var_binds object getting from SNMP agents
     @param mib_server_url: URL of SNMP MIB server
     @param data_format: format of data
     @return: translated string
     """
-    payload = await prepare_payload(var_binds)
+    payload = prepare_payload(var_binds)
 
     try:
-        return await get_url(mib_server_url, payload, data_format)
+        return get_url(mib_server_url, payload, data_format)
     except requests.Timeout:
         logger.exception("Time out occurred during call to MIB Server")
         raise
@@ -48,7 +47,7 @@ async def get_translation(var_binds, mib_server_url, data_format):
         raise
 
 
-async def prepare_payload(var_binds):
+def prepare_payload(var_binds):
     payload = {}
     var_binds_list = []
     # *TODO*: Below differs a bit between poller and trap!
@@ -65,22 +64,48 @@ async def prepare_payload(var_binds):
     return payload
 
 
-@backoff.on_exception(backoff.expo, aiohttp.ClientError, max_tries=3)
-async def get_url(mib_server_url, payload, data_format):
+class SharedException(object):
+    pass
+
+
+def get_url(mib_server_url, payload, data_format):
     headers = {"Content-type": "application/json"}
     endpoint = "translation"
     translation_url = os.path.join(mib_server_url.strip("/"), endpoint)
     logger.debug("[-] translation_url: %s", translation_url)
 
-    async with ClientSession(raise_for_status=True) as session:
-        resp = await session.post(
-            translation_url,
-            headers=headers,
-            data=payload,
-            params={"data_format": data_format},
-            timeout=5,
+    # Set up the request params
+    params = {"data_format": data_format}
+
+    try:
+        # use Session with Retry
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+            method_whitelist=["GET", "POST"],
         )
-        return await resp.text()
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session = requests.Session()
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        resp = session.post(
+            translation_url, headers=headers, data=payload, params=params, timeout=60
+        )
+
+    except Exception as e:
+        logger.error(
+            f"MIB server unreachable! Error happened while communicating to MIB server to perform the Translation: {e}"
+        )
+        raise SharedException("MIB server is unreachable!")
+
+    if resp.status_code != 200:
+        logger.error(f"[-] MIB Server API Error with code: {resp.status_code}")
+        raise SharedException(f"MIB Server API Error with code: {resp.status_code}")
+
+    # *TODO*: For future release could retain failed translations in some place to re-translate.
+
+    return resp.text
 
 
 # 1.3.6.1.2.1.2.2.1.4.1|Integer|16436|16436|True
