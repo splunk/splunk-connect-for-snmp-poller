@@ -32,7 +32,6 @@ celery = "^5.1.2"
 pymongo = {version = "^3.11.3", extras = ["srv"]} 
 jsoncomment = "^0.4.2"
 aiohttp = "^3.7.4"
-asgiref = "^3.4.1"
 backoff = "^1.11.1"
 
 [tool.poetry.dev-dependencies]
