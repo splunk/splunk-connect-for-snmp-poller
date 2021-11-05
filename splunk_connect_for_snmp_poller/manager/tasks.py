@@ -41,7 +41,7 @@ from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 logger = get_task_logger(__name__)
 
 
-async def get_snmp_data(
+def get_snmp_data(
     var_binds,
     handler,
     mongo_connection,
@@ -60,7 +60,7 @@ async def get_snmp_data(
 ):
     if var_binds:
         try:
-            await handler(
+            handler(
                 mongo_connection,
                 enricher,
                 snmp_engine,
