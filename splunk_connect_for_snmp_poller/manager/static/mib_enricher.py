@@ -41,15 +41,12 @@ def extract_current_index_from_metric(current_translated_oid):
     return None
 
 
-def extract_dimension_name_and_value(dimension, index):
-    all_keys = dimension.keys()
-    if len(all_keys) == 1:
-        dimension_name = [key for key in all_keys][0]
-        dimension_values = dimension[dimension_name]
-        # We need to enrich only table data. Static values like IF-MIB::ifNumber.0 won't be enriched (it doesn't
-        # make sense for those)
-        if 0 <= index < len(dimension_values):
-            return dimension_name, dimension_values[index]
+def extract_dimension_name_and_value(dimension_key, dimension_dict, index):
+    dimension_values = dimension_dict[dimension_key]
+    # We need to enrich only table data. Static values like IF-MIB::ifNumber.0 won't be enriched (it doesn't
+    # make sense for those)
+    if 0 <= index < len(dimension_values):
+        return dimension_key, dimension_values[index]
     return None, None
 
 
@@ -75,12 +72,14 @@ class MibEnricher:
                 if_mib_record = self.get_by_oid_and_type(
                     InterfaceMib.IF_MIB_METRIC_PREFIX, enricher_existing_varbinds
                 )
-                for dimension in if_mib_record:
+                for dimension_key in if_mib_record:
                     index = extract_current_index_from_metric(metric_name)
                     (
                         dimension_name,
                         dimension_value,
-                    ) = extract_dimension_name_and_value(dimension, index)
+                    ) = extract_dimension_name_and_value(
+                        dimension_key, if_mib_record, index
+                    )
                     if dimension_name:
                         result.append({dimension_name: dimension_value})
         return result
