@@ -589,9 +589,7 @@ def walk_handler_with_enricher(
         ):
             break
         else:
-            result, is_metric = get_translated_string(
-                mib_server_url, var_binds, True
-            )
+            result, is_metric = get_translated_string(mib_server_url, var_binds, True)
             new_result = _sort_walk_data(
                 is_metric,
                 merged_result_metric,

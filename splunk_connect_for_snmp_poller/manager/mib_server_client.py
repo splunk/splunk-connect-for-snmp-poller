@@ -108,7 +108,6 @@ def get_url(mib_server_url, payload, data_format):
     return resp.text
 
 
-
 # 1.3.6.1.2.1.2.2.1.4.1|Integer|16436|16436|True
 # 1.3.6.1.2.1.1.6.0|DisplayString|San Francisco, California, United States|San Francisco, California, United States|True
 # 1.3.6.1.2.1.2.2.1.6.2|OctetString|<null>ybù@|0x00127962f940|False
