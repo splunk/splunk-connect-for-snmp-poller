@@ -14,7 +14,6 @@
 #    limitations under the License.
 #   ########################################################################
 import json
-import re
 import time
 
 import requests
@@ -27,12 +26,6 @@ from splunk_connect_for_snmp_poller.manager.data.event_builder import (
 )
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnricher
-from splunk_connect_for_snmp_poller.manager.variables import (
-    enricher_additional_varbinds,
-    enricher_name,
-    enricher_oid_family,
-)
-from splunk_connect_for_snmp_poller.utilities import multi_key_lookup
 
 logger = get_logger(__name__)
 
@@ -77,7 +70,6 @@ def post_data_to_splunk_hec(
     index,
     ir: InventoryRecord,
     additional_metric_fields,
-    server_config,
     one_time_flag=False,
     mib_enricher=None,
     is_error=False,
@@ -93,7 +85,6 @@ def post_data_to_splunk_hec(
             index["metric_index"],
             ir,
             additional_metric_fields,
-            server_config,
             one_time_flag=one_time_flag,
             mib_enricher=mib_enricher,
         )
@@ -184,13 +175,13 @@ def build_metric_data(
     index,
     ir: InventoryRecord,
     additional_metric_fields,
-    server_config,
     one_time_flag=False,
     mib_enricher=None,
 ):
     json_val = json.loads(variables_binds)
     metric_name = json_val["metric_name"]
     metric_value = json_val["_value"]
+    parsed_index = json_val.get("parsed_index")
     fields = {
         f"metric_name:{metric_name}": metric_value,
         EventField.FREQUENCY.value: ir.frequency_str,
@@ -208,47 +199,20 @@ def build_metric_data(
     else:
         builder.add(EventField.SOURCETYPE, "sc4snmp:metric")
 
-    extract_additional_properties(fields, metric_name, metric_value, server_config)
+    extract_additional_properties(fields, metric_name, metric_value, parsed_index)
 
     builder.add_fields(fields)
     return builder.build()
 
 
-def extract_additional_properties(fields, metric_name, metric_value, server_config):
-    result = multi_key_lookup(server_config, (enricher_name, enricher_oid_family))
-    oid_families = result if result else []
-    any_regex_matched = False
+def extract_additional_properties(fields, metric_name, metric_value, parsed_index):
+    stripped = metric_name[: metric_name.index("_")]
+    del fields["metric_name:" + metric_name]
+    fields["metric_name:" + stripped] = metric_value
 
-    for family in oid_families.keys():
-        if metric_name.startswith("sc4snmp." + family):
-            stripped = metric_name[: metric_name.index("_")]
-            input_text = metric_name[metric_name.index("_") + 1 :]  # noqa: E203
-
-            entries = multi_key_lookup(
-                oid_families, (family, enricher_additional_varbinds)
-            )
-            if entries:
-                regex_entries = [
-                    entry["regex"] for entry in entries if "regex" in entry
-                ]
-                for regex in regex_entries:
-                    result = re.match(regex, input_text)
-                    if result:
-                        any_regex_matched = True
-                        for key, value in result.groupdict().items():
-                            fields[key] = value.replace("_", ".")
-                        del fields["metric_name:" + metric_name]
-                        fields["metric_name:" + stripped] = metric_value
-                        break
-            break
-
-    if not any_regex_matched:
-        stripped = metric_name[: metric_name.rindex("_")]
-        input_text = metric_name[metric_name.rindex("_") + 1 :]  # noqa: E203
-
-        fields["index_number"] = input_text
-        del fields["metric_name:" + metric_name]
-        fields["metric_name:" + stripped] = metric_value
+    if parsed_index:
+        for key, value in parsed_index.items():
+            fields[key] = value
 
 
 def build_error_data(

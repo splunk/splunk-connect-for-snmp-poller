@@ -67,7 +67,6 @@ async def get_snmp_data(
     one_time_flag,
     ir,
     additional_metric_fields,
-    server_config,
 ):
     if var_binds:
         try:
@@ -86,7 +85,6 @@ async def get_snmp_data(
                 ir,
                 additional_metric_fields,
                 var_binds,
-                server_config,
             )
         except Exception as e:
             logger.exception(f"Error occurred while calling {handler.__name__}(): {e}")
@@ -172,7 +170,6 @@ async def snmp_polling_async(
         one_time_flag,
         ir,
         additional_metric_fields,
-        server_config,
     ]
     get_bulk_specific_parameters = [mongo_connection, enricher_presence]
     try:
