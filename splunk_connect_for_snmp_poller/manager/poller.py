@@ -50,6 +50,7 @@ from splunk_connect_for_snmp_poller.manager.variables import (
 )
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 from splunk_connect_for_snmp_poller.utilities import (
+    OnetimeFlag,
     file_was_modified,
     multi_key_lookup,
     parse_config_file,
@@ -261,6 +262,7 @@ class Poller:
                 self._server_config,
                 self.__get_splunk_indexes(),
                 None,
+                OnetimeFlag.ENRICHER_UPDATE_WALK.value,
             )
             self._enricher_jobs_map[entry_key] = job_reference
 
