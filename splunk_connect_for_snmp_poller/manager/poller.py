@@ -258,7 +258,7 @@ class Poller:
             ir.frequency_str = ttl
             job_reference = schedule.every(int(ttl)).seconds.do(
                 snmp_polling,
-                ir,
+                ir.to_json(),
                 self._server_config,
                 self.__get_splunk_indexes(),
                 None,
