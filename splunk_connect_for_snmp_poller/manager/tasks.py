@@ -214,7 +214,7 @@ async def snmp_polling_async(
                 if ir.profile.startswith(OidConstant.IF_MIB[:-2]) or (
                     enricher_presence and one_time_flag == OnetimeFlag.AFTER_FAIL.value
                 ):
-                    if ir.profile.startswith(OidConstant.IF_MIB):
+                    if ir.profile.startswith(OidConstant.IF_MIB[:-2]):
                         profile = ir.profile
                     else:
                         profile = OidConstant.IF_MIB
