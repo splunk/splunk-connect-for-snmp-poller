@@ -211,7 +211,7 @@ async def snmp_polling_async(
             # Perform SNNP WALK for oid end with *
             if ir.profile[-1] == "*":
                 logger.info("Executing SNMP WALK for %s profile=%s", host, ir.profile)
-                if ir.profile.startswith(OidConstant.IF_MIB) or (
+                if ir.profile.startswith(OidConstant.IF_MIB[-2:]) or (
                     enricher_presence and one_time_flag == OnetimeFlag.AFTER_FAIL.value
                 ):
                     if ir.profile.startswith(OidConstant.IF_MIB):
