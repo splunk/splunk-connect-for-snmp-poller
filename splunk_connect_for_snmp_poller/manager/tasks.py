@@ -15,10 +15,10 @@
 #
 import os
 
-from celery import Task
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
 
+from celery import Task
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.hec_sender import HecSender
@@ -196,16 +196,23 @@ def snmp_polling(
             # Perform SNNP WALK for oid end with *
             if ir.profile[-1] == "*":
                 logger.info("Executing SNMP WALK for %s profile=%s", host, ir.profile)
-                if ir.profile == OidConstant.IF_MIB or (
+                if ir.profile.startswith(OidConstant.IF_MIB_PREFIX) or (
                     enricher_presence and one_time_flag == OnetimeFlag.AFTER_FAIL.value
                 ):
+                    if ir.profile.startswith(OidConstant.IF_MIB_PREFIX):
+                        profile = ir.profile
+                    else:
+                        profile = OidConstant.IF_MIB
+                    logger.info(
+                        "Executing SNMP WALK for IF-MIB %s profile=%s", host, ir.profile
+                    )
                     logger.debug(
                         "Executing SNMP small WALK for %s profile=%s",
                         host,
-                        OidConstant.IF_MIB,
+                        profile,
                     )
                     walk_handler_with_enricher(
-                        OidConstant.IF_MIB,
+                        profile,
                         server_config,
                         mongo_connection,
                         *static_parameters,

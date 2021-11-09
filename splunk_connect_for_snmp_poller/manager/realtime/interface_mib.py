@@ -83,9 +83,15 @@ class InterfaceMib:
             return int(if_number[InterfaceMib.METRIC_VALUE_KEY])
         return 0
 
+    def _return_number_of_interfaces(self):
+        if self.network_interfaces():
+            return self._network_interfaces
+        else:
+            return len(self._full_dictionary)
+
     def __extract_single_field_as_list(self, base_mib_metric_name):
         all_indexes = []
-        for index in range(0, self.network_interfaces()):
+        for index in range(0, self._return_number_of_interfaces()):
             current = base_mib_metric_name + str(index + 1)
             if current in self._full_dictionary:
                 all_indexes.append(

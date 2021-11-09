@@ -32,12 +32,9 @@
 # under the License.
 import logging
 import os
-from collections import defaultdict
 
 from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import ConnectionFailure
-
-from splunk_connect_for_snmp_poller.manager.realtime.interface_mib import InterfaceMib
 
 from .manager.variables import enricher_additional_varbinds, enricher_existing_varbinds
 
@@ -182,57 +179,20 @@ class WalkedHostsRepository:
                 return_document=ReturnDocument.AFTER,
             )
 
-    def create_mib_static_data_mongo_structure(self, existing_data, additional_data):
-        """
-        This function creates database mib static data structure out of existing_data and additional_data provided
-        from config.yaml and the data derived from SNMP Walk, for ex.:
-        existing_data = [{'interface_index': ['1', '2']}, {'interface_desc': ['lo', 'eth0']}]
-        additional_data = {'IF-MIB': {'indexNum': 'index_num'}, 'SNMPv2-MIB': {'indexNum': 'index_num'}}
-
-        Returned structure should look like this:
-        { "MIB-STATIC-DATA": {
-            {'IF-MIB':
-                        {'existingVarBinds': [{'interface_index': ['1', '2']}, {'interface_desc': ['lo', 'eth0']}],
-                        'additionalVarBinds': {'indexNum': 'index_num'}},
-            'SNMPv2-MIB':
-                        {'additionalVarBinds': {'indexNum': 'index_num'}}
-            }
-        }
-        """
-        static_data_dictionary = {
-            WalkedHostsRepository.MIB_STATIC_DATA: defaultdict(dict)
-        }
-        static_data_dictionary_mib = static_data_dictionary[
-            WalkedHostsRepository.MIB_STATIC_DATA
-        ]
-        if existing_data:
-            static_data_dictionary_mib[InterfaceMib.IF_MIB_DATA_MONGO_IDENTIFIER][
-                enricher_existing_varbinds
-            ] = existing_data
-        for el in additional_data.keys():
-            static_data_dictionary_mib[el][
-                enricher_additional_varbinds
-            ] = additional_data[el]
-        return static_data_dictionary
-
     # Input is what extract_network_interface_data_from_walk() returns
     def update_mib_static_data_for(self, host, existing_data, additional_data):
         if not existing_data and not additional_data:
             return
-        static_data_dictionary = self.create_mib_static_data_mongo_structure(
-            existing_data, additional_data
-        )
-        logger.info(f"Updating static data for {host} with {static_data_dictionary}")
-        self._walked_hosts.find_one_and_update(
-            {"_id": host},
-            {"$set": static_data_dictionary},
-            upsert=True,
-            return_document=ReturnDocument.AFTER,
-        )
-        return static_data_dictionary[WalkedHostsRepository.MIB_STATIC_DATA]
+        for el in existing_data:
+            for key, value in el.items():
+                self.update_static_data_for_one_existing(host, "IF-MIB", key, value)
+        if additional_data:
+            self.update_static_data_for_one(host, additional_data)
 
     def update_static_data_for_one(self, host, static_data_dictionary):
-        logger.info(f"Updating static data for {host} with {static_data_dictionary}")
+        logger.info(
+            f"Updating additionalVarbind static data for {host} with {static_data_dictionary}"
+        )
         for oid_family in static_data_dictionary.keys():
             index_dict = static_data_dictionary[oid_family]
             if index_dict:
@@ -240,11 +200,27 @@ class WalkedHostsRepository:
                     {"_id": host},
                     {
                         "$set": {
-                            f"MIB-STATIC-DATA.{oid_family}.additionalVarBinds": index_dict
+                            f"MIB-STATIC-DATA.{oid_family}.{enricher_additional_varbinds}": index_dict
                         }
                     },
                     upsert=True,
                 )
+
+    def update_static_data_for_one_existing(
+        self, host, oid_family, attribute, attribute_values
+    ):
+        logger.info(
+            f"Updating existingVarbind static data for {host} with {attribute}: {attribute_values}"
+        )
+        self._walked_hosts.update(
+            {"_id": host},
+            {
+                "$set": {
+                    f"MIB-STATIC-DATA.{oid_family}.{enricher_existing_varbinds}.{attribute}": attribute_values
+                }
+            },
+            upsert=True,
+        )
 
     def delete_oidfamilies_from_static_data(self, host, oid_families):
         logger.info(f"Deleting oidfamilies {oid_families} from {host}")

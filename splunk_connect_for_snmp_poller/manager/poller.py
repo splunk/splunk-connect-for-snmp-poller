@@ -26,6 +26,7 @@ from splunk_connect_for_snmp_poller.manager.data.inventory_record import Invento
 from splunk_connect_for_snmp_poller.manager.poller_utilities import (
     automatic_onetime_task,
     automatic_realtime_job,
+    create_poller_enricher_entry_key,
     create_poller_scheduler_entry_key,
     parse_inventory_file,
     return_database_id,
@@ -36,14 +37,22 @@ from splunk_connect_for_snmp_poller.manager.profile_matching import (
     extract_desc,
     get_profiles,
 )
+from splunk_connect_for_snmp_poller.manager.task_utilities import translate_list_to_oid
 from splunk_connect_for_snmp_poller.manager.tasks import snmp_polling
 from splunk_connect_for_snmp_poller.manager.validator.inventory_validator import (
     DYNAMIC_PROFILE,
 )
-from splunk_connect_for_snmp_poller.manager.variables import onetime_if_walk
+from splunk_connect_for_snmp_poller.manager.variables import (
+    enricher_existing_varbinds,
+    enricher_if_mib,
+    enricher_oid_family,
+    onetime_if_walk,
+)
 from splunk_connect_for_snmp_poller.mongo import WalkedHostsRepository
 from splunk_connect_for_snmp_poller.utilities import (
+    OnetimeFlag,
     file_was_modified,
+    multi_key_lookup,
     parse_config_file,
 )
 
@@ -57,6 +66,7 @@ class Poller:
         self._inventory_mod_time = 0
         self._config_mod_time = 0
         self._jobs_map = {}
+        self._enricher_jobs_map = {}
         self._dynamic_jobs = set()
         self._mongo = WalkedHostsRepository(self._server_config["mongo"])
         self._local_snmp_engine = SnmpEngine()
@@ -173,6 +183,7 @@ class Poller:
         logger.info("Add enricher to a host")
         old_enricher = {} if new_host else self._old_enricher
         if current_enricher != {}:
+            self.process_jobs_for_enricher(current_enricher, ir)
             update_enricher_config(
                 old_enricher,
                 current_enricher,
@@ -190,6 +201,13 @@ class Poller:
                 del self._jobs_map[entry_key]
                 self._dynamic_jobs.remove(entry_key)
 
+    def delete_all_enricher_entries_per_host(self, host):
+        for entry_key in list(self._enricher_jobs_map.keys()):
+            if entry_key.split("#")[0] == host:
+                logger.debug("Removing job for %s", entry_key)
+                schedule.cancel_job(self._enricher_jobs_map.get(entry_key))
+                del self._enricher_jobs_map[entry_key]
+
     def clean_job_inventory(self, inventory_entry_keys: set, inventory_hosts: set):
         for entry_key in list(self._jobs_map):
             if entry_key not in inventory_entry_keys:
@@ -203,6 +221,7 @@ class Poller:
                         str(inventory_hosts),
                     )
                     self._mongo.delete_host(db_host_id)
+                    self.delete_all_enricher_entries_per_host(db_host_id)
                     self._mongo.delete_onetime_walk_result(db_host_id)
                 del self._jobs_map[entry_key]
 
@@ -222,6 +241,30 @@ class Poller:
             old_conf != (ir.host, ir.version, ir.community, ir.profile, config, indexes)
             or frequency != interval
         )
+
+    def process_jobs_for_enricher(self, enricher, ir):
+        ifmib_structure = multi_key_lookup(
+            enricher, (enricher_oid_family, enricher_if_mib, enricher_existing_varbinds)
+        )
+        for varbind in ifmib_structure:
+            ifmib_attr = varbind["id"]
+            ttl = varbind["ttl"]
+            oid = translate_list_to_oid(["IF-MIB", ifmib_attr])
+            db_host = return_database_id(ir.host)
+            entry_key = create_poller_enricher_entry_key(db_host, ifmib_attr)
+            logger.debug("Adding configuration for enricher job %s", entry_key)
+            ir = copy.deepcopy(ir)
+            ir.profile = f"{oid}.*"
+            ir.frequency_str = ttl
+            job_reference = schedule.every(int(ttl)).seconds.do(
+                snmp_polling,
+                ir.to_json(),
+                self._server_config,
+                self.__get_splunk_indexes(),
+                None,
+                OnetimeFlag.ENRICHER_UPDATE_WALK.value,
+            )
+            self._enricher_jobs_map[entry_key] = job_reference
 
     def process_new_job(self, entry_key, ir, profiles):
         acquired_profiles = profiles.get("profiles")
