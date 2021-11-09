@@ -70,11 +70,13 @@ class InterfaceMib:
 
     def __build_in_memory_dictionary(self):
         all_keys = {}
+        n = 1
         for mib in self.unprocessed_if_mib_data():
-            all_keys[mib[InterfaceMib.METRIC_NAME_KEY]] = {
+            all_keys[mib[InterfaceMib.METRIC_NAME_KEY] + f"_{n}"] = {
                 InterfaceMib.METRIC_VALUE_KEY: mib[InterfaceMib.METRIC_VALUE_KEY],
                 InterfaceMib.METRIC_TYPE_KEY: mib[InterfaceMib.METRIC_TYPE_KEY],
             }
+            n += 1
         return all_keys
 
     def __extract_number_of_network_interfaces(self):
@@ -92,7 +94,7 @@ class InterfaceMib:
     def __extract_single_field_as_list(self, base_mib_metric_name):
         all_indexes = []
         for index in range(0, self._return_number_of_interfaces()):
-            current = base_mib_metric_name + str(index + 1)
+            current = base_mib_metric_name + f"_{index + 1}"
             if current in self._full_dictionary:
                 all_indexes.append(
                     self._full_dictionary[current][InterfaceMib.METRIC_VALUE_KEY]
