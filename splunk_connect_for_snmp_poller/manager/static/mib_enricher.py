@@ -22,31 +22,21 @@ from ..variables import enricher_additional_varbinds, enricher_existing_varbinds
 logger = logging.getLogger(__name__)
 
 
-def extract_current_index_from_metric(current_translated_oid):
-    try:
-        if current_translated_oid:
-            return (
-                int(
-                    current_translated_oid[
-                        current_translated_oid.rindex("_") + 1 :  # noqa: E203
-                    ]
-                )
-                - 1
-            )
-    except ValueError:
-        logger.warning(
-            f"Could not find any index for {current_translated_oid}. This will not be enriched"
-        )
-
+def extract_current_index_from_metric(parsed_index):
+    if parsed_index and "ifIndex" in parsed_index:
+        return int(parsed_index["ifIndex"]) - 1
     return None
 
 
-def extract_dimension_name_and_value(dimension_key, dimension_dict, index):
-    dimension_values = dimension_dict[dimension_key]
-    # We need to enrich only table data. Static values like IF-MIB::ifNumber.0 won't be enriched (it doesn't
-    # make sense for those)
-    if 0 <= index < len(dimension_values):
-        return dimension_key, dimension_values[index]
+def extract_dimension_name_and_value(dimension, index):
+    all_keys = dimension.keys()
+    if len(all_keys) == 1 and index is not None:
+        dimension_name = [key for key in all_keys][0]
+        dimension_values = dimension[dimension_name]
+        # We need to enrich only table data. Static values like IF-MIB::ifNumber.0 won't be enriched (it doesn't
+        # make sense for those)
+        if 0 <= index < len(dimension_values):
+            return dimension_name, dimension_values[index]
     return None, None
 
 
@@ -65,30 +55,28 @@ class MibEnricher:
             oid_record = self.get_by_oid(oid_family.split(".")[1])
         return oid_record.get(type, {})
 
-    def __enrich_if_mib_existing(self, metric_name):
+    def __enrich_if_mib_existing(self, metric_name, parsed_index):
         result = []
         if metric_name and metric_name.startswith(InterfaceMib.IF_MIB_METRIC_PREFIX):
             if self._mib_static_data_collection:
                 if_mib_record = self.get_by_oid_and_type(
                     InterfaceMib.IF_MIB_METRIC_PREFIX, enricher_existing_varbinds
                 )
-                for dimension_key in if_mib_record:
-                    index = extract_current_index_from_metric(metric_name)
+                for dimension in if_mib_record:
+                    index = extract_current_index_from_metric(parsed_index)
                     (
                         dimension_name,
                         dimension_value,
-                    ) = extract_dimension_name_and_value(
-                        dimension_key, if_mib_record, index
-                    )
+                    ) = extract_dimension_name_and_value(dimension, index)
                     if dimension_name:
                         result.append({dimension_name: dimension_value})
         return result
 
-    def __enrich_if_mib_additional(self, metric_name):
+    def __enrich_if_mib_additional(self, metric_name, parsed_index):
         for oid_family in self._mib_static_data_collection.keys():
             if oid_family in metric_name:
                 try:
-                    index = extract_current_index_from_metric(metric_name) + 1
+                    index = extract_current_index_from_metric(parsed_index) + 1
                     index_field = self.get_by_oid_and_type(
                         oid_family, enricher_additional_varbinds
                     )["indexNum"]
@@ -99,17 +87,17 @@ class MibEnricher:
                     logger.debug(f"Can't get the index from metric name: {metric_name}")
         return []
 
-    def append_additional_dimensions(self, translated_var_bind):
+    def append_additional_dimensions(self, translated_var_bind, parsed_index):
         if translated_var_bind:
             metric_name = translated_var_bind[InterfaceMib.METRIC_NAME_KEY]
             additional_if_mib_dimensions = []
             fields_list = []
             if self._mib_static_data_collection:
                 additional_if_mib_dimensions += self.__enrich_if_mib_existing(
-                    metric_name
+                    metric_name, parsed_index
                 )
                 additional_if_mib_dimensions += self.__enrich_if_mib_additional(
-                    metric_name
+                    metric_name, parsed_index
                 )
             for more_data in additional_if_mib_dimensions:
                 translated_var_bind.update(more_data)
