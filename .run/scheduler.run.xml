@@ -24,6 +24,8 @@
       <env name="CELERY_BROKER_URL" value="localhost" />
       <env name="MONGO_URI" value="mongodb://localhost:27017" />
       <env name="MIBS_SERVER_URL" value="http://localhost:5000" />
+      <env name="OTEL_SERVER_METRICS_URL" value="http://localhost:8882" />
+      <env name="OTEL_SERVER_LOGS_URL" value="http://localhost:8881" />
     </envs>
     <option name="SDK_HOME" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/splunk_connect_for_snmp_poller" />

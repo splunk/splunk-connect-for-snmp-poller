@@ -76,11 +76,12 @@ class MibEnricher:
         for oid_family in self._mib_static_data_collection.keys():
             if oid_family in metric_name:
                 try:
-                    index = extract_current_index_from_metric(parsed_index) + 1
-                    index_field = self.get_by_oid_and_type(
-                        oid_family, enricher_additional_varbinds
-                    )["indexNum"]
-                    return [{index_field: index}]
+                    index = extract_current_index_from_metric(parsed_index)
+                    if index is not None:
+                        index_field = self.get_by_oid_and_type(
+                            oid_family, enricher_additional_varbinds
+                        )["indexNum"]
+                        return [{index_field: index + 1}]
                 except KeyError:
                     logger.debug("Enricher additionalVarBinds badly formatted")
                 except TypeError:
