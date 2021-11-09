@@ -190,7 +190,9 @@ class WalkedHostsRepository:
             self.update_static_data_for_one(host, additional_data)
 
     def update_static_data_for_one(self, host, static_data_dictionary):
-        logger.info(f"Updating static data for {host} with {static_data_dictionary}")
+        logger.info(
+            f"Updating additionalVarbind static data for {host} with {static_data_dictionary}"
+        )
         for oid_family in static_data_dictionary.keys():
             index_dict = static_data_dictionary[oid_family]
             if index_dict:
@@ -207,6 +209,9 @@ class WalkedHostsRepository:
     def update_static_data_for_one_existing(
         self, host, oid_family, attribute, attribute_values
     ):
+        logger.info(
+            f"Updating existingVarbind static data for {host} with {attribute}: {attribute_values}"
+        )
         self._walked_hosts.update(
             {"_id": host},
             {
