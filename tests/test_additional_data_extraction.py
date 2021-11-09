@@ -34,8 +34,6 @@ class TestAdditionalDataExtraction(TestCase):
 
         extract_additional_properties(
             fields,
-            "sc4snmp.TCP-MIB.tcpConnLocalPort_192_168_0_1_161_127_0_0_1_5",
-            "1111",
             parsed_index,
         )
 
