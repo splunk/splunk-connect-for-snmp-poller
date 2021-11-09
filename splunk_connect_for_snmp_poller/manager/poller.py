@@ -31,6 +31,7 @@ from splunk_connect_for_snmp_poller.manager.poller_utilities import (
     parse_inventory_file,
     return_database_id,
     update_enricher_config,
+    update_inventory_record,
 )
 from splunk_connect_for_snmp_poller.manager.profile_matching import (
     assign_profiles_to_device,
@@ -247,18 +248,18 @@ class Poller:
             enricher, (enricher_oid_family, enricher_if_mib, enricher_existing_varbinds)
         )
         for varbind in ifmib_structure:
-            ifmib_attr = varbind["id"]
-            ttl = varbind["ttl"]
-            oid = translate_list_to_oid(["IF-MIB", ifmib_attr])
+            ifmib_attr, ttl, = (
+                varbind["id"],
+                varbind["ttl"],
+            )
+            ifmib_oid = translate_list_to_oid(["IF-MIB", ifmib_attr])
             db_host = return_database_id(ir.host)
             entry_key = create_poller_enricher_entry_key(db_host, ifmib_attr)
             logger.debug("Adding configuration for enricher job %s", entry_key)
-            ir = copy.deepcopy(ir)
-            ir.profile = f"{oid}.*"
-            ir.frequency_str = ttl
+            new_ir = update_inventory_record(ir, ifmib_oid, ttl)
             job_reference = schedule.every(int(ttl)).seconds.do(
                 snmp_polling,
-                ir.to_json(),
+                new_ir.to_json(),
                 self._server_config,
                 self.__get_splunk_indexes(),
                 None,

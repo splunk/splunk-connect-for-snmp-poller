@@ -14,12 +14,15 @@
 # limitations under the License.
 #
 from unittest import TestCase
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
+from pysnmp.smi.rfc1902 import ObjectIdentity
 
 from splunk_connect_for_snmp_poller.manager.task_utilities import (
     _sort_walk_data,
     is_metric_data,
     is_oid,
+    mib_string_handler,
     parse_port,
     process_one_time_flag,
 )
@@ -222,3 +225,36 @@ class TestTaskUtilities(TestCase):
         )
         self.assertTrue(mongo.delete_onetime_walk_result.called)
         self.assertFalse(mongo.add_onetime_walk_result.called)
+
+    def test_mib_string_handler_two_element(self):
+        with patch(
+            "splunk_connect_for_snmp_poller.manager.task_utilities.translate_list_to_oid"
+        ) as mock:
+            returned = MagicMock()
+            returned.__class__ = ObjectIdentity
+            mock.return_value = returned
+            oid = mib_string_handler([["IF-MIB", "ifMtu"]])
+        self.assertEqual(len(oid.bulk), 1)
+        self.assertEqual(len(oid.get), 0)
+
+    def test_mib_string_handler_three_elements(self):
+        with patch(
+            "splunk_connect_for_snmp_poller.manager.task_utilities.translate_list_to_oid"
+        ) as mock:
+            returned = MagicMock()
+            returned.__class__ = ObjectIdentity
+            mock.return_value = returned
+            oid = mib_string_handler([["IF-MIB", "ifMtu", 1]])
+        self.assertEqual(len(oid.get), 1)
+        self.assertEqual(len(oid.bulk), 0)
+
+    def test_mib_string_handler_four_elements(self):
+        with patch(
+            "splunk_connect_for_snmp_poller.manager.task_utilities.translate_list_to_oid"
+        ) as mock:
+            returned = MagicMock()
+            returned.__class__ = ObjectIdentity
+            mock.return_value = returned
+            oid = mib_string_handler([["IF-MIB", "ifMtu", 1, ""]])
+        self.assertEqual(len(oid.get), 0)
+        self.assertEqual(len(oid.bulk), 0)
