@@ -161,7 +161,9 @@ def _enrich_event_data(mib_enricher: MibEnricher, variables_binds: dict) -> str:
     metric_result = json.loads(variables_binds["metric"])
     parsed_index = metric_result.get("parsed_index")
     non_metric_result = variables_binds["non_metric"]
-    additional_dimensions = mib_enricher.append_additional_dimensions(metric_result, parsed_index)
+    additional_dimensions = mib_enricher.append_additional_dimensions(
+        metric_result, parsed_index
+    )
     logger.debug(additional_dimensions)
     for field_name in additional_dimensions:
         if field_name in metric_result:

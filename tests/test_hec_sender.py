@@ -74,7 +74,9 @@ class TestHecSender(TestCase):
             "_value": "1",
             "metric_type": "Integer",
         }
-        _enrich_metric_data(_MibEnricher, variables_binds_initial, fields_initial, {"ifIndex": 1})
+        _enrich_metric_data(
+            _MibEnricher, variables_binds_initial, fields_initial, {"ifIndex": 1}
+        )
         self.assertEqual(variables_binds, variables_binds_initial)
         self.assertEqual(fields, fields_initial)
 
@@ -97,7 +99,9 @@ class TestHecSender(TestCase):
             "_value": "2",
             "metric_type": "Integer",
         }
-        _enrich_metric_data(_MibEnricher, variables_binds_initial, fields_initial, {"ifIndex": 2})
+        _enrich_metric_data(
+            _MibEnricher, variables_binds_initial, fields_initial, {"ifIndex": 2}
+        )
         self.assertEqual(variables_binds, variables_binds_initial)
         self.assertEqual(fields, fields_initial)
 
@@ -120,7 +124,9 @@ class TestHecSender(TestCase):
             "_value": "3",
             "metric_type": "Integer",
         }
-        _enrich_metric_data(_MibEnricher, variables_binds_initial, fields_initial, {"ifIndex": 3})
+        _enrich_metric_data(
+            _MibEnricher, variables_binds_initial, fields_initial, {"ifIndex": 3}
+        )
         self.assertEqual(variables_binds, variables_binds_initial)
         self.assertEqual(fields, fields_initial)
 
