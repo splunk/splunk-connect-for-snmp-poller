@@ -32,10 +32,9 @@ def extract_dimension_name_and_value(dimension_key, dimension_dict, index):
     dimension_values = dimension_dict[dimension_key]
     # We need to enrich only table data. Static values like IF-MIB::ifNumber.0 won't be enriched (it doesn't
     # make sense for those)
-    if index is None:
-        return None, None
-    if 0 <= index < len(dimension_values):
-        return dimension_key, dimension_values[index]
+    if index is not None:
+        if 0 <= index < len(dimension_values):
+            return dimension_key, dimension_values[index]
     return None, None
 
 

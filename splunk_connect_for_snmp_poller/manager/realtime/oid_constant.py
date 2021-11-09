@@ -20,3 +20,4 @@ class OidConstant:
     # see https://www.alvestrand.no/objectid/1.3.6.1.html for a better understanding
     UNIVERSAL_BASE_OID = "1.3.6.1.*"
     IF_MIB = "1.3.6.1.2.1.2.*"
+    IF_MIB_PREFIX = "1.3.6.1.2.1.2"
