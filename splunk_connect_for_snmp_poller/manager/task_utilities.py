@@ -184,21 +184,12 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
     get_list, bulk_list = [], []
     for mib_string in mib_list:
         try:
-            if len(mib_string) == 3:
-                # convert mib string to oid
-                oid = translate_list_to_oid(mib_string)
+            oid = translate_list_to_oid(mib_string)
+            logger.debug(f"[-] oid: {oid}")
+            mib_string_length = len(mib_string)
+            if mib_string_length == 3:
                 get_list.append(ObjectType(oid))
-
-            elif len(mib_string) == 2:
-                # convert mib string to oid
-                oid = translate_list_to_oid(mib_string)
-                logger.debug(f"[-] oid: {oid}")
-                bulk_list.append(ObjectType(oid))
-
-            elif len(mib_string) == 1:
-                # convert mib string to oid
-                oid = translate_list_to_oid(mib_string)
-                logger.debug(f"[-] oid: {oid}")
+            elif mib_string_length < 3:
                 bulk_list.append(ObjectType(oid))
             else:
                 raise Exception(
