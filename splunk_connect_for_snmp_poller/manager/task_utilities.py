@@ -219,7 +219,7 @@ def translate_list_to_oid(mib_string):
     return oid
 
 
-async def snmp_get_handler(
+def snmp_get_handler(
     mongo_connection,
     enricher_presence,
     snmp_engine,
