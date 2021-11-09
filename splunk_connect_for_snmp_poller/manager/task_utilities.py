@@ -79,7 +79,7 @@ def is_metric_data(value):
         return False
 
 
-def get_translated_string(mib_server_url, var_binds, return_multimetric=False):
+def get_translated_string(mib_server_url, var_binds, return_multimetric=False, force_event=False):
     """
     Get the translated/formatted var_binds string depending on whether the var_binds is an event or metric
     Note: if it failed to get translation, return the the original var_binds
@@ -88,6 +88,7 @@ def get_translated_string(mib_server_url, var_binds, return_multimetric=False):
     """
     logger.debug(f"Getting translation for the following var_binds: {var_binds}")
     is_metric, result = result_without_translation(var_binds, return_multimetric)
+    is_metric = False if force_event else is_metric
     original_varbinds = is_metric, result
     # Override the var_binds string with translated var_binds string
     try:
@@ -490,12 +491,12 @@ def walk_handler(
                 error_in_one_time_walk = True
             break
         else:
-            result, is_metric = get_translated_string(mib_server_url, var_binds)
+            result, is_metric = get_translated_string(mib_server_url, var_binds, force_event=True)
             post_data_to_splunk_hec(
                 hec_sender,
                 host,
                 result,
-                is_metric,
+                False,
                 index,
                 ir,
                 additional_metric_fields,
