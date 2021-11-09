@@ -224,17 +224,11 @@ class WalkedHostsRepository:
     def update_mib_static_data_for(self, host, existing_data, additional_data):
         if not existing_data and not additional_data:
             return
-        static_data_dictionary = self.create_mib_static_data_mongo_structure(
-            existing_data, additional_data
-        )
-        logger.info(f"Updating static data for {host} with {static_data_dictionary}")
-        self._walked_hosts.find_one_and_update(
-            {"_id": host},
-            {"$set": static_data_dictionary},
-            upsert=True,
-            return_document=ReturnDocument.AFTER,
-        )
-        return static_data_dictionary[WalkedHostsRepository.MIB_STATIC_DATA]
+        for el in existing_data:
+            for key, value in el.items():
+                self.update_static_data_for_one_existing(host, "IF-MIB", key, value)
+        if additional_data:
+            self.update_static_data_for_one(host, additional_data)
 
     def update_static_data_for_one(self, host, static_data_dictionary):
         logger.info(f"Updating static data for {host} with {static_data_dictionary}")
@@ -250,6 +244,19 @@ class WalkedHostsRepository:
                     },
                     upsert=True,
                 )
+
+    def update_static_data_for_one_existing(
+        self, host, oid_family, attribute, attribute_values
+    ):
+        self._walked_hosts.update(
+            {"_id": host},
+            {
+                "$set": {
+                    f"MIB-STATIC-DATA.{oid_family}.existingVarBinds.{attribute}": attribute_values
+                }
+            },
+            upsert=True,
+        )
 
     def delete_oidfamilies_from_static_data(self, host, oid_families):
         logger.info(f"Deleting oidfamilies {oid_families} from {host}")

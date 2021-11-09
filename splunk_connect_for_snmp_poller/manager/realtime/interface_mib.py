@@ -87,8 +87,7 @@ class InterfaceMib:
         if self.network_interfaces():
             return self._network_interfaces
         else:
-            if len(self._full_dictionary) > 1:
-                return len(self._full_dictionary[0])
+            return len(self._full_dictionary)
 
     def __extract_single_field_as_list(self, base_mib_metric_name):
         all_indexes = []
