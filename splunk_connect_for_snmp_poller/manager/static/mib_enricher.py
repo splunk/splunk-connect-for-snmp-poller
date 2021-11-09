@@ -30,7 +30,7 @@ def extract_current_index_from_metric(parsed_index):
 
 def extract_dimension_name_and_value(dimension, index):
     all_keys = dimension.keys()
-    if len(all_keys) == 1 and index:
+    if len(all_keys) == 1 and index is not None:
         dimension_name = [key for key in all_keys][0]
         dimension_values = dimension[dimension_name]
         # We need to enrich only table data. Static values like IF-MIB::ifNumber.0 won't be enriched (it doesn't
