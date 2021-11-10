@@ -28,15 +28,13 @@ def extract_current_index_from_metric(parsed_index):
     return None
 
 
-def extract_dimension_name_and_value(dimension, index):
-    all_keys = dimension.keys()
-    if len(all_keys) == 1 and index is not None:
-        dimension_name = [key for key in all_keys][0]
-        dimension_values = dimension[dimension_name]
-        # We need to enrich only table data. Static values like IF-MIB::ifNumber.0 won't be enriched (it doesn't
-        # make sense for those)
+def extract_dimension_name_and_value(dimension_key, dimension_dict, index):
+    dimension_values = dimension_dict[dimension_key]
+    # We need to enrich only table data. Static values like IF-MIB::ifNumber.0 won't be enriched (it doesn't
+    # make sense for those)
+    if index is not None:
         if 0 <= index < len(dimension_values):
-            return dimension_name, dimension_values[index]
+            return dimension_key, dimension_values[index]
     return None, None
 
 
@@ -67,7 +65,9 @@ class MibEnricher:
                     (
                         dimension_name,
                         dimension_value,
-                    ) = extract_dimension_name_and_value(dimension, index)
+                    ) = extract_dimension_name_and_value(
+                        dimension, if_mib_record, index
+                    )
                     if dimension_name:
                         result.append({dimension_name: dimension_value})
         return result

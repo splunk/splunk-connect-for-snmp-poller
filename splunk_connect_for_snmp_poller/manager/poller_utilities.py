@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import copy
 import csv
 import logging.config
 import threading
@@ -379,8 +380,19 @@ def create_poller_scheduler_entry_key(host, profile):
     return host + "#" + profile
 
 
+def create_poller_enricher_entry_key(host, ifmib_attribute):
+    return host + "#" + ifmib_attribute
+
+
 def return_database_id(host):
     if "#" in host:
         host = host.split("#")[0]
     _host, _port = parse_port(host)
     return f"{_host}:{_port}"
+
+
+def update_inventory_record(original_ir, oid, ttl):
+    ir = copy.deepcopy(original_ir)
+    ir.profile = f"{oid}.*"
+    ir.frequency_str = ttl
+    return ir

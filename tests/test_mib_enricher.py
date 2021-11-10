@@ -19,20 +19,28 @@ from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnrich
 
 mib_static_data_coll = {
     "IF-MIB": {
-        "existingVarBinds": [
-            {"interface_index": ["1", "2"]},
-            {"interface_desc": ["lo", "eth0"]},
-        ],
+        "existingVarBinds": {
+            "Speed": ["10000000", "100000000"],
+            "Type": ["softwareLoopback", "ethernetCsmacd"],
+            "AdminStatus": ["up", "up"],
+            "MTU": ["16436", "1500"],
+            "OperationalStatus": ["up", "up"],
+            "ifDescr": ["lo", "eth0"],
+        },
         "additionalVarBinds": {},
     },
     "SNMPv2-MIB": {"additionalVarBinds": {"indexNum": "index_num"}},
 }
 mib_static_data_coll_additional = {
     "IF-MIB": {
-        "existingVarBinds": [
-            {"interface_index": ["1", "2"]},
-            {"interface_desc": ["lo", "eth0"]},
-        ],
+        "existingVarBinds": {
+            "Speed": ["10000000", "100000000"],
+            "Type": ["softwareLoopback", "ethernetCsmacd"],
+            "AdminStatus": ["up", "up"],
+            "MTU": ["16436", "1500"],
+            "OperationalStatus": ["up", "up"],
+            "ifDescr": ["lo", "eth0"],
+        },
         "additionalVarBinds": {"indexNum": "index_num"},
     },
     "SNMPv2-MIB": {"additionalVarBinds": {"indexNum": "index_num"}},
@@ -90,9 +98,13 @@ class TestMibEnricher(TestCase):
         }
         enricher = MibEnricher(mib_static_data_coll)
         enricher.append_additional_dimensions(translated_metric, {"ifIndex": 2})
-        self.assertTrue("interface_index" in translated_metric)
-        self.assertTrue("interface_desc" in translated_metric)
-        self.assertFalse("index_num" in translated_metric)
+        self.assertTrue("Speed" in translated_metric)
+        self.assertTrue("Type" in translated_metric)
+        self.assertTrue("AdminStatus" in translated_metric)
+        self.assertTrue("MTU" in translated_metric)
+        self.assertTrue("OperationalStatus" in translated_metric)
+        self.assertTrue("ifDescr" in translated_metric)
+        self.assertTrue("index_num" not in translated_metric)
 
     def test_process_one_valid_snmpv2_mib_entry(self):
         translated_metric = {
@@ -114,6 +126,10 @@ class TestMibEnricher(TestCase):
         }
         enricher = MibEnricher(mib_static_data_coll_additional)
         enricher.append_additional_dimensions(translated_metric, {"ifIndex": 2})
-        self.assertTrue("interface_index" in translated_metric)
-        self.assertTrue("interface_desc" in translated_metric)
+        self.assertTrue("Speed" in translated_metric)
+        self.assertTrue("Type" in translated_metric)
+        self.assertTrue("AdminStatus" in translated_metric)
+        self.assertTrue("MTU" in translated_metric)
+        self.assertTrue("OperationalStatus" in translated_metric)
+        self.assertTrue("ifDescr" in translated_metric)
         self.assertTrue("index_num" in translated_metric)

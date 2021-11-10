@@ -17,6 +17,8 @@ import sys
 from unittest import TestCase
 from unittest.mock import Mock
 
+from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
+
 sys.modules["splunk_connect_for_snmp_poller.manager.celery_client"] = Mock()
 from splunk_connect_for_snmp_poller.manager.poller_utilities import (  # noqa: E402
     create_poller_scheduler_entry_key,
@@ -24,6 +26,7 @@ from splunk_connect_for_snmp_poller.manager.poller_utilities import (  # noqa: E
     get_frequency,
     is_ifmib_different,
     return_database_id,
+    update_inventory_record,
 )
 
 
@@ -306,3 +309,14 @@ class TestPollerUtilities(TestCase):
         }
         result = deleted_oid_families(old_enricher, new_enricher)
         self.assertEqual(result, set())
+
+    def test_update_inventory_record(self):
+        old_ir = InventoryRecord("127.0.0.1", "v2", "public", "basev1", "10")
+        new_oid_ir = update_inventory_record(old_ir, "1.3.6.1.2.1.2.2.1.4", "12")
+        self.assertEqual(old_ir.profile, "basev1")
+        self.assertEqual(old_ir.frequency_str, "10")
+        self.assertEqual(new_oid_ir.profile, "1.3.6.1.2.1.2.2.1.4.*")
+        self.assertEqual(new_oid_ir.frequency_str, "12")
+        self.assertEqual(new_oid_ir.community, "public")
+        self.assertEqual(new_oid_ir.version, "v2")
+        self.assertEqual(new_oid_ir.host, "127.0.0.1")

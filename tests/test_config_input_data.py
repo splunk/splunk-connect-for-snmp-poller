@@ -60,8 +60,8 @@ parsed_config_correct = {
         "oidFamily": {
             "IF-MIB": {
                 "existingVarBinds": [
-                    {"ifIndex": "interface_index"},
-                    {"ifDescr": "interface_desc"},
+                    {"id": "ifIndex", "name": "interface_index", "ttl": 10},
+                    {"id": "ifDescr", "name": "interface_desc", "ttl": 20},
                 ]
             }
         }
@@ -73,9 +73,9 @@ parsed_config_correct_three_fields = {
         "oidFamily": {
             "IF-MIB": {
                 "existingVarBinds": [
-                    {"ifIndex": "interface_index"},
-                    {"ifDescr": "interface_desc"},
-                    {"ifInUcastPkts": "total_in_packets"},
+                    {"id": "ifIndex", "name": "interface_index", "ttl": 10},
+                    {"id": "ifDescr", "name": "interface_desc", "ttl": 20},
+                    {"id": "ifInUcastPkts", "name": "total_in_packets", "ttl": 30},
                 ]
             }
         }
@@ -87,9 +87,9 @@ parsed_config_correct_one_non_existing_field = {
         "oidFamily": {
             "IF-MIB": {
                 "existingVarBinds": [
-                    {"ifIndex": "interface_index"},
-                    {"ifDescr": "interface_desc"},
-                    {"ifUknownField": "unknown_field"},
+                    {"id": "ifIndex", "name": "interface_index", "ttl": 10},
+                    {"id": "ifDescr", "name": "interface_desc", "ttl": 20},
+                    {"id": "ifUknownField", "name": "unknown_field", "ttl": 5},
                 ]
             }
         }
@@ -101,9 +101,9 @@ parsed_config_duplicate_keys = {
         "oidFamily": {
             "IF-MIB": {
                 "existingVarBinds": [
-                    {"ifIndex": "interface_index"},
-                    {"ifIndex": "interface_index"},
-                    {"ifIndex": "interface_index_2"},
+                    {"id": "ifIndex", "name": "interface_index", "ttl": 10},
+                    {"id": "ifIndex", "name": "interface_index", "ttl": 10},
+                    {"id": "ifIndex", "name": "interface_index2", "ttl": 10},
                 ]
             }
         }
@@ -115,9 +115,9 @@ parsed_config_with_additional_varbinds_ifmib = {
         "oidFamily": {
             "IF-MIB": {
                 "existingVarBinds": [
-                    {"ifIndex": "interface_index"},
-                    {"ifDescr": "interface_desc"},
-                    {"ifInUcastPkts": "total_in_packets"},
+                    {"id": "ifIndex", "name": "interface_index", "ttl": 10},
+                    {"id": "ifDescr", "name": "interface_desc", "ttl": 20},
+                    {"id": "ifInUcastPkts", "name": "total_in_packets", "ttl": 5},
                 ],
                 "additionalVarBinds": [
                     {"indexNum": "index_num"},

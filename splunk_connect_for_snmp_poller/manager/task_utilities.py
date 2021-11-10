@@ -182,28 +182,15 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
     if not mib_list:
         return VarbindCollection(get=[], bulk=[])
     get_list, bulk_list = [], []
-    mibBuilder = builder.MibBuilder()
-    mibViewController = view.MibViewController(mibBuilder)
-    config = {"sources": [os.environ["MIBS_FILES_URL"]]}
-    compiler.addMibCompiler(mibBuilder, **config)
     for mib_string in mib_list:
         try:
-            if len(mib_string) == 3:
-                # convert mib string to oid
-                oid = ObjectIdentity(
-                    mib_string[0], mib_string[1], mib_string[2]
-                ).resolveWithMib(mibViewController)
-                logger.debug(f"[-] oid: {oid}")
+            oid = translate_list_to_oid(mib_string)
+            logger.debug(f"[-] oid: {oid}")
+            mib_string_length = len(mib_string)
+            if mib_string_length == 3:
                 get_list.append(ObjectType(oid))
-
-            elif len(mib_string) == 2:
-                # convert mib string to oid
-                oid = ObjectIdentity(mib_string[0], mib_string[1]).resolveWithMib(
-                    mibViewController
-                )
-                logger.debug(f"[-] oid: {oid}")
+            elif mib_string_length < 3:
                 bulk_list.append(ObjectType(oid))
-
             else:
                 raise Exception(
                     f"Invalid mib string - {mib_string}."
@@ -215,6 +202,15 @@ def mib_string_handler(mib_list: list) -> VarbindCollection:
                 f"Error happened while polling for mib string: {mib_string}: {e}"
             )
     return VarbindCollection(get=get_list, bulk=bulk_list)
+
+
+def translate_list_to_oid(mib_string):
+    mibBuilder = builder.MibBuilder()
+    mibViewController = view.MibViewController(mibBuilder)
+    config = {"sources": [os.environ["MIBS_FILES_URL"]]}
+    compiler.addMibCompiler(mibBuilder, **config)
+    oid = ObjectIdentity(*mib_string).resolveWithMib(mibViewController)
+    return oid
 
 
 def snmp_get_handler(

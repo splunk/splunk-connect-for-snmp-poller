@@ -157,12 +157,14 @@ class OnetimeFlag(str, Enum):
     FIRST_WALK = "first_time"
     AFTER_FAIL = "after_fail"
     NOT_A_WALK = "not_a_walk"
+    ENRICHER_UPDATE_WALK = "enricher_walk"
 
     @staticmethod
     def is_a_walk(value: str) -> bool:
         if (
             value == OnetimeFlag.FIRST_WALK.value
             or value == OnetimeFlag.AFTER_FAIL.value
+            or value == OnetimeFlag.ENRICHER_UPDATE_WALK.value
         ):
             return True
         elif value == OnetimeFlag.NOT_A_WALK.value:
