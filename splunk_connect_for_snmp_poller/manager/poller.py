@@ -255,6 +255,8 @@ class Poller:
             ifmib_oid = translate_list_to_oid(["IF-MIB", ifmib_attr])
             db_host = return_database_id(ir.host)
             entry_key = create_poller_enricher_entry_key(db_host, ifmib_attr)
+            if entry_key in self._enricher_jobs_map:
+                return
             logger.debug("Adding configuration for enricher job %s", entry_key)
             new_ir = update_inventory_record(ir, ifmib_oid, ttl)
             job_reference = schedule.every(int(ttl)).seconds.do(
