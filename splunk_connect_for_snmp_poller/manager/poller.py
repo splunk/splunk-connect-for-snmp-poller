@@ -20,6 +20,7 @@ import threading
 import time
 
 import schedule
+from flask import Flask, request
 from pysnmp.hlapi import SnmpEngine
 
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
@@ -64,6 +65,8 @@ class Poller:
         self._lock = threading.Lock()
         self._force_refresh = False
         self._old_enricher = {}
+        self._refresh_enabled = False
+        self._profiles_hash = ""
 
     def force_inventory_refresh(self):
         self._force_refresh = True
@@ -76,6 +79,12 @@ class Poller:
         }
 
     def run(self):
+
+        threading.Thread(
+            target=self.__start_refresh_endpoint,
+            args=[self._args.refresh_endpoint_port],
+        ).start()
+
         self.__start_realtime_scheduler_task()
         counter = 0
         while True:
@@ -99,12 +108,12 @@ class Poller:
 
         # update job when either inventory changes or config changes
         if server_config_modified or inventory_config_modified or self._force_refresh:
-            self._force_refresh = False
             logger.info(
                 f"Refreshing inventory and config: server_config_modified = {server_config_modified}, "
                 f"inventory_config_modified = {inventory_config_modified}, "
                 f"force_refresh = {self._force_refresh}"
             )
+            self._force_refresh = False
 
             # TODO should rethink logic with changed to profiles and oids
             inventory_entry_keys = set()
@@ -350,6 +359,30 @@ class Poller:
             finally:
                 if self._lock.locked():
                     self._lock.release()
+
+    def __start_refresh_endpoint(self, refresh_endpoint_port):
+        app = Flask(__name__)
+
+        @app.route("/refresh")
+        def hello():
+            if not self._refresh_enabled:
+                self._refresh_enabled = True
+                self._profiles_hash = request.args.get("profiles_hash")
+                logger.info("Ignoring first refresh request")
+                return "Ignoring first refresh request"
+            else:
+                profiles_hash = request.args.get("profiles_hash")
+                if profiles_hash != self._profiles_hash:
+                    self._profiles_hash = profiles_hash
+                    self.force_inventory_refresh()
+                    logger.info("Refresh of inventory requested over HTTP endpoint")
+                    return "Inventory refreshed"
+                else:
+                    logger.info("No changes in profiles")
+                    return "No changes in profiles"
+
+        app.run(host="0.0.0.0", port=refresh_endpoint_port)
+        return app
 
 
 def scheduled_task(ir: InventoryRecord, server_config, splunk_indexes, profiles):

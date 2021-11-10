@@ -120,6 +120,12 @@ def parse_command_line_arguments():
         default=120,
         help="Frequency in seconds for onetime task",
     )
+    parser.add_argument(
+        "--refresh_endpoint_port",
+        type=int,
+        default=8765,
+        help="Port of inventory refresh endpoint",
+    )
     return parser.parse_args()
 
 
