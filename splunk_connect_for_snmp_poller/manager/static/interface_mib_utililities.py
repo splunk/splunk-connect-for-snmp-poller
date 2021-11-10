@@ -71,7 +71,6 @@ def extract_network_interface_data_from_existing_config(config_as_dict):
 def extract_network_interface_data_from_walk(config_as_dict, if_mib_metric_walk_data):
     result = []
     network_data = InterfaceMib(if_mib_metric_walk_data)
-    # if network_data.has_consistent_data():
     enricher_fields = extract_network_interface_data_from_existing_config(
         config_as_dict
     )
