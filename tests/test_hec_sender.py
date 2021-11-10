@@ -32,10 +32,10 @@ from splunk_connect_for_snmp_poller.manager.static.mib_enricher import MibEnrich
 _MibEnricher = MibEnricher(
     {
         "IF-MIB": {
-            "existingVarBinds": [
-                {"interface_index": ["1", "2", "3"]},
-                {"interface_desc": ["lo", "eth0", "eth1"]},
-            ]
+            "existingVarBinds": {
+                "interface_index": ["1", "2", "3"],
+                "interface_desc": ["lo", "eth0", "eth1"],
+            },
         }
     }
 )
@@ -221,7 +221,7 @@ class TestHecSender(TestCase):
         self.assertEqual(rep.status_code, 200)
         self.assertEqual(json.loads(rep.content), response_json)
 
-    @responses.activate
+    @responses.activate  # type: ignore
     @pytest.mark.usefixtures
     def test_send_event_request_with_error(self):
         # given
