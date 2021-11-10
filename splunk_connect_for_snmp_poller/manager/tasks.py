@@ -15,10 +15,10 @@
 #
 import os
 
+from celery import Task
 from celery.utils.log import get_task_logger
 from pysnmp.hlapi import ObjectIdentity, ObjectType, SnmpEngine
 
-from celery import Task
 from splunk_connect_for_snmp_poller.manager.celery_client import app
 from splunk_connect_for_snmp_poller.manager.data.inventory_record import InventoryRecord
 from splunk_connect_for_snmp_poller.manager.hec_sender import HecSender
