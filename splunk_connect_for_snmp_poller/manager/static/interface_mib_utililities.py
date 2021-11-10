@@ -71,14 +71,14 @@ def extract_network_interface_data_from_existing_config(config_as_dict):
 def extract_network_interface_data_from_walk(config_as_dict, if_mib_metric_walk_data):
     result = []
     network_data = InterfaceMib(if_mib_metric_walk_data)
-    if network_data.has_consistent_data():
-        enricher_fields = extract_network_interface_data_from_existing_config(
-            config_as_dict
-        )
-        for data in enricher_fields:
-            splunk_dimension = data["splunk_dimension_name"]
-            current_result = network_data.extract_custom_field(data["oid_name"])
-            if current_result:
-                result.append({f"{splunk_dimension}": current_result})
+    # if network_data.has_consistent_data():
+    enricher_fields = extract_network_interface_data_from_existing_config(
+        config_as_dict
+    )
+    for data in enricher_fields:
+        splunk_dimension = data["splunk_dimension_name"]
+        current_result = network_data.extract_custom_field(data["oid_name"])
+        if current_result:
+            result.append({f"{splunk_dimension}": current_result})
 
     return result

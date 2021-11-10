@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from operator import itemgetter
 
 
 # See http://www.net-snmp.org/docs/mibs/interfaces.html for additional implementation details
@@ -24,6 +25,7 @@ def extract_if_mib_only(translated_walk_result):
                 InterfaceMib.METRIC_NAME_KEY,
                 InterfaceMib.METRIC_VALUE_KEY,
                 InterfaceMib.METRIC_TYPE_KEY,
+                InterfaceMib.METRIC_PARSED_INDEX_KEY,
             )
         )
         and translation[InterfaceMib.METRIC_NAME_KEY].startswith(
@@ -37,75 +39,51 @@ class InterfaceMib:
     METRIC_NAME_KEY = "metric_name"
     METRIC_VALUE_KEY = "_value"
     METRIC_TYPE_KEY = "metric_type"
+    METRIC_PARSED_INDEX_KEY = "parsed_index"
+    METRIC_IF_INDEX_KEY = "ifIndex"
     IF_MIB_METRIC_PREFIX = "sc4snmp.IF-MIB."
-    NON_METRIC_IDENTIFIER = "ifDescr"
     IF_MIB_DATA_MONGO_IDENTIFIER = "IF-MIB"
-    IF_MIB_IF_NUMBER = "sc4snmp.IF-MIB.ifNumber_0"
-    IF_MIB_IF_INDEX_BASE = "sc4snmp.IF-MIB.ifIndex_"
-    IF_MIB_IF_DESCR_BASE = "sc4snmp.IF-MIB.ifDescr_"
 
     def __init__(self, if_mib_metric_walk_data):
         self._if_mib_walk_data = extract_if_mib_only(if_mib_metric_walk_data)
         self._full_dictionary = self.__build_in_memory_dictionary()
-        self._network_interfaces = self.__extract_number_of_network_interfaces()
-        self._network_indexes = self.__extract_interface_indexes()
-        self._network_interface_names = self.__extract_interface_names()
 
     def unprocessed_if_mib_data(self):
         return self._if_mib_walk_data
 
-    def network_interfaces(self):
-        return self._network_interfaces
-
-    def network_indexes(self):
-        return self._network_indexes
-
-    def network_interface_names(self):
-        return self._network_interface_names
-
-    def has_consistent_data(self):
-        return self.network_interfaces() == len(self.network_indexes()) and len(
-            self.network_indexes()
-        ) == len(self.network_interface_names())
-
     def __build_in_memory_dictionary(self):
         all_keys = {}
-        n = 1
         for mib in self.unprocessed_if_mib_data():
-            all_keys[mib[InterfaceMib.METRIC_NAME_KEY] + f"_{n}"] = {
-                InterfaceMib.METRIC_VALUE_KEY: mib[InterfaceMib.METRIC_VALUE_KEY],
-                InterfaceMib.METRIC_TYPE_KEY: mib[InterfaceMib.METRIC_TYPE_KEY],
-            }
-            n += 1
+            if mib[InterfaceMib.METRIC_NAME_KEY] not in all_keys:
+                all_keys[mib[InterfaceMib.METRIC_NAME_KEY]] = []
+            all_keys[mib[InterfaceMib.METRIC_NAME_KEY]].append(
+                {
+                    InterfaceMib.METRIC_VALUE_KEY: mib[InterfaceMib.METRIC_VALUE_KEY],
+                    InterfaceMib.METRIC_TYPE_KEY: mib[InterfaceMib.METRIC_TYPE_KEY],
+                    InterfaceMib.METRIC_PARSED_INDEX_KEY: self.__get_ifindex(
+                        mib[InterfaceMib.METRIC_PARSED_INDEX_KEY]
+                    ),
+                }
+            )
+            sorted(
+                all_keys[mib[InterfaceMib.METRIC_NAME_KEY]],
+                key=itemgetter(InterfaceMib.METRIC_PARSED_INDEX_KEY),
+            )
         return all_keys
 
-    def __extract_number_of_network_interfaces(self):
-        if InterfaceMib.IF_MIB_IF_NUMBER in self._full_dictionary:
-            if_number = self._full_dictionary[InterfaceMib.IF_MIB_IF_NUMBER]
-            return int(if_number[InterfaceMib.METRIC_VALUE_KEY])
-        return 0
+    def __get_ifindex(self, ifindex_dictionary):
+        return ifindex_dictionary[InterfaceMib.METRIC_IF_INDEX_KEY]
 
     def _return_number_of_interfaces(self):
-        if self.network_interfaces():
-            return self._network_interfaces
-        else:
-            return len(self._full_dictionary)
+        for value_list in self._full_dictionary.values():
+            return len(value_list)
 
     def __extract_single_field_as_list(self, base_mib_metric_name):
         all_indexes = []
-        for index in range(0, self._return_number_of_interfaces()):
-            current = base_mib_metric_name + f"_{index + 1}"
-            if current in self._full_dictionary:
-                all_indexes.append(
-                    self._full_dictionary[current][InterfaceMib.METRIC_VALUE_KEY]
-                )
+        if base_mib_metric_name in self._full_dictionary:
+            for el in self._full_dictionary[base_mib_metric_name]:
+                all_indexes.append(el[InterfaceMib.METRIC_VALUE_KEY])
         return all_indexes
-
-    def __extract_interface_indexes(self):
-        return self.__extract_single_field_as_list(InterfaceMib.IF_MIB_IF_INDEX_BASE)
-
-    def __extract_interface_names(self):
-        return self.__extract_single_field_as_list(InterfaceMib.IF_MIB_IF_DESCR_BASE)
 
     def extract_custom_field(self, snmp_field_name):
         return self.__extract_single_field_as_list(snmp_field_name)
