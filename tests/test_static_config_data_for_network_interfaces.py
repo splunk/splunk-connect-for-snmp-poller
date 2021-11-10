@@ -62,11 +62,11 @@ class ExtractEnricherDataFromConfigTest(TestCase):
         self.assertTrue(len(result) == 2)
         expected_result = [
             {
-                "oid_name": f"{InterfaceMib.IF_MIB_METRIC_PREFIX}ifIndex_",
+                "oid_name": f"{InterfaceMib.IF_MIB_METRIC_PREFIX}ifIndex",
                 "splunk_dimension_name": "interface_index",
             },
             {
-                "oid_name": f"{InterfaceMib.IF_MIB_METRIC_PREFIX}ifDescr_",
+                "oid_name": f"{InterfaceMib.IF_MIB_METRIC_PREFIX}ifDescr",
                 "splunk_dimension_name": "interface_desc",
             },
         ]
@@ -79,16 +79,16 @@ class ExtractEnricherDataFromConfigTest(TestCase):
         self.assertTrue(len(result) == 3)
         expected_result = [
             {
-                "oid_name": "sc4snmp.IF-MIB.ifIndex_",
+                "oid_name": "sc4snmp.IF-MIB.ifIndex",
                 "splunk_dimension_name": "interface_index",
             },
             {
-                "oid_name": "sc4snmp.IF-MIB.ifIndex_",
+                "oid_name": "sc4snmp.IF-MIB.ifIndex",
                 "splunk_dimension_name": "interface_index",
             },
             {
-                "oid_name": "sc4snmp.IF-MIB.ifIndex_",
-                "splunk_dimension_name": "interface_index_2",
+                "oid_name": "sc4snmp.IF-MIB.ifIndex",
+                "splunk_dimension_name": "interface_index2",
             },
         ]
         self.assertEqual(result, expected_result)
