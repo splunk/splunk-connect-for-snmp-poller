@@ -68,26 +68,26 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "celery"
-version = "5.1.2"
+version = "5.2.1"
 description = "Distributed Task Queue."
 category = "main"
 optional = false
-python-versions = ">=3.6,"
+python-versions = ">=3.7,"
 
 [package.dependencies]
 billiard = ">=3.6.4.0,<4.0"
-click = ">=7.0,<8.0"
+click = ">=8.0,<9.0"
 click-didyoumean = ">=0.0.3"
 click-plugins = ">=1.1.1"
-click-repl = ">=0.1.6"
-kombu = ">=5.1.0,<6.0"
-pytz = ">0.0-dev"
+click-repl = ">=0.2.0"
+kombu = ">=5.2.2,<6.0"
+pytz = ">0.dev.0"
 vine = ">=5.0.0,<6.0"
 
 [package.extras]
 arangodb = ["pyArango (>=1.3.2)"]
 auth = ["cryptography"]
-azureblockblob = ["azure-storage-blob (==12.6.0)"]
+azureblockblob = ["azure-storage-blob (==12.9.0)"]
 brotli = ["brotli (>=1.0.0)", "brotlipy (>=0.7.0)"]
 cassandra = ["cassandra-driver (<3.21.0)"]
 consul = ["python-consul2"]
@@ -97,21 +97,21 @@ couchdb = ["pycouchdb"]
 django = ["Django (>=1.11)"]
 dynamodb = ["boto3 (>=1.9.178)"]
 elasticsearch = ["elasticsearch"]
-eventlet = ["eventlet (>=0.26.1)"]
-gevent = ["gevent (>=1.0.0)"]
+eventlet = ["eventlet (>=0.32.0)"]
+gevent = ["gevent (>=1.5.0)"]
 librabbitmq = ["librabbitmq (>=1.5.0)"]
 memcache = ["pylibmc"]
-mongodb = ["pymongo[srv] (>=3.3.0)"]
+mongodb = ["pymongo[srv] (>=3.3.0,<3.12.1)"]
 msgpack = ["msgpack"]
 pymemcache = ["python-memcached"]
 pyro = ["pyro4"]
 pytest = ["pytest-celery"]
-redis = ["redis (>=3.2.0)"]
+redis = ["redis (>=3.4.1,<4.0.0)"]
 s3 = ["boto3 (>=1.9.125)"]
 slmq = ["softlayer-messaging (>=1.0.3)"]
 solar = ["ephem"]
 sqlalchemy = ["sqlalchemy"]
-sqs = ["boto3 (>=1.9.125)", "pycurl (==7.43.0.5)"]
+sqs = ["kombu"]
 tblib = ["tblib (>=1.3.0)", "tblib (>=1.5.0)"]
 yaml = ["PyYAML (>=3.10)"]
 zookeeper = ["kazoo (>=1.3.1)"]
@@ -138,11 +138,14 @@ unicode_backport = ["unicodedata2"]
 
 [[package]]
 name = "click"
-version = "7.1.2"
+version = "8.0.3"
 description = "Composable command line interface toolkit"
 category = "main"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+python-versions = ">=3.6"
+
+[package.dependencies]
+colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
 name = "click-didyoumean"
@@ -186,7 +189,7 @@ six = "*"
 name = "colorama"
 version = "0.4.4"
 description = "Cross-platform colored terminal text."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
@@ -222,11 +225,11 @@ python-versions = "*"
 
 [[package]]
 name = "kombu"
-version = "5.1.0"
+version = "5.2.2"
 description = "Messaging library for Python."
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 amqp = ">=5.0.6,<6.0.0"
@@ -236,15 +239,15 @@ vine = "*"
 azureservicebus = ["azure-servicebus (>=7.0.0)"]
 azurestoragequeues = ["azure-storage-queue"]
 consul = ["python-consul (>=0.6.0)"]
-librabbitmq = ["librabbitmq (>=1.5.2)"]
-mongodb = ["pymongo (>=3.3.0)"]
+librabbitmq = ["librabbitmq (>=2.0.0)"]
+mongodb = ["pymongo (>=3.3.0,<3.12.1)"]
 msgpack = ["msgpack"]
 pyro = ["pyro4"]
 qpid = ["qpid-python (>=0.26)", "qpid-tools (>=0.26)"]
-redis = ["redis (>=3.3.11)"]
+redis = ["redis (>=3.4.1,<4.0.0)"]
 slmq = ["softlayer-messaging (>=1.0.3)"]
 sqlalchemy = ["sqlalchemy"]
-sqs = ["boto3 (>=1.4.4)", "pycurl (==7.43.0.2)", "urllib3 (<1.26)"]
+sqs = ["boto3 (>=1.9.12)", "pycurl (>=7.44.1,<7.45.0)", "urllib3 (>=1.26.7)"]
 yaml = ["PyYAML (>=3.10)"]
 zookeeper = ["kazoo (>=1.3.1)"]
 
@@ -555,7 +558,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "2ac389fabcd973633bb94c9bd68bf0a05e51883f4e283bb5cf15ab9838d9afdf"
+content-hash = "6352305c3d1a7d2bd6c524423a08932092b764ccca8fb7b315c0b95805042576"
 
 [metadata.files]
 amqp = [
@@ -579,8 +582,8 @@ black = [
     {file = "black-21.9b0.tar.gz", hash = "sha256:7de4cfc7eb6b710de325712d40125689101d21d25283eed7e9998722cf10eb91"},
 ]
 celery = [
-    {file = "celery-5.1.2-py3-none-any.whl", hash = "sha256:9dab2170b4038f7bf10ef2861dbf486ddf1d20592290a1040f7b7a1259705d42"},
-    {file = "celery-5.1.2.tar.gz", hash = "sha256:8d9a3de9162965e97f8e8cc584c67aad83b3f7a267584fa47701ed11c3e0d4b0"},
+    {file = "celery-5.2.1-py3-none-any.whl", hash = "sha256:cc63ea6572d558be65297ba6db7a7979e64c0a3d0d61212d6302ef1ca05a0d22"},
+    {file = "celery-5.2.1.tar.gz", hash = "sha256:b41a590b49caf8e6498a57db628e580d5f8dc6febda0f42de5d783aed5b7f808"},
 ]
 certifi = [
     {file = "certifi-2021.5.30-py2.py3-none-any.whl", hash = "sha256:50b1e4f8446b06f41be7dd6338db18e0990601dce795c2b1686458aa7e8fa7d8"},
@@ -591,8 +594,8 @@ charset-normalizer = [
     {file = "charset_normalizer-2.0.1-py3-none-any.whl", hash = "sha256:b68b38179052975093d71c1b5361bf64afd80484697c1f27056e50593e695ceb"},
 ]
 click = [
-    {file = "click-7.1.2-py2.py3-none-any.whl", hash = "sha256:dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc"},
-    {file = "click-7.1.2.tar.gz", hash = "sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a"},
+    {file = "click-8.0.3-py3-none-any.whl", hash = "sha256:353f466495adaeb40b6b5f592f9f91cb22372351c84caeb068132442a4518ef3"},
+    {file = "click-8.0.3.tar.gz", hash = "sha256:410e932b050f5eed773c4cda94de75971c89cdb3155a72a0831139a79e5ecb5b"},
 ]
 click-didyoumean = [
     {file = "click-didyoumean-0.0.3.tar.gz", hash = "sha256:112229485c9704ff51362fe34b2d4f0b12fc71cc20f6d2b3afabed4b8bfa6aeb"},
@@ -653,8 +656,8 @@ iniconfig = [
     {file = "iniconfig-1.1.1.tar.gz", hash = "sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32"},
 ]
 kombu = [
-    {file = "kombu-5.1.0-py3-none-any.whl", hash = "sha256:e2dedd8a86c9077c350555153825a31e456a0dc20c15d5751f00137ec9c75f0a"},
-    {file = "kombu-5.1.0.tar.gz", hash = "sha256:01481d99f4606f6939cdc9b637264ed353ee9e3e4f62cfb582324142c41a572d"},
+    {file = "kombu-5.2.2-py3-none-any.whl", hash = "sha256:d36f0cde6a18d9eb7b6b3aa62a59bfdff7f5724689850e447eca5be8efc9d501"},
+    {file = "kombu-5.2.2.tar.gz", hash = "sha256:0f5d0763fb916808f617b886697b2be28e6bc35026f08e679697fc814b48a608"},
 ]
 lxml = [
     {file = "lxml-4.6.3-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:df7c53783a46febb0e70f6b05df2ba104610f2fb0d27023409734a3ecbb78fb2"},
